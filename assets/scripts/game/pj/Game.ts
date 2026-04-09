@@ -13,10 +13,8 @@ export default class Game extends cc.Component {
 
         const layout = layoutNode.getComponent("SeatLayout");
 
-        await layout.ready();   // ⭐ 关键点（不会再报错）
+        await layout.ready();   
 
-        console.log("SeatLayout 已就绪");
-
-        layout.createSeats(10, 2);
+        layout.createSeats(8, 1);
     }
 }

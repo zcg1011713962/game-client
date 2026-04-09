@@ -59,15 +59,22 @@ export default class SeatLayout extends cc.Component {
 
         let seats = [];
 
-        for (let i = 0; i < count; i++) {
-
-            const angle = (Math.PI * 2 / count) * i - Math.PI / 2;
-
-            const x = Math.cos(angle) * radius.x;
-            const y = Math.sin(angle) * radius.y;
-
-            seats.push({ x, y, angle });
+        if(count == 8){
+            // 设置坐标角度
+            seats.push({ x : 30, y : -700, angle:  0 });
+            seats.push({ x : 420, y : -300, angle:  0 });
+            seats.push({ x : 420, y : 100, angle:  0 });
+            seats.push({ x : 420, y : 500, angle:  0 });
+            seats.push({ x : 30, y : 700, angle:  0 });
+            seats.push({ x : -350, y : -300, angle:  0 });
+            seats.push({ x : -350, y : 100, angle:  0 });
+            seats.push({ x : -350, y : 500, angle:  0 });
+        }else {
+            return;
         }
+
+        
+       
 
         seats = this.rotate(seats, selfIndex);
 
@@ -76,8 +83,8 @@ export default class SeatLayout extends cc.Component {
             const node = cc.instantiate(this.seatPrefab);
             node.parent = this.seatContainer;
             node.setPosition(s.x, s.y);
-
-            node.angle = -cc.misc.radiansToDegrees(s.angle);
+            // 设置角度
+            // node.angle = -cc.misc.radiansToDegrees(s.angle);
 
             const seat = node.getComponent("Seat");
 
@@ -86,7 +93,6 @@ export default class SeatLayout extends cc.Component {
                 isBanker: i === 0
             });
 
-            seat.updateView(s.angle);
         });
     }
 

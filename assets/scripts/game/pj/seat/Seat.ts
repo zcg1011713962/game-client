@@ -36,12 +36,4 @@ export default class Seat extends cc.Component {
         }
     }
 
-    updateView(angle: number) {
-        // 上半区翻转（避免倒立）
-        this.node.scaleX = (angle > Math.PI / 2 || angle < -Math.PI / 2) ? -1 : 1;
-
-        if (this.cardsNode) {
-            this.cardsNode.angle = 0;
-        }
-    }
 }
