@@ -1,102 +1,102 @@
 const { ccclass, property } = cc._decorator;
 
-interface SeatPos {
-    x: number;
-    y: number;
-    angle: number;
-}
-
 @ccclass
 export default class SeatLayout extends cc.Component {
 
-    @property(cc.Prefab)
-    seatPrefab: cc.Prefab = null;
+    private seatPrefab: cc.Prefab = null;
+    private seatContainer: cc.Node = null;
 
-    @property(cc.Node)
-    seatContainer: cc.Node = null;
+    private _resolveReady: Function = null;
+    private _isReady: boolean = false;
 
-    /**
-     * 创建座位
-     */
-    createSeats(count: number, selfIndex: number) {
-        this.seatContainer.removeAllChildren();
+    onLoad() {
+        this.seatContainer = cc.find("Canvas/TableRoot/SeatContainer");
 
-        const radius = this.getRadius(count);
-        let seats: SeatPos[] = [];
+        cc.resources.load("prefabs/Seat", cc.Prefab, (err, prefab) => {
+            if (err) {
+                cc.error("Seat prefab加载失败", err);
+                return;
+            }
 
-        for (let i = 0; i < count; i++) {
+            this.seatPrefab = prefab;
+            this._isReady = true;
 
-            const angle = (Math.PI * 2 / count) * i - Math.PI / 2;
-
-            let x = Math.cos(angle) * radius.x;
-            let y = Math.sin(angle) * radius.y;
-
-            const safe = this.applySafeArea(x, y);
-
-            seats.push({
-                x: safe.x,
-                y: safe.y,
-                angle: angle
-            });
-        }
-
-        // ⭐ 让自己在底部
-        seats = this.rotateSeats(seats, selfIndex);
-
-        // 创建节点
-        seats.forEach((seat, i) => {
-
-            const node = cc.instantiate(this.seatPrefab);
-            node.parent = this.seatContainer;
-            node.setPosition(seat.x, seat.y);
-
-            // 朝向中心
-            node.angle = -cc.misc.radiansToDegrees(seat.angle);
-
-            const comp = node.getComponent('Seat') as any;
-
-            if (comp) {
-                comp.init({
-                    name: "玩家" + i,
-                    isBanker: i === 0
-                });
-
-                comp.updateView(seat.angle);
+            // ⭐ 通知 Promise
+            if (this._resolveReady) {
+                this._resolveReady(true);
+                this._resolveReady = null;
             }
         });
     }
 
     /**
-     * 半径
+     * ⭐ Promise初始化
      */
-    private getRadius(count: number) {
-        if (count <= 6) {
-            return { x: 420, y: 650 };
-        } else if (count <= 10) {
-            return { x: 520, y: 760 };
-        } else {
-            return { x: 580, y: 820 };
+    public ready(): Promise<boolean> {
+        return new Promise((resolve) => {
+
+            // 已经准备好，直接返回
+            if (this._isReady) {
+                resolve(true);
+                return;
+            }
+
+            // 没好就等加载完成
+            this._resolveReady = resolve;
+        });
+    }
+
+    createSeats(count: number, selfIndex: number) {
+
+        if (!this.seatPrefab || !this.seatContainer) {
+            cc.error("SeatLayout未初始化完成");
+            return;
         }
+
+        this.seatContainer.removeAllChildren();
+
+        const radius = this.getRadius(count);
+
+        let seats = [];
+
+        for (let i = 0; i < count; i++) {
+
+            const angle = (Math.PI * 2 / count) * i - Math.PI / 2;
+
+            const x = Math.cos(angle) * radius.x;
+            const y = Math.sin(angle) * radius.y;
+
+            seats.push({ x, y, angle });
+        }
+
+        seats = this.rotate(seats, selfIndex);
+
+        seats.forEach((s, i) => {
+
+            const node = cc.instantiate(this.seatPrefab);
+            node.parent = this.seatContainer;
+            node.setPosition(s.x, s.y);
+
+            node.angle = -cc.misc.radiansToDegrees(s.angle);
+
+            const seat = node.getComponent("Seat");
+
+            seat.init({
+                name: "玩家" + i,
+                isBanker: i === 0
+            });
+
+            seat.updateView(s.angle);
+        });
     }
 
-    /**
-     * 安全区
-     */
-    private applySafeArea(x: number, y: number) {
-
-        if (y > 700) y = 700;
-        if (y < -720) y = -720;
-
-        if (x > 540) x = 540;
-        if (x < -540) x = -540;
-
-        return { x, y };
+    private getRadius(count: number) {
+        if (count <= 6) return { x: 420, y: 650 };
+        if (count <= 10) return { x: 520, y: 760 };
+        return { x: 580, y: 820 };
     }
 
-    /**
-     * 旋转数组（自己在底部）
-     */
-    private rotateSeats(seats: SeatPos[], selfIndex: number) {
-        return seats.slice(selfIndex).concat(seats.slice(0, selfIndex));
+    private rotate(arr, index) {
+        return arr.slice(index).concat(arr.slice(0, index));
     }
 }
