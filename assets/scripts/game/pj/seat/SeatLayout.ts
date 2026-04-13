@@ -10,7 +10,7 @@ export default class SeatLayout extends cc.Component {
     private _isReady: boolean = false;
 
     onLoad() {
-        this.seatContainer = cc.find("Canvas/TableRoot/SeatContainer");
+        this.seatContainer = cc.find("Canvas/MainLayout/Table/SeatContainer");
 
         cc.resources.load("prefabs/Seat", cc.Prefab, (err, prefab) => {
             if (err) {
@@ -46,7 +46,7 @@ export default class SeatLayout extends cc.Component {
         });
     }
 
-    createSeats(count: number, selfIndex: number) {
+    initSeatLayout() {
 
         if (!this.seatPrefab || !this.seatContainer) {
             cc.error("SeatLayout未初始化完成");
@@ -57,24 +57,15 @@ export default class SeatLayout extends cc.Component {
 
         let seats = [];
 
-        const CARD_DIR = {
-            LEFT: 0,
-            RIGHT: 1
-        };
-
-        if(count == 8){
-            // 设置座位坐标
-            seats.push({ x : -30, y : -700, angle:  0 , dir: CARD_DIR.RIGHT});
-            seats.push({ x : 480, y : -380, angle:  0, dir: CARD_DIR.LEFT });
-            seats.push({ x : 480, y : 20, angle:  0 , dir: CARD_DIR.LEFT });
-            seats.push({ x : 480, y : 420, angle:  0, dir: CARD_DIR.LEFT  });
-            seats.push({ x : -30, y : 700, angle:  0 , dir: CARD_DIR.RIGHT});
-            seats.push({ x : -400, y : 420, angle:  0 , dir: CARD_DIR.RIGHT});
-            seats.push({ x : -400, y : 20, angle:  0, dir: CARD_DIR.RIGHT });
-            seats.push({ x : -400, y : -380, angle:  0 , dir: CARD_DIR.RIGHT});
-        }else {
-            return;
-        }
+        // 设置座位坐标
+            seats.push({ x : 0, y : -600, id:  0 });
+            seats.push({ x : 400, y : -380, id:  1 });
+            seats.push({ x : 480, y : 20, id:  2 });
+            seats.push({ x : 400, y : 420, id:  3});
+            seats.push({ x : 0, y : 700, id:  4});
+            seats.push({ x : -400, y : 420, id:  5 });
+            seats.push({ x : -480, y : 20, id:  6});
+            seats.push({ x : -400, y : -380, id:  7});
 
 
         seats.forEach((s, i) => {
@@ -82,17 +73,9 @@ export default class SeatLayout extends cc.Component {
             const node = cc.instantiate(this.seatPrefab);
             node.parent = this.seatContainer;
             node.setPosition(s.x, s.y);
-        
-            const seat = node.getComponent("Seat");
-            // 初始化座位信息
-            seat.init({
-                name: "入座" + i,
-                isBanker: i === 0
-            });
 
         });
-
-        console.log('座位坐标' + seats)
+        console.log('SeatLayout OK')
     }
 
 
