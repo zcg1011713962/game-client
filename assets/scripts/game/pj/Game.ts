@@ -9,12 +9,20 @@ export default class Game extends cc.Component {
 
     async initTable() {
 
-        const layoutNode = cc.find("Canvas/TableRoot/SeatContainer");
+        const seatContainer = cc.find("Canvas/TableRoot/SeatContainer");
+        const cardContainer = cc.find("Canvas/TableRoot/CardContainer");
 
-        const layout = layoutNode.getComponent("SeatLayout");
+        const seatLayout = seatContainer.getComponent("SeatLayout");
+        const cardLayout = cardContainer.getComponent("CardLayout");
 
-        await layout.ready();   
+        await seatLayout.ready();   
+        await cardLayout.ready();   
 
-        layout.createSeats(8, 1);
+        // 初始化座位
+        seatLayout.createSeats(8, 0);
+
+        // 发牌
+        let data = [1, 1, 1, 1];
+        cardLayout.dealPaiJiu(data);
     }
 }

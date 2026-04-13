@@ -55,54 +55,46 @@ export default class SeatLayout extends cc.Component {
 
         this.seatContainer.removeAllChildren();
 
-        const radius = this.getRadius(count);
-
         let seats = [];
 
+        const CARD_DIR = {
+            LEFT: 0,
+            RIGHT: 1
+        };
+
         if(count == 8){
-            // 设置坐标角度
-            seats.push({ x : 30, y : -700, angle:  0 });
-            seats.push({ x : 420, y : -300, angle:  0 });
-            seats.push({ x : 420, y : 100, angle:  0 });
-            seats.push({ x : 420, y : 500, angle:  0 });
-            seats.push({ x : 30, y : 700, angle:  0 });
-            seats.push({ x : -350, y : -300, angle:  0 });
-            seats.push({ x : -350, y : 100, angle:  0 });
-            seats.push({ x : -350, y : 500, angle:  0 });
+            // 设置座位坐标
+            seats.push({ x : -30, y : -700, angle:  0 , dir: CARD_DIR.RIGHT});
+            seats.push({ x : 480, y : -380, angle:  0, dir: CARD_DIR.LEFT });
+            seats.push({ x : 480, y : 20, angle:  0 , dir: CARD_DIR.LEFT });
+            seats.push({ x : 480, y : 420, angle:  0, dir: CARD_DIR.LEFT  });
+            seats.push({ x : -30, y : 700, angle:  0 , dir: CARD_DIR.RIGHT});
+            seats.push({ x : -400, y : 420, angle:  0 , dir: CARD_DIR.RIGHT});
+            seats.push({ x : -400, y : 20, angle:  0, dir: CARD_DIR.RIGHT });
+            seats.push({ x : -400, y : -380, angle:  0 , dir: CARD_DIR.RIGHT});
         }else {
             return;
         }
 
-        
-       
-
-        seats = this.rotate(seats, selfIndex);
 
         seats.forEach((s, i) => {
 
             const node = cc.instantiate(this.seatPrefab);
             node.parent = this.seatContainer;
             node.setPosition(s.x, s.y);
-            // 设置角度
-            // node.angle = -cc.misc.radiansToDegrees(s.angle);
-
+        
             const seat = node.getComponent("Seat");
-
+            // 初始化座位信息
             seat.init({
-                name: "玩家" + i,
+                name: "入座" + i,
                 isBanker: i === 0
             });
 
         });
+
+        console.log('座位坐标' + seats)
     }
 
-    private getRadius(count: number) {
-        if (count <= 6) return { x: 420, y: 650 };
-        if (count <= 10) return { x: 520, y: 760 };
-        return { x: 580, y: 820 };
-    }
 
-    private rotate(arr, index) {
-        return arr.slice(index).concat(arr.slice(0, index));
-    }
+
 }
