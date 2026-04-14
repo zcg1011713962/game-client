@@ -351,8 +351,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        0,
-        0,
+        -10.764,
+        -21.528,
         0,
         0,
         0,
@@ -1568,7 +1568,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 1080,
-      "height": 1708
+      "height": 1780
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -1579,8 +1579,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        0,
-        0,
+        3.588,
+        -68.172,
         0,
         0,
         0,
@@ -1734,14 +1734,14 @@
     "_id": "c5uQJV8uFB8LDEvjRfHF+c"
   },
   {
-    "__type__": "1870bhHkxJCRKUlVK21HtUM",
+    "__type__": "ba6048lLCdMCKfrcUgkdwsa",
     "_name": "",
     "_objFlags": 0,
     "node": {
       "__id__": 33
     },
     "_enabled": true,
-    "_id": "91JgfDRR1FHb5F7WX+Lcsq"
+    "_id": "bdvdC+2nxE14A72eDPwm7F"
   },
   {
     "__type__": "cc.Sprite",
@@ -1816,8 +1816,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        -28.421,
-        -841.973,
+        25,
+        -850,
         0,
         0,
         0,
@@ -1881,8 +1881,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        28.859,
-        47.888,
+        0,
+        0,
         0,
         0,
         0,
@@ -2075,15 +2075,15 @@
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
-      "x": 0.5,
-      "y": 0.5
+      "x": 0.3,
+      "y": 1
     },
     "_trs": {
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        0,
-        0,
+        426.977,
+        -836.013,
         0,
         0,
         0,
@@ -2169,15 +2169,15 @@
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
-      "x": 0.5,
-      "y": 0.5
+      "x": 0.3,
+      "y": 1
     },
     "_trs": {
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        9.343,
-        -850.219,
+        -457.102,
+        -828.691,
         0,
         0,
         0,

@@ -1,9 +1,9 @@
 const { ccclass, property } = cc._decorator;
-
+import CursorManager from "../common/CursorManager";
 @ccclass
 export default class SeatLayout extends cc.Component {
 
-    private seatPrefab: cc.Prefab = null;
+    private seatPrefab: cc.Node = null;
     private seatContainer: cc.Node = null;
 
     private _resolveReady: Function = null;
@@ -11,7 +11,7 @@ export default class SeatLayout extends cc.Component {
 
     onLoad() {
         this.seatContainer = cc.find("Canvas/MainLayout/Table/SeatContainer");
-
+         // 加载座位预制体
         cc.resources.load("prefabs/Seat", cc.Prefab, (err, prefab) => {
             if (err) {
                 cc.error("Seat prefab加载失败", err);
@@ -29,7 +29,7 @@ export default class SeatLayout extends cc.Component {
         });
     }
 
-    /**
+      /**
      * ⭐ Promise初始化
      */
     public ready(): Promise<boolean> {
@@ -45,6 +45,7 @@ export default class SeatLayout extends cc.Component {
             this._resolveReady = resolve;
         });
     }
+
 
     initSeatLayout() {
 
@@ -74,9 +75,21 @@ export default class SeatLayout extends cc.Component {
             node.parent = this.seatContainer;
             node.setPosition(s.x, s.y);
 
+            
+            // 座位点击事件
+            node.on(cc.Node.EventType.MOUSE_DOWN, CursorManager.onDown, CursorManager);
+            node.on(cc.Node.EventType.MOUSE_UP, CursorManager.onUp, CursorManager);
+            node.on(cc.Node.EventType.MOUSE_LEAVE, CursorManager.onUp, CursorManager);
+
         });
         console.log('SeatLayout OK')
     }
+
+
+
+
+
+   
 
 
 
