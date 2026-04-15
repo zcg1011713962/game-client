@@ -31,12 +31,10 @@ export default class Game extends cc.Component {
 
     async initTable() {
         const seatContainer = cc.find("Canvas/MainLayout/Table/SeatContainer");
-        const seatLayout = seatContainer.getComponent("SeatLayout");
+        const seatManager = seatContainer.getComponent("SeatManager");
 
-        await seatLayout.ready();
+        await seatManager.ready();
 
-        seatLayout.initSeatLayout();
-
-        let data = [1, 1, 1, 1];
+        seatManager.initSeatLayout();
     }
 }

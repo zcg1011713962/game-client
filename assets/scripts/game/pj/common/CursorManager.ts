@@ -21,6 +21,7 @@ export default class CursorManager {
         cc.game.canvas.style.cursor = "none";
     }
 
+
     /**
      * 鼠标按下
      */
@@ -40,6 +41,7 @@ export default class CursorManager {
      * 鼠标抬起
      */
     public static onUp() {
+        console.log("uo")
         this.cursorOkNode.active = false;
         this.cursorNode.active = true;
     }
@@ -57,7 +59,7 @@ export default class CursorManager {
         }
 
         const uiPos = this.canvas.convertToNodeSpaceAR(pos);
-
+        this.cursorOkNode.active = false;
         // ⭐ 默认手型跟随鼠标
         this.cursorNode.setPosition(uiPos);
     }
