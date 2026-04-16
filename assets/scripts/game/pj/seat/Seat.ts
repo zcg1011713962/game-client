@@ -6,13 +6,16 @@ export default class Seat extends cc.Component {
 
     private normalNode: cc.Node = null;
     private hoverNode: cc.Node = null;
+    private setOut: cc.Node = null;
 
     private seatData: SeatData = null;
 
     onLoad() {
         this.normalNode = this.node.getChildByName("Normal");
         this.hoverNode = this.node.getChildByName("Hover");
+        this.setOut = this.node.getChildByName("SetOut");
         this.setHover(false);
+        this.setSetOut(false);
 
         this.node.on(cc.Node.EventType.MOUSE_ENTER, this.onEnter, this);
         this.node.on(cc.Node.EventType.MOUSE_LEAVE, this.onLeave, this);
@@ -34,16 +37,20 @@ export default class Seat extends cc.Component {
         if (!this.seatData) return;
 
         switch (this.seatData.state) {
-            case SeatState.EMPTY:
-                this.normalNode.active = true;
+            case SeatState.EMPTY: 
+                this.setNormal(true);
+                this.setHover(false);
                 break;
 
-            case SeatState.OCCUPIED:
-                this.normalNode.active = false;
+            case SeatState.OCCUPIED: 
+                this.setNormal(false);
+                this.setHover(false);
+                this.setSetOut(true);
                 break;
 
             case SeatState.LOCKED:
-                this.normalNode.active = false;
+                this.setNormal(false);
+                this.setHover(false);
                 break;
         }
     }
@@ -60,15 +67,31 @@ export default class Seat extends cc.Component {
 
     private onClick() {
         if (this.seatData.state !== SeatState.EMPTY) return;
-        console.log(this.seatData)
+        console.log('座位状态:', this.seatData.id, this.seatData.state)
         // 通知 SeatManager
         cc.systemEvent.emit("SEAT_CLICK", this.seatData.id);
     }
 
     /**
-     * 座位高亮
+     * 高亮座位控制
      */
     private setHover(active: boolean) {
         this.hoverNode.active = active;
     }
+
+    /**
+     * 普通座位控制
+     */
+    private setNormal(active: boolean) {
+        this.normalNode.active = active;
+    }
+
+
+    /**
+     * 已加入座位控制
+     */
+    private setSetOut(active: boolean) {
+        this.setOut.active = active;
+    }
+
 }

@@ -41,7 +41,6 @@ export default class CursorManager {
      * 鼠标抬起
      */
     public static onUp() {
-        console.log("uo")
         this.cursorOkNode.active = false;
         this.cursorNode.active = true;
     }

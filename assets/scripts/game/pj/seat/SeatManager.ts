@@ -11,8 +11,9 @@ export default class SeatManager extends cc.Component {
     private _resolveReady: Function = null;
     private _isReady: boolean = false;
 
-
+    // 座位预制体数组
     private seatList: Seat[] = [];
+    // 座位属性
     private seatDataList: SeatData[] = [];
 
     onLoad() {
@@ -32,7 +33,7 @@ export default class SeatManager extends cc.Component {
         });
         this.seatContainer = cc.find("Canvas/MainLayout/Table/SeatContainer");
         this.initData();
-        // 监听点击
+        // 监听座位点击
         cc.systemEvent.on("SEAT_CLICK", this.onSeatClick, this);
     }
 
@@ -98,7 +99,7 @@ export default class SeatManager extends cc.Component {
 
         if (data.state !== SeatState.EMPTY) return;
 
-        // 模拟坐下
+        // 坐下状态
         data.state = SeatState.OCCUPIED;
 
         this.refreshSeat(seatId);
@@ -108,7 +109,7 @@ export default class SeatManager extends cc.Component {
      * 刷新单个座位
      */
     private refreshSeat(seatId: number) {
-        const seat = this.seatList.find(s => s["data"].id === seatId);
+        const seat = this.seatList.find(s => s["seatData"].id === seatId);
         const data = this.seatDataList.find(s => s.id === seatId);
 
         if (seat && data) {
@@ -116,12 +117,8 @@ export default class SeatManager extends cc.Component {
         }
     }
 
-
-
-
-
    
-  public ready(): Promise<boolean> {
+    public ready(): Promise<boolean> {
         return new Promise((resolve) => {
 
             // 已经准备好，直接返回
