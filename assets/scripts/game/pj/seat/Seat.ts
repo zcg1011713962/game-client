@@ -7,6 +7,8 @@ export default class Seat extends cc.Component {
     private normalNode: cc.Node = null;
     private hoverNode: cc.Node = null;
     private setOut: cc.Node = null;
+    private setOut: cc.Node = null;
+    
 
     private seatData: SeatData = null;
 
@@ -16,6 +18,8 @@ export default class Seat extends cc.Component {
         this.setOut = this.node.getChildByName("SetOut");
         this.setHover(false);
         this.setSetOut(false);
+        this.setStautsReady(false);
+
 
         this.node.on(cc.Node.EventType.MOUSE_ENTER, this.onEnter, this);
         this.node.on(cc.Node.EventType.MOUSE_LEAVE, this.onLeave, this);
@@ -92,6 +96,15 @@ export default class Seat extends cc.Component {
      */
     private setSetOut(active: boolean) {
         this.setOut.active = active;
+    }
+
+
+    /**
+     * 状态
+     */
+    private setStautsReady(active: boolean) {
+        this.setOut.getChildByName("Status").getChildByName("Status1").active = !active;
+        this.setOut.getChildByName("Status").getChildByName("Status2").active = active;
     }
 
 }
