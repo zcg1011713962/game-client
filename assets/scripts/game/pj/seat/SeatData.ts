@@ -10,5 +10,4 @@ export interface SeatData {
     x: number;
     y: number;
     state: SeatState;
-    playerName: string;
 }
