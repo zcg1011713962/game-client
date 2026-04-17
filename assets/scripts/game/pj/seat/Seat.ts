@@ -24,4 +24,20 @@ export class Seat {
         }
         this.user = null;
     }
+
+    ready() {
+        if (this.user) {
+            this.user.state = UserState.Ready;
+            return true;
+        }
+        return false;
+    }
+
+    playing() {
+        if (this.user) {
+            this.user.state = UserState.Playing;
+            return true;
+        }
+        return false;
+    }
 }

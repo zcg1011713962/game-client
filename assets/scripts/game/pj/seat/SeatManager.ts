@@ -2,8 +2,8 @@ const { ccclass, property } = cc._decorator;
 import SeatComponent from "./SeatComponent";
 import { SeatData, SeatState } from "./SeatData";
 import RoomManager from "../room/RoomManager";
-import { UserInfo } from "../user/UserInfo";
 import CurrUserManager from "../user/CurrUserManager";
+import SeatComponentManager from "./SeatComponentManager";
 @ccclass
 export default class SeatManager extends cc.Component {
 
@@ -14,10 +14,6 @@ export default class SeatManager extends cc.Component {
     private _resolveReady: Function = null;
     private _isReady: boolean = false;
 
-    // 座位预制体数组
-    private seatComponentList: SeatComponent[] = [];
-    // 座位属性
-    private seatComponentDataList: SeatData[] = [];
 
     onLoad() {
          // 加载座位预制体
@@ -58,7 +54,7 @@ export default class SeatManager extends cc.Component {
         seats.push({ x : -400, y : -380, id:  7});
 
         for (let i = 0; i < seats.length; i++) {
-            this.seatComponentDataList.push({
+            SeatComponentManager.getInstance().seatComponentDataList.push({
                 id: seats[i].id,
                 x: seats[i].x,
                 y: seats[i].y,
@@ -79,14 +75,14 @@ export default class SeatManager extends cc.Component {
         this.seatContainerNode.removeAllChildren();
 
 
-        this.seatComponentDataList.forEach((data, i) => {
+        SeatComponentManager.getInstance().seatComponentDataList.forEach((data, i) => {
             const node = cc.instantiate(this.seatPrefab);
             node.parent = this.seatContainerNode;
             node.setPosition(data.x, data.y);
 
             const seatComponent = node.getComponent(SeatComponent);
             seatComponent.setData(data);
-            this.seatComponentList.push(seatComponent);
+             SeatComponentManager.getInstance().seatComponentList.push(seatComponent);
 
         });
         console.log('SeatLayout OK')
@@ -97,7 +93,7 @@ export default class SeatManager extends cc.Component {
      * 点击座位
      */
     private onSeatClick(seatId: number) {
-        const data = this.seatComponentDataList.find(s => s.id === seatId);
+        const data = SeatComponentManager.getInstance().seatComponentDataList.find(s => s.id === seatId);
         if (!data){
             console.log("没有座位预制体", seatId);
             return;
@@ -116,9 +112,9 @@ export default class SeatManager extends cc.Component {
             return;
         }
 
-        // 已经坐了就不处理
-        if (self.seatId >= 0) {
-            console.log("已经入座", userId);
+        // 已准备，游戏中
+        if (self.isReady() || self.isPlaying()) {
+            console.log("用户状态不允许入座", userId, self.state);
             return;
         }
 
@@ -138,8 +134,8 @@ export default class SeatManager extends cc.Component {
      * 刷新单个座位
      */
     private refreshSeat(seatId: number) {
-        const seat = this.seatComponentList.find(s => s["seatData"].id === seatId);
-        const data = this.seatComponentDataList.find(s => s.id === seatId);
+        const seat = SeatComponentManager.getInstance().seatComponentList.find(s => s["seatData"].id === seatId);
+        const data = SeatComponentManager.getInstance().seatComponentDataList.find(s => s.id === seatId);
 
         if (seat && data) {
             seat.setData(data);
@@ -161,6 +157,7 @@ export default class SeatManager extends cc.Component {
         });
     }
 
+
     public setStartBtnStatus(active: boolean) {
         this.startBtnNode.active = active;
     }
@@ -170,9 +167,13 @@ export default class SeatManager extends cc.Component {
         this.setStartBtnStatus(false);
 
          const userId = CurrUserManager.getInstance().currentUserId;
-         const self = RoomManager.getRoom()?.users.get(userId);
-         const seatComponent = this.seatComponentList.find(s => s["seatData"].id === self.seatId);
-         seatComponent.setStautsReady(true);
+         const room = RoomManager.getRoom();
+         if(room){
+            RoomManager.ready(userId);
+         }else{
+            console.log("房间未初始化")
+         }
+         
     }
 
 

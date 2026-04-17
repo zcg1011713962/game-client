@@ -30,6 +30,11 @@ export class UserInfo {
         return this.state === UserState.Ready;
     }
 
+    /** 是否游戏中 */
+    isPlaying(): boolean {
+        return this.state === UserState.Playing;
+    }
+
     /** 入座 */
     sitDown(seatId: number) {
         this.seatId = seatId;

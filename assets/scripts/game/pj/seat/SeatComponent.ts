@@ -34,6 +34,11 @@ export default class SeatComponent extends cc.Component {
         this.updateView();
     }
 
+      public getData() {
+        return this.seatData;
+    }
+
+
     /**
      * 更新座位UI状态
      */

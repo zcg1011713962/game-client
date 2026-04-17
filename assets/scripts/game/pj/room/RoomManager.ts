@@ -2,6 +2,9 @@
 import { UserInfo } from "../user/UserInfo";
 import { Room } from "./Room";
 import { Seat } from "../seat/Seat";
+import SeatManager from "../seat/SeatManager";
+import SeatComponentManager from "../seat/SeatComponentManager";
+import SeatComponent from "../seat/SeatComponent";
 
 export default class RoomManager {
     private static room: Room | null = null;
@@ -79,6 +82,58 @@ export default class RoomManager {
 
         let seat = this.room.getSeat(user.seatId);
         seat?.standUp();
+    }
+
+     /**
+      * 
+      *  准备
+      */
+     public static ready(userId: number) {
+        if (!this.room) return;
+
+        let user = this.room.users.get(userId);
+        if (!user || user.seatId < 0) return;
+
+        let seat = this.room.getSeat(user.seatId);
+        if(seat){
+            return seat.ready();
+        }
+        return false;
+    }
+
+    /**
+     * 
+     * 游戏中
+     */
+     public static playing(userId: number) {
+        if (!this.room) return;
+
+        let user = this.room.users.get(userId);
+        if (!user || user.seatId < 0) return;
+
+        let seat = this.room.getSeat(user.seatId);
+        if(seat){
+            return seat.playing();
+        }
+        return false;
+    }
+
+
+    public static refreshAllSeatView(){
+        if(this.room){
+            this.room.users.forEach((userInfo, i) =>{
+                const seatId = userInfo.seatId;
+                if(seatId > 0){
+                    //SeatComponent seatComponent = SeatComponentManager.getInstance().seatComponentList.find(it => it.getData().id == seatId)
+                    //if(){
+
+                    //}
+                }
+            })
+
+            return true;
+        }
+        return false;
     }
 
     /** 获取某个座位玩家 */
