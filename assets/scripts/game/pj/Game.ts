@@ -3,6 +3,7 @@ import CursorManager from "./common/CursorManager";
 import RoomManager from "./room/RoomManager";
 import { UserInfo } from "./user/UserInfo";
 import CurrUserManager from "./user/CurrUserManager";
+import UIManager from "./ui/UIManager";
 
 @ccclass
 export default class Game extends cc.Component {
@@ -39,7 +40,7 @@ export default class Game extends cc.Component {
 
         const seatManager =  this.seatContainerNode.getComponent("SeatManager");
         // 隐藏准备按钮
-        seatManager.setStartBtnStatus(false);
+        UIManager.instance.setStartBtnStatus(false);
         await seatManager.ready();
         // 初始化桌子
         seatManager.initSeatLayout();
@@ -50,11 +51,21 @@ export default class Game extends cc.Component {
 
     public enterRoom(){
         // 自己进房
-        const userId = 888888
+        const selftUserId = 888888
+        const roomId = 12345678;
 
-        let self = new UserInfo({ userId: userId, nickname: "玩家-me" });
-        CurrUserManager.getInstance().currentUserId = userId;
-        RoomManager.enterRoom(12345678, self);
+        let self = new UserInfo({ userId: selftUserId, nickname: "玩家-me", gold: 10000 });
+        CurrUserManager.getInstance().currentUserId = selftUserId;
+        RoomManager.enterRoom(roomId, self);
+
+        for (let i = 1; i < 8; i++) {
+             const userId = selftUserId + i;
+             let user = new UserInfo({ userId: userId, nickname: "玩家" + i , gold: i * 10000});
+             RoomManager.enterRoom(12345678, user);
+             RoomManager.sitDown(userId, i);
+             RoomManager.ready(userId);
+        }
+       
     }
 
 

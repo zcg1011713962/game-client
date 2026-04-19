@@ -1,3 +1,4 @@
+import { UserInfo } from "../user/UserInfo";
 // SeatData.ts
 export enum SeatState {
     EMPTY, // 空闲
@@ -10,4 +11,5 @@ export interface SeatData {
     x: number;
     y: number;
     state: SeatState;
+    userInfo: UserInfo | null;
 }

@@ -4,12 +4,13 @@ import { SeatData, SeatState } from "./SeatData";
 import RoomManager from "../room/RoomManager";
 import CurrUserManager from "../user/CurrUserManager";
 import SeatComponentManager from "./SeatComponentManager";
+import { UserInfo } from "../user/UserInfo";
 @ccclass
 export default class SeatManager extends cc.Component {
 
     private seatPrefab: cc.Node = null;
     private seatContainerNode: cc.Node = null;
-    private startBtnNode: cc.Node = null;
+  
 
     private _resolveReady: Function = null;
     private _isReady: boolean = false;
@@ -31,13 +32,9 @@ export default class SeatManager extends cc.Component {
             }
         });
         this.seatContainerNode = cc.find("Canvas/MainLayout/Table/SeatContainer");
-        this.startBtnNode = cc.find("Canvas/MainLayout/Table/Table/StartBtn");
         this.initData();
         // 监听座位点击
         cc.systemEvent.on("SEAT_CLICK", this.onSeatClick, this);
-        // 准备按钮点击
-        // 鼠标移动手势
-        this.startBtnNode.on(cc.Node.EventType.MOUSE_UP, this.onStartBtnClick, this);
     }
 
  
@@ -58,7 +55,8 @@ export default class SeatManager extends cc.Component {
                 id: seats[i].id,
                 x: seats[i].x,
                 y: seats[i].y,
-                state: SeatState.EMPTY
+                state: SeatState.EMPTY,
+                userInfo: null
             });
         }
     }
@@ -82,7 +80,7 @@ export default class SeatManager extends cc.Component {
 
             const seatComponent = node.getComponent(SeatComponent);
             seatComponent.setData(data);
-             SeatComponentManager.getInstance().seatComponentList.push(seatComponent);
+            SeatComponentManager.getInstance().seatComponentList.push(seatComponent);
 
         });
         console.log('SeatLayout OK')
@@ -120,11 +118,7 @@ export default class SeatManager extends cc.Component {
 
         let success = RoomManager.sitDown(self.userId, seatId);
         if (success) {
-            // 座位预制体坐下状态
-            data.state = SeatState.OCCUPIED;
-            // 准备按钮
-            this.setStartBtnStatus(true);
-            this.refreshSeat(seatId);
+            SeatManager.refreshSeat(seatId, self);
         } else {
             console.log("入座失败");
         }
@@ -133,11 +127,13 @@ export default class SeatManager extends cc.Component {
     /**
      * 刷新单个座位
      */
-    private refreshSeat(seatId: number) {
+    public static refreshSeat(seatId: number, userInfo: UserInfo) {
         const seat = SeatComponentManager.getInstance().seatComponentList.find(s => s["seatData"].id === seatId);
         const data = SeatComponentManager.getInstance().seatComponentDataList.find(s => s.id === seatId);
 
         if (seat && data) {
+            // 更新座位用户信息
+            data.userInfo = userInfo;
             seat.setData(data);
         }
     }
@@ -155,25 +151,6 @@ export default class SeatManager extends cc.Component {
             // 没好就等加载完成
             this._resolveReady = resolve;
         });
-    }
-
-
-    public setStartBtnStatus(active: boolean) {
-        this.startBtnNode.active = active;
-    }
-
-    private onStartBtnClick(){
-        console.log("点击准备")
-        this.setStartBtnStatus(false);
-
-         const userId = CurrUserManager.getInstance().currentUserId;
-         const room = RoomManager.getRoom();
-         if(room){
-            RoomManager.ready(userId);
-         }else{
-            console.log("房间未初始化")
-         }
-         
     }
 
 

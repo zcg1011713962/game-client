@@ -8,8 +8,8 @@
   "premultiplyAlpha": false,
   "genMipmaps": false,
   "packable": true,
-  "width": 20,
-  "height": 20,
+  "width": 80,
+  "height": 80,
   "platformSettings": {},
   "subMetas": {
     "coin": {

@@ -1,15 +1,16 @@
 const { ccclass } = cc._decorator;
+import { UserInfo, UserState } from "../user/UserInfo";
 import { SeatData, SeatState } from "./SeatData";
 
 @ccclass
 export default class SeatComponent extends cc.Component {
-
+    // 普通座位
     private normalNode: cc.Node = null;
+    // 高亮座位
     private hoverNode: cc.Node = null;
+    // 坐下
     private setOut: cc.Node = null;
-    private setOut: cc.Node = null;
-    
-
+    // 座位预制体数据
     private seatData: SeatData = null;
 
     onLoad() {
@@ -34,7 +35,7 @@ export default class SeatComponent extends cc.Component {
         this.updateView();
     }
 
-      public getData() {
+    public getData() {
         return this.seatData;
     }
 
@@ -54,7 +55,7 @@ export default class SeatComponent extends cc.Component {
             case SeatState.OCCUPIED: 
                 this.setNormal(false);
                 this.setHover(false);
-                this.setSetOut(true);
+                this.setSetOut(true); 
                 break;
 
             case SeatState.LOCKED:
@@ -97,9 +98,31 @@ export default class SeatComponent extends cc.Component {
 
 
     /**
-     * 已加入座位控制
+     * 坐下
      */
     private setSetOut(active: boolean) {
+        // console.log("seatData", this.seatData);
+        // if(this.seatData){
+        //     console.log("userInfo", this.seatData.userInfo);
+        // }
+        if(this.seatData && this.seatData.userInfo){
+            const userInfo = this.seatData.userInfo;
+            const info = this.setOut.getChildByName("Info");
+            const coinValNode = info.getChildByName("CoinVal");
+            coinValNode.getComponent(cc.Label).string = String(userInfo.gold);
+            const name = this.setOut.getChildByName("Name");
+            const nicknameNode = name.getChildByName("nickname");
+            nicknameNode.getComponent(cc.Label).string = userInfo.nickname;
+
+            console.log(userInfo.userId, userInfo.nickname, userInfo.gold)
+            if(userInfo.state == UserState.Ready){
+                this.setStautsReady(true);
+            }else if(userInfo.state == UserState.Sit){
+                this.setStautsReady(false);
+            }
+        }
+
+        // 预制体显示
         this.setOut.active = active;
     }
 

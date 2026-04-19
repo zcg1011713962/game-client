@@ -10,13 +10,22 @@ export class Room {
     /** 所有用户（包含未入座） */
     users: Map<number, UserInfo> = new Map();
 
-    constructor(roomId: number, maxSeat: number = 8) {
-        this.roomId = roomId;
-        this.maxSeat = maxSeat;
+    private static _instance: Room | null = null;
 
-        for (let i = 0; i < maxSeat; i++) {
-            this.seats.push(new Seat(i));
+    // 禁止外部 new
+    private constructor() {}
+
+
+      public static getInstance(roomId: number, maxSeat: number = 8): Room {
+        if (!this._instance) {
+            this._instance = new Room();
+            this._instance.roomId = roomId;
+            this._instance.maxSeat = maxSeat;
+             for (let i = 0; i < maxSeat; i++) {
+                this._instance.seats.push(new Seat(i));
+            }
         }
+        return this._instance;
     }
 
     /** 获取空座位 */
