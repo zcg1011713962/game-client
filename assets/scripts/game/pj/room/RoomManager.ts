@@ -133,13 +133,18 @@ export default class RoomManager {
             if(RoomManager.room.users){
                const size = RoomManager.room.users.size;
                let readyUsers: UserInfo[] = RoomManager.getReadyUsers();
+
+               const popUpNode = cc.find("Canvas/UI/PopUp");
+               console.log("popUpNode", popUpNode)
+               const popupManager =  popUpNode.getComponent("PopupManager");
+                console.log("popupManager", popupManager)
                if(size == readyUsers.length){
                   console.log("所有玩家已经准备好")
+                  popupManager.show("所有玩家已经准备好");
                }else{
                   console.log("有玩家未准备好")
+                  popupManager.show("有玩家未准备好");
                }
-            }else{
-
             }
         }
 
