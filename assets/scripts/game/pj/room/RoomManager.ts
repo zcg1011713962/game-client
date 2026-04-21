@@ -8,6 +8,8 @@ import SeatComponentManager from "../seat/SeatComponentManager";
 import SeatComponent from "../seat/SeatComponent";
 import { SeatData, SeatState } from "../seat/SeatData";
 import CurrUserManager from "../user/CurrUserManager";
+import PaiJiuUtil from "../util/PaiJiuUtil";
+
 
 export default class RoomManager {
     private static room: Room | null = null;
@@ -125,7 +127,7 @@ export default class RoomManager {
     /**
      * 是否所有都准备
      */
-    public static isAllReady(userId: number) {
+    public static async isAllReady(userId: number) {
         if (!RoomManager.room) return;
         // 是房主
         if(RoomManager.roomOwerUserId == CurrUserManager.getInstance().currentUserId){
@@ -135,12 +137,30 @@ export default class RoomManager {
                let readyUsers: UserInfo[] = RoomManager.getReadyUsers();
 
                const popUpNode = cc.find("Canvas/UI/PopUp");
-               console.log("popUpNode", popUpNode)
+               //console.log("popUpNode", popUpNode)
                const popupManager =  popUpNode.getComponent("PopupManager");
-                console.log("popupManager", popupManager)
+               // console.log("popupManager", popupManager)
                if(size == readyUsers.length){
                   console.log("所有玩家已经准备好")
                   //popupManager.show("所有玩家已经准备好");
+                  const paiJiuTable = UIManager.instance.getTableNode().getComponent("PaiJiuTable");
+                  const serverResult = {
+                    bankerSeat: 0,
+                    players: [
+                        { seat: 0, cards: [{ id: 11, name: "天牌" }, { id: 12, name: "地牌" }] },
+                        { seat: 1, cards: [{ id: 21, name: "人牌" }, { id: 22, name: "和牌" }] },
+                        { seat: 2, cards: [{ id: 31, name: "梅花" }, { id: 32, name: "长三" }] },
+                        { seat: 3, cards: [{ id: 41, name: "板凳" }, { id: 42, name: "斧头" }] },
+                    ],
+                  };
+                  await paiJiuTable.playStartAnim(serverResult);
+                  // 翻牌
+                  await PaiJiuUtil.wait(paiJiuTable, 2.2);
+                  serverResult.players.forEach((player, index) =>{
+                    paiJiuTable.flipSeatCards(player.seat, () => {
+                        paiJiuTable.sortSeatCards(player.seat);
+                    });
+                  })
                }else{
                   console.log("有玩家未准备好")
                   popupManager.show("有玩家未准备好");

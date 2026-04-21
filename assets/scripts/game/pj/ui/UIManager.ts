@@ -4,6 +4,7 @@ import CurrUserManager from "../user/CurrUserManager";
 @ccclass
 export default class UIManager extends cc.Component {
     private startBtnNode: cc.Node = null;
+    private tableNode: cc.Node = null;
 
     private static _instance: UIManager = null;
     public static get instance(): UIManager {
@@ -13,9 +14,14 @@ export default class UIManager extends cc.Component {
      onLoad() {
         // 保存单例引用
         UIManager._instance = this;
+        this.tableNode = cc.find("Canvas/MainLayout/Table");
         this.startBtnNode = cc.find("Canvas/MainLayout/Table/Table/StartBtn");
          // 准备按钮点击
         this.startBtnNode.on(cc.Node.EventType.MOUSE_UP, this.onStartBtnClick, this);
+    }
+
+    public getTableNode(){
+        return this.tableNode;
     }
 
 
