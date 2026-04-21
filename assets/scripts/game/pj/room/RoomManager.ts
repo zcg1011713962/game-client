@@ -140,7 +140,7 @@ export default class RoomManager {
                 console.log("popupManager", popupManager)
                if(size == readyUsers.length){
                   console.log("所有玩家已经准备好")
-                  popupManager.show("所有玩家已经准备好");
+                  //popupManager.show("所有玩家已经准备好");
                }else{
                   console.log("有玩家未准备好")
                   popupManager.show("有玩家未准备好");
