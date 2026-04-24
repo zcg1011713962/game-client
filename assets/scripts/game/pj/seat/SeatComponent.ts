@@ -1,6 +1,7 @@
 const { ccclass } = cc._decorator;
 import { UserInfo, UserState } from "../user/UserInfo";
 import { SeatData, SeatState } from "./SeatData";
+import UIManager from "../ui/UIManager";
 
 @ccclass
 export default class SeatComponent extends cc.Component {
@@ -12,6 +13,8 @@ export default class SeatComponent extends cc.Component {
     private setOut: cc.Node = null;
     // 座位预制体数据
     private seatData: SeatData = null;
+
+    private avatarMap : { [key: string]: cc.SpriteFrame } = {}; // 头像图片资源
 
     onLoad() {
         this.normalNode = this.node.getChildByName("Normal");
@@ -25,6 +28,11 @@ export default class SeatComponent extends cc.Component {
         this.node.on(cc.Node.EventType.MOUSE_ENTER, this.onEnter, this);
         this.node.on(cc.Node.EventType.MOUSE_LEAVE, this.onLeave, this);
         this.node.on(cc.Node.EventType.MOUSE_DOWN, this.onClick, this);
+    }
+
+    public init(seatData: SeatData, avatarMap : { [key: string]: cc.SpriteFrame }){
+        this.avatarMap = avatarMap;
+        this.setData(seatData);
     }
 
     /**
@@ -108,6 +116,14 @@ export default class SeatComponent extends cc.Component {
         if(this.seatData && this.seatData.userInfo){
             const userInfo = this.seatData.userInfo;
             const info = this.setOut.getChildByName("Info");
+            const avatarNode = this.setOut.getChildByName("Avatars");
+
+            const avatarSprite = this.getAvatarSprite(userInfo);
+            if(avatarSprite){
+                const avatarSpriteNode = avatarNode.getComponent(cc.Sprite);
+                avatarSpriteNode.spriteFrame = avatarSprite;
+            }
+            
             const coinValNode = info.getChildByName("CoinVal");
             coinValNode.getComponent(cc.Label).string = String(userInfo.gold);
             const name = this.setOut.getChildByName("Name");
@@ -124,6 +140,16 @@ export default class SeatComponent extends cc.Component {
 
         // 预制体显示
         this.setOut.active = active;
+    }
+
+    private getAvatarSprite(userInfo : UserInfo){
+        const key = `avatar_${userInfo.avatar}`;
+        const spriteFrame = this.avatarMap[key];
+        if (!spriteFrame) {
+            console.error("找不到头像:", key);
+            return;
+        }
+        return spriteFrame; 
     }
 
 

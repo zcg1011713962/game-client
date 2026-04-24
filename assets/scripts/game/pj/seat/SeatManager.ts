@@ -10,31 +10,55 @@ export default class SeatManager extends cc.Component {
 
     private seatPrefab: cc.Node = null;
     private seatContainerNode: cc.Node = null;
-  
-
-    private _resolveReady: Function = null;
-    private _isReady: boolean = false;
+    private avatarMap : { [key: string]: cc.SpriteFrame } = {}; // 预加载头像图片资源
 
 
     onLoad() {
-         // 加载座位预制体
-        cc.resources.load("prefabs/Seat", cc.Prefab, (err, prefab) => {
-            if (err) {
-                cc.error("Seat prefab加载失败", err);
-                return;
-            }
-            this.seatPrefab = prefab;
-            this._isReady = true;
-            // 通知 Promise
-            if (this._resolveReady) {
-                this._resolveReady(true);
-                this._resolveReady = null;
-            }
-        });
         this.seatContainerNode = cc.find("Canvas/MainLayout/Table/SeatContainer");
-        this.initData();
         // 监听座位点击
         cc.systemEvent.on("SEAT_CLICK", this.onSeatClick, this);
+    }
+
+    public async init(){
+        // 加载座位预制体
+        await this.loadSeatPrefabs();
+        // 加载头像
+        await this.loadAvatarImg();
+        // 初始化数据
+        this.initData();
+    }
+
+
+    loadSeatPrefabs() {
+        return new Promise((resolve, reject) => {
+            cc.resources.load("prefabs/Seat", cc.Prefab, (err, prefab) => {
+                if (err) {
+                    cc.error("Seat prefab加载失败", err);
+                    reject(err);
+                    return;
+                }
+                this.seatPrefab = prefab;
+                resolve(prefab);
+                console.log("座位预制体加载完成");
+            });
+        });
+    }
+
+
+    loadAvatarImg() {
+        return new Promise((resolve, reject) => {
+            cc.resources.loadDir("avatar", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                assets.forEach(sp => {
+                    this.avatarMap[sp.name] = sp;
+                });
+                resolve(this.avatarMap);
+                console.log("所有头像加载完成");
+            });
+        });
     }
 
  
@@ -79,7 +103,7 @@ export default class SeatManager extends cc.Component {
             node.setPosition(data.x, data.y);
 
             const seatComponent = node.getComponent(SeatComponent);
-            seatComponent.setData(data);
+            seatComponent.init(data, this.avatarMap);
             SeatComponentManager.getInstance().seatComponentList.push(seatComponent);
 
         });
@@ -136,21 +160,6 @@ export default class SeatManager extends cc.Component {
             data.userInfo = userInfo;
             seat.setData(data);
         }
-    }
-
-   
-    public ready(): Promise<boolean> {
-        return new Promise((resolve) => {
-
-            // 已经准备好，直接返回
-            if (this._isReady) {
-                resolve(true);
-                return;
-            }
-
-            // 没好就等加载完成
-            this._resolveReady = resolve;
-        });
     }
 
 

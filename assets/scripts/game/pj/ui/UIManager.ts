@@ -1,6 +1,7 @@
 const {ccclass, property} = cc._decorator;
 import RoomManager from "../room/RoomManager";
 import CurrUserManager from "../user/CurrUserManager";
+import PaiJiuUtil from "../util/PaiJiuUtil";
 @ccclass
 export default class UIManager extends cc.Component {
     private startBtnNode: cc.Node = null;
@@ -11,19 +12,19 @@ export default class UIManager extends cc.Component {
         return this._instance;
     }
 
-     onLoad() {
+    onLoad() {
         // 保存单例引用
         UIManager._instance = this;
         this.tableNode = cc.find("Canvas/MainLayout/Table");
         this.startBtnNode = cc.find("Canvas/MainLayout/Table/Table/StartBtn");
          // 准备按钮点击
         this.startBtnNode.on(cc.Node.EventType.MOUSE_UP, this.onStartBtnClick, this);
+
     }
 
     public getTableNode(){
         return this.tableNode;
     }
-
 
     public setStartBtnStatus(active: boolean) {
         // 如果是房主显示开始，非房主显示准备
@@ -38,17 +39,19 @@ export default class UIManager extends cc.Component {
     /**
      * 开始或者准备按钮点击
      */
-    private onStartBtnClick(){
+    private async onStartBtnClick(){
          console.log("点击准备或开始")
          const userId = CurrUserManager.getInstance().currentUserId;
          const room = RoomManager.getRoom();
-         if(room){
-            RoomManager.ready(userId);
-            RoomManager.isAllReady(userId);
-         }else{
-            console.log("房间未初始化")
-         } 
+         RoomManager.ready(userId);
+         const flag = await RoomManager.isAllReady(userId);
+         console.log("完成一局，进入下一局", flag);
+         if(flag){
+            await PaiJiuUtil.wait(this, 2);
+            UIManager.instance.setStartBtnStatus(true);
+         }
     }
+
 
 
 }

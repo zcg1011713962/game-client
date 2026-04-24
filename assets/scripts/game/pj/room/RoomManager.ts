@@ -9,6 +9,7 @@ import SeatComponent from "../seat/SeatComponent";
 import { SeatData, SeatState } from "../seat/SeatData";
 import CurrUserManager from "../user/CurrUserManager";
 import PaiJiuUtil from "../util/PaiJiuUtil";
+import {Hand, HandResult, CardUtils} from "../util/CardUtils";
 
 
 export default class RoomManager {
@@ -105,7 +106,10 @@ export default class RoomManager {
       *  准备
       */
      public static ready(userId: number) {
-        if (!RoomManager.room) return;
+        if (!RoomManager.room){
+            console.log("房间未初始化")
+            return;
+        } 
 
         let user = RoomManager.room.users.get(userId);
         if (!user || user.seatId < 0){
@@ -144,26 +148,50 @@ export default class RoomManager {
                   console.log("所有玩家已经准备好")
                   //popupManager.show("所有玩家已经准备好");
                   const paiJiuTable = UIManager.instance.getTableNode().getComponent("PaiJiuTable");
+
+                  const players = [];
+                  // 发牌
+                  const hands: Hand[] = CardUtils.deal(8);
+    
+                  for (let i = 0; i < hands.length; i++) {
+                      players.push({ seat: i, cards: hands[i] });
+                  }
+                  // console.log(players);
                   const serverResult = {
                     bankerSeat: 0,
-                    players: [
-                        { seat: 0, cards: [{ id: 11, name: "天牌" }, { id: 12, name: "地牌" }] },
-                        { seat: 1, cards: [{ id: 21, name: "人牌" }, { id: 22, name: "和牌" }] },
-                        { seat: 2, cards: [{ id: 31, name: "梅花" }, { id: 32, name: "长三" }] },
-                        { seat: 3, cards: [{ id: 41, name: "板凳" }, { id: 42, name: "斧头" }] },
-                    ],
+                    players: players,
                   };
                   await paiJiuTable.playStartAnim(serverResult);
                   // 翻牌
-                  await PaiJiuUtil.wait(paiJiuTable, 2.2);
+                  await PaiJiuUtil.wait(paiJiuTable, 3);
                   serverResult.players.forEach((player, index) =>{
                     paiJiuTable.flipSeatCards(player.seat, () => {
                         paiJiuTable.sortSeatCards(player.seat);
                     });
                   })
+                  // 庄家的牌
+                  const bankerHand : Hand = players[serverResult.bankerSeat].cards;
+                  // 闲家的牌数组
+                  const playerHands : Hand[] = serverResult.players.filter((p, index) => {
+                    return index !== serverResult.bankerSeat;
+                  }).map(p => p.cards);
+                  
+                  for (const playerHand of playerHands) {
+                        // 跟庄家比牌
+                        const ret = CardUtils.compare(bankerHand, playerHand);
+                        if(ret > 0){
+                            console.log("闲输");
+                        }else if(ret == 0){
+                            console.log("平");
+                        }else{
+                            console.log("闲赢");
+                        }
+                  }
+                  return true;
                }else{
                   console.log("有玩家未准备好")
                   popupManager.show("有玩家未准备好");
+                  return false;
                }
             }
         }
