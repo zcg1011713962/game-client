@@ -6,6 +6,7 @@ import PaiJiuUtil from "../util/PaiJiuUtil";
 export default class UIManager extends cc.Component {
     private startBtnNode: cc.Node = null;
     private tableNode: cc.Node = null;
+    private topNode: cc.Node = null;
 
     private static _instance: UIManager = null;
     public static get instance(): UIManager {
@@ -19,7 +20,21 @@ export default class UIManager extends cc.Component {
         this.startBtnNode = cc.find("Canvas/MainLayout/Table/Table/StartBtn");
          // 准备按钮点击
         this.startBtnNode.on(cc.Node.EventType.MOUSE_UP, this.onStartBtnClick, this);
+        this.startBtnNode = cc.find("Canvas/MainLayout/Table/Table/StartBtn");
+        this.topNode = cc.find("Canvas/MainLayout/Top");
+        this.init();
+    }
 
+    private init(){
+         const label1 = this.topNode.getChildByName("label1");
+         const label2 = this.topNode.getChildByName("label2");
+         const label3 = this.topNode.getChildByName("label3");
+         const label4 = this.topNode.getChildByName("label4");
+         const label5 = this.topNode.getChildByName("label5");
+
+        this.setLabelView(label1);
+        this.setLabelView(label3);
+        this.setLabelView(label5);
     }
 
     public getTableNode(){
@@ -54,6 +69,47 @@ export default class UIManager extends cc.Component {
          }
     }
 
+
+    public setLabelView(labelNode: cc.Node) {
+        if(labelNode){
+            const label = labelNode.getComponent(cc.Label);
+            let outline = labelNode.getComponent(cc.LabelOutline);
+            if (!outline) {
+                outline = labelNode.addComponent(cc.LabelOutline);
+                // 黑色描边
+                outline.color = cc.Color.BLACK;
+                // 宽度
+                outline.width = 5;
+            }
+            label.node.color = cc.Color.YELLOW; 
+        }
+    }
+
+    public setCoinView(coinValNode : cc.Node, coin: number){
+        const label = coinValNode.getComponent(cc.Label);
+        let outline = coinValNode.getComponent(cc.LabelOutline);
+        if (!outline) {
+                outline = coinValNode.addComponent(cc.LabelOutline);
+                // 黑色描边
+                outline.color = cc.Color.BLACK;
+                // 宽度
+                outline.width = 10;
+        }
+        label.string = String(coin);
+        label.node.color = new cc.Color(255, 215, 0); // 金黄色
+    }
+
+    public setNickNameView(labelNode: cc.Node, isBanker: boolean, isSelf: boolean, name : string) {
+        const label = labelNode.getComponent(cc.Label);
+         label.string = name;
+        if (isSelf) {
+            label.node.color = cc.Color.GREEN;
+        } else if (isBanker) {
+            label.node.color = new cc.Color(255, 215, 0); // 金色
+        } else {
+            label.node.color = cc.Color.WHITE;
+        }
+    }
 
 
 }

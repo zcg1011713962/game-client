@@ -3,6 +3,8 @@ import { UserInfo, UserState } from "../user/UserInfo";
 import { SeatData, SeatState } from "./SeatData";
 import RoomManager from "../room/RoomManager";
 import {Hand, HandResult, CardUtils} from "../util/CardUtils";
+import UIManager from "../ui/UIManager";
+import CurrUserManager from "../user/CurrUserManager";
 
 @ccclass
 export default class SeatComponent extends cc.Component {
@@ -67,7 +69,7 @@ export default class SeatComponent extends cc.Component {
                 this.setSetOut(true); 
                 break;
 
-            case SeatState.LOCKED:
+            case SeatState.LOCKED: // 游戏中锁定
                 this.setNormal(false);
                 this.setHover(false);
                 this.setSetOut(true); 
@@ -112,10 +114,9 @@ export default class SeatComponent extends cc.Component {
      * 坐下
      */
     private setSetOut(active: boolean) {
-        // console.log("seatData", this.seatData);
-        // if(this.seatData){
-        //     console.log("userInfo", this.seatData.userInfo);
-        // }
+        // 获取玩家数据
+        const serverResult = RoomManager.getRoomPlayers();
+        
         if(this.seatData && this.seatData.userInfo){
             const userInfo = this.seatData.userInfo;
             const info = this.setOut.getChildByName("Info");
@@ -131,23 +132,13 @@ export default class SeatComponent extends cc.Component {
             // 昵称
             const name = this.setOut.getChildByName("Name");
             const nicknameNode = name.getChildByName("nickname");
-            nicknameNode.getComponent(cc.Label).string = userInfo.nickname;
+            UIManager.instance.setNickNameView(nicknameNode, serverResult.bankerSeat === userInfo.seatId, CurrUserManager.getInstance().currentUserId === userInfo.userId , userInfo.nickname);
 
             // 金币展示
             const coinValNode = info.getChildByName("CoinVal");
-            const label = coinValNode.getComponent(cc.Label);
-            let outline = coinValNode.getComponent(cc.LabelOutline);
-            if (!outline) {
-                outline = coinValNode.addComponent(cc.LabelOutline);
-                // 黑色描边
-                outline.color = cc.Color.BLACK;
-                // 宽度
-                outline.width = 10;
-            }
-            label.string = String(userInfo.gold);
-            label.node.color = new cc.Color(255, 215, 0); // 金黄色
-            
-
+            UIManager.instance.setCoinView(coinValNode, userInfo.gold);
+           
+        
 
             console.log(userInfo.userId, userInfo.nickname, userInfo.gold)
             if(userInfo.state == UserState.Ready){
@@ -156,7 +147,6 @@ export default class SeatComponent extends cc.Component {
                 this.setStautsReady(0);
             }else if(userInfo.state == UserState.Playing){
                 this.setStautsReady(2); // 隐藏准备状态
-                const serverResult = RoomManager.getRoomPlayers();
                 if(serverResult.bankerSeat > -1){
                      this.setBankerView(serverResult.bankerSeat == userInfo.seatId); // 展示庄闲
                 }
@@ -256,8 +246,8 @@ export default class SeatComponent extends cc.Component {
                label.string = "赢";
                label.node.color = new cc.Color(0, 255, 0); // 绿色
             } else if(result == 3){
-               //label.string = "--";
-               //label.node.color = cc.Color.WHITE; 
+               label.string = "--";
+               label.node.color = cc.Color.WHITE; 
             }
         }
         bankerLabelNode.active = true;

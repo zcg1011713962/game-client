@@ -31,7 +31,7 @@ export default class RoomManager {
         win: number;
     }[]；
     } = {
-        bankerSeat: -1,
+        bankerSeat: 1,
         players: []
     };
 
@@ -134,10 +134,6 @@ export default class RoomManager {
         if(seat){
             const flag = seat.ready();
             if(flag){
-                const data = SeatComponentManager.getInstance().seatComponentDataList.find(s => s.id === user.seatId);
-                if(data){
-                     data.state = SeatState.LOCKED;
-                }
                 RoomManager.refreshAllSeatView();
             }
             return flag;
@@ -177,12 +173,9 @@ export default class RoomManager {
                   const hands: Hand[] = CardUtils.deal(8);
                   for (let i = 0; i < hands.length; i++) {
                     players.push({ seat: i, cards: hands[i], win: -1 });
-                    // console.log(players); 
                   }
-                  this.serverResult = {
-                        bankerSeat: 0,
-                        players: players,
-                  };
+                  this.serverResult.players = players;
+
                   await paiJiuTable.playStartAnim(this.serverResult);
                   // 翻牌
                   await PaiJiuUtil.wait(paiJiuTable, 3);
@@ -192,21 +185,21 @@ export default class RoomManager {
                     });
                   })
                   // 庄家的牌
-                  const bankerHand : Hand =  this.serverResult.players[ this.serverResult.bankerSeat].cards;
+                  const bankerHand : Hand =  this.serverResult.players[this.serverResult.bankerSeat].cards;
                   // 闲家比牌
-                  for (const players of this.serverResult.players) {
-                    if(players.seat != this.serverResult.bankerSeat){ 
+                  for (const player of this.serverResult.players) {
+                    if(player.seat !== this.serverResult.bankerSeat){ 
                          // 跟庄家比牌
-                        const ret = CardUtils.compare(bankerHand, players.cards);
+                        const ret = CardUtils.compare(bankerHand, player.cards);
                         if(ret > 0){
-                            players.win = 0;
-                            console.log("闲输");
+                            player.win = 0;
+                            console.log("闲输", player.seat);
                         }else if(ret == 0){
-                            console.log("平");
-                            players.win = 1;
+                            console.log("平", player.seat);
+                            player.win = 1;
                         }else{
-                            console.log("闲赢");
-                            players.win = 2;
+                            console.log("闲赢", player.seat);
+                            player.win = 2;
                         }
                     }
                   }
@@ -235,6 +228,10 @@ export default class RoomManager {
         if(seat){
             const flag = seat.playing();
             if(flag){
+                const data = SeatComponentManager.getInstance().seatComponentDataList.find(s => s.id === user.seatId);
+                if(data){
+                     data.state = SeatState.LOCKED;
+                }
                 RoomManager.refreshAllSeatView();
             }
              return flag;
@@ -330,7 +327,9 @@ export default class RoomManager {
         for(const player of this.serverResult.players){
             const seatComponen = SeatComponentManager.getInstance().seatComponentList.find(s => s["seatData"].id === player.seat);
             if(seatComponen){
-                seatComponen.setResultStatusView(player.win);
+                if(player.seat !== this.serverResult.bankerSeat){
+                    seatComponen.setResultStatusView(player.win);
+                }
             }
         }
     }
