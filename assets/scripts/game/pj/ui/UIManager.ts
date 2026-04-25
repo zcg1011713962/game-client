@@ -45,8 +45,10 @@ export default class UIManager extends cc.Component {
          const room = RoomManager.getRoom();
          RoomManager.ready(userId);
          const flag = await RoomManager.isAllReady(userId);
-         console.log("完成一局，进入下一局", flag);
+        
          if(flag){
+            RoomManager.settle();
+            console.log("完成一局，进入下一局");
             await PaiJiuUtil.wait(this, 2);
             UIManager.instance.setStartBtnStatus(true);
          }

@@ -12,10 +12,11 @@ export default class Game extends cc.Component {
     private cursorOkNode: cc.Node = null;
     private canvasNode: cc.Node = null;
     private seatContainerNode: cc.Node = null;
-
+    
 
     onLoad () {
         console.log("Game onLoad");
+        this.disableVConsole();
 
         this.canvasNode = cc.find("Canvas");
         this.cursorNode = cc.find("Canvas/CursorLayer/Hand");
@@ -68,6 +69,31 @@ export default class Game extends cc.Component {
        
     }
 
+    
+    disableVConsole(){
+        (function () {
+        const w: any = window;
 
+        // 1. 干掉已存在
+        if (w.vConsole) {
+            try { w.vConsole.destroy(); } catch (e) {}
+            w.vConsole = null;
+        }
+
+        // 2. 删DOM
+        const el = document.getElementById('__vconsole');
+        if (el) el.remove();
+
+        // 3. 拦截未来创建
+        Object.defineProperty(w, "VConsole", {
+            configurable: true,
+            get() {
+                return function () {
+                    return { destroy() {} };
+                };
+            }
+        });
+        })();
+    }
 
 }

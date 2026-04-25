@@ -22,6 +22,19 @@ export default class RoomManager {
 
     public static roomOwerUserId: number | null = null;
 
+
+    private static serverResult: {
+    bankerSeat: number;
+    players: {
+        seat: number;
+        cards: Hand;
+        win: number;
+    }[]；
+    } = {
+        bankerSeat: -1,
+        players: []
+    };
+
     // 禁止外部 new
     private constructor() {}
 
@@ -121,6 +134,10 @@ export default class RoomManager {
         if(seat){
             const flag = seat.ready();
             if(flag){
+                const data = SeatComponentManager.getInstance().seatComponentDataList.find(s => s.id === user.seatId);
+                if(data){
+                     data.state = SeatState.LOCKED;
+                }
                 RoomManager.refreshAllSeatView();
             }
             return flag;
@@ -137,55 +154,61 @@ export default class RoomManager {
         if(RoomManager.roomOwerUserId == CurrUserManager.getInstance().currentUserId){
             console.log("检查所有玩家状态")
             if(RoomManager.room.users){
-               const size = RoomManager.room.users.size;
+               const players : UserInfo[] =  Array.from(RoomManager.room.users.values());
+               // 已入座玩家
+               const seatedSize = players.filter(it => it.isSeated()).length;
+                
                let readyUsers: UserInfo[] = RoomManager.getReadyUsers();
+               let playingUsers: UserInfo[] = RoomManager.getPlayingUsers();
+               console.log("readyUsers", readyUsers.length, "playingUsers", playingUsers.length);
 
                const popUpNode = cc.find("Canvas/UI/PopUp");
-               //console.log("popUpNode", popUpNode)
                const popupManager =  popUpNode.getComponent("PopupManager");
-               // console.log("popupManager", popupManager)
-               if(size == readyUsers.length){
-                  console.log("所有玩家已经准备好")
-                  //popupManager.show("所有玩家已经准备好");
+               // 准备状态或游戏状态
+               if(seatedSize == readyUsers.length || seatedSize == playingUsers.length + readyUsers.length){
+                  console.log("所有玩家已经准备好,准备进入游戏")
+                  readyUsers.forEach(it => this.playing(it.userId));
+                 
                   const paiJiuTable = UIManager.instance.getTableNode().getComponent("PaiJiuTable");
+                 
 
                   const players = [];
                   // 发牌
                   const hands: Hand[] = CardUtils.deal(8);
-    
                   for (let i = 0; i < hands.length; i++) {
-                      players.push({ seat: i, cards: hands[i] });
+                    players.push({ seat: i, cards: hands[i], win: -1 });
+                    // console.log(players); 
                   }
-                  // console.log(players);
-                  const serverResult = {
-                    bankerSeat: 0,
-                    players: players,
+                  this.serverResult = {
+                        bankerSeat: 0,
+                        players: players,
                   };
-                  await paiJiuTable.playStartAnim(serverResult);
+                  await paiJiuTable.playStartAnim(this.serverResult);
                   // 翻牌
                   await PaiJiuUtil.wait(paiJiuTable, 3);
-                  serverResult.players.forEach((player, index) =>{
+                  this.serverResult.players.forEach((player, index) =>{
                     paiJiuTable.flipSeatCards(player.seat, () => {
                         paiJiuTable.sortSeatCards(player.seat);
                     });
                   })
                   // 庄家的牌
-                  const bankerHand : Hand = players[serverResult.bankerSeat].cards;
-                  // 闲家的牌数组
-                  const playerHands : Hand[] = serverResult.players.filter((p, index) => {
-                    return index !== serverResult.bankerSeat;
-                  }).map(p => p.cards);
-                  
-                  for (const playerHand of playerHands) {
-                        // 跟庄家比牌
-                        const ret = CardUtils.compare(bankerHand, playerHand);
+                  const bankerHand : Hand =  this.serverResult.players[ this.serverResult.bankerSeat].cards;
+                  // 闲家比牌
+                  for (const players of this.serverResult.players) {
+                    if(players.seat != this.serverResult.bankerSeat){ 
+                         // 跟庄家比牌
+                        const ret = CardUtils.compare(bankerHand, players.cards);
                         if(ret > 0){
+                            players.win = 0;
                             console.log("闲输");
                         }else if(ret == 0){
                             console.log("平");
+                            players.win = 1;
                         }else{
                             console.log("闲赢");
+                            players.win = 2;
                         }
+                    }
                   }
                   return true;
                }else{
@@ -197,15 +220,6 @@ export default class RoomManager {
         }
 
     }
-
-    public static getReadyUsers(): UserInfo[] {
-        if(RoomManager.room){
-            return Array.from(RoomManager.room.users.values())
-            .filter(u => u.state === UserState.Ready);
-        }
-        return new Array();
-    }
-
 
     /**
      * 
@@ -219,7 +233,11 @@ export default class RoomManager {
 
         let seat = RoomManager.room.getSeat(user.seatId);
         if(seat){
-            return seat.playing();
+            const flag = seat.playing();
+            if(flag){
+                RoomManager.refreshAllSeatView();
+            }
+             return flag;
         }
         return false;
     }
@@ -239,8 +257,10 @@ export default class RoomManager {
                             UIManager.instance.setStartBtnStatus(true);
                         }else if(userInfo.state == UserState.Ready){
                             UIManager.instance.setStartBtnStatus(false);
+                        }else if(userInfo.state == UserState.Playing){
+                            // 显示庄或者闲家
+
                         }
-                     
                     }
                 }
             })
@@ -271,4 +291,48 @@ export default class RoomManager {
     public static getRoom(): Room | null {
         return RoomManager.room;
     }
+
+    /**
+     * 
+     *获取准备玩家
+     */
+    public static getReadyUsers(): UserInfo[] {
+        if(RoomManager.room){
+            return Array.from(RoomManager.room.users.values())
+            .filter(u => u.state === UserState.Ready);
+        }
+        return new Array();
+    }
+    /**
+     * 
+     * 获取游戏中玩家
+     */
+     public static getPlayingUsers(): UserInfo[] {
+        if(RoomManager.room){
+            return Array.from(RoomManager.room.users.values())
+            .filter(u => u.state === UserState.Playing);
+        }
+        return new Array();
+    }
+
+
+
+     /** 获取当前房间 */
+    public static getRoomPlayers(){
+        return this.serverResult;
+    }
+
+    /**
+     * 
+     * 结算
+     */
+    public static settle(){
+        for(const player of this.serverResult.players){
+            const seatComponen = SeatComponentManager.getInstance().seatComponentList.find(s => s["seatData"].id === player.seat);
+            if(seatComponen){
+                seatComponen.setResultStatusView(player.win);
+            }
+        }
+    }
+
 }
