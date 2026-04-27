@@ -19,35 +19,30 @@ export default class WsClient {
 
     private constructor() {}
 
-    public connect(baseUrl: string, token: string) {
-        this.token = token;
-        this.url = `${baseUrl}?token=${encodeURIComponent(token)}`;
+    public connectAsync(baseUrl: string, token: string): Promise<void> {
+        return new Promise((resolve, reject) => {
 
-        this.ws = new WebSocket(this.url);
+            this.url = `${baseUrl}?token=${encodeURIComponent(token)}`;
+            this.ws = new WebSocket(this.url);
 
-        this.ws.onopen = () => {
-            cc.log("WebSocket连接成功");
-            this.startHeartbeat();
-        };
+            this.ws.onopen = () => {
+                cc.log("WebSocket连接成功");
+                this.startHeartbeat();
+                resolve(); // 👉 通知外部可以发消息了
+            };
 
-        this.ws.onmessage = (event) => {
-            cc.log("收到消息:", event.data);
-            this.handleMessage(event.data);
-        };
+            this.ws.onerror = (err) => {
+                reject(err);
+            };
 
-        this.ws.onerror = (event) => {
-            cc.error("WebSocket错误:", event);
-        };
+            this.ws.onmessage = (event) => {
+                this.handleMessage(event.data);
+            };
 
-        this.ws.onclose = () => {
-            cc.warn("WebSocket已关闭");
-            this.stopHeartbeat();
-
-            // 简单重连
-            setTimeout(() => {
-                this.reconnect();
-            }, 3000);
-        };
+            this.ws.onclose = () => {
+                this.stopHeartbeat();
+            };
+        });
     }
 
     private reconnect() {
@@ -82,7 +77,7 @@ export default class WsClient {
 
     public send(cmd: string, data: any = {}) {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-            cc.warn("WebSocket未连接，发送失败:", cmd);
+            console.log("WebSocket未连接，发送失败:", cmd);
             return;
         }
 
@@ -91,7 +86,7 @@ export default class WsClient {
             seq: this.seq++,
             data: data
         };
-
+        console.log("send", msg);
         this.ws.send(JSON.stringify(msg));
     }
 
@@ -127,7 +122,7 @@ export default class WsClient {
             case "PONG":
                 break;
 
-            case "JOIN_ROOM_RESULT":
+            case "ENTER_ROOM_RESULT":
                 cc.log("进房结果:", msg);
                 break;
 

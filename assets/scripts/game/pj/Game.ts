@@ -47,7 +47,10 @@ export default class Game extends cc.Component {
         await seatManager.init();
         // 初始化桌子
         seatManager.initSeatLayout();
-        // 模拟进房
+    
+        const token = "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOjEyMzQ1NiwiaWF0IjoxNzc3MzAzOTg0LCJleHAiOjE3Nzc5MDg3ODR9.xryK6TW4pAlJlEYqCPNoEoCaU8BItUUBiE3wBJWEk9c";
+        const url = "ws://127.0.0.1:19001/ws";
+        await WsClient.instance.connectAsync(url, token);
         this.enterRoom()
     }
 
@@ -58,11 +61,8 @@ export default class Game extends cc.Component {
         const roomId = 12345678;
         let self = new UserInfo({ userId: selftUserId, nickname: "玩家-me", gold: 10000 , avatar: "0"});
 
-        const token = "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOjEyMzQ1NiwiaWF0IjoxNzc3Mjg2NTM1LCJleHAiOjE3Nzc4OTEzMzV9.YxC68QiFw-EBaH27UGz5og_IE7M4PuiFe6RWT47kOi8";
-        const url = "ws://127.0.0.1:19001/ws";
-        WsClient.instance.connect(url, token);
         // 进房
-        WsClient.instance.send("JOIN_ROOM", {
+        WsClient.instance.send("ENTER_ROOM", {
             roomId: roomId
         });
 
@@ -74,7 +74,7 @@ export default class Game extends cc.Component {
        
         CurrUserManager.getInstance().currentUserId = selftUserId;
         RoomManager.enterRoom(roomId, self);
-        RoomManager.sitDown(userId, i);
+
 
         // for (let i = 1; i < 8; i++) {
         //      const userId = selftUserId + i;
