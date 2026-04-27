@@ -4,6 +4,7 @@ import RoomManager from "./room/RoomManager";
 import { UserInfo } from "./user/UserInfo";
 import CurrUserManager from "./user/CurrUserManager";
 import UIManager from "./ui/UIManager";
+import GameRes from "./GameRes";
 
 @ccclass
 export default class Game extends cc.Component {
@@ -29,7 +30,6 @@ export default class Game extends cc.Component {
         CursorManager.init(this.canvasNode, this.cursorNode, this.cursorOkNode);
         // 鼠标移动手势
         this.canvasNode.on(cc.Node.EventType.MOUSE_MOVE, CursorManager.onMove, CursorManager);
-
      }
 
 
@@ -38,6 +38,7 @@ export default class Game extends cc.Component {
     }
 
     async initTable() {
+        await GameRes.instance.preload();
 
         const seatManager =  this.seatContainerNode.getComponent("SeatManager");
         // 隐藏准备按钮

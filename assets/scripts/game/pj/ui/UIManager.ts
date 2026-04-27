@@ -7,6 +7,7 @@ export default class UIManager extends cc.Component {
     private startBtnNode: cc.Node = null;
     private tableNode: cc.Node = null;
     private topNode: cc.Node = null;
+    private seats : { x : number, y : number, id:  number }[] = [];
 
     private static _instance: UIManager = null;
     public static get instance(): UIManager {
@@ -26,6 +27,7 @@ export default class UIManager extends cc.Component {
     }
 
     private init(){
+         this.intSeatPos();
          const label1 = this.topNode.getChildByName("label1");
          const label2 = this.topNode.getChildByName("label2");
          const label3 = this.topNode.getChildByName("label3");
@@ -109,6 +111,23 @@ export default class UIManager extends cc.Component {
         } else {
             label.node.color = cc.Color.WHITE;
         }
+    }
+
+    public intSeatPos(){
+        this.seats = [];
+        // 设置座位坐标
+        this.seats.push({ x : 0, y : -600, id:  0 });
+        this.seats.push({ x : 400, y : -380, id:  1 });
+        this.seats.push({ x : 480, y : 20, id:  2 });
+        this.seats.push({ x : 400, y : 420, id:  3});
+        this.seats.push({ x : 0, y : 700, id:  4});
+        this.seats.push({ x : -400, y : 420, id:  5 });
+        this.seats.push({ x : -480, y : 20, id:  6});
+        this.seats.push({ x : -400, y : -380, id:  7});
+    }
+
+    public getSeat() : { x : number, y : number, id:  number }[] {
+        return this.seats;
     }
 
 

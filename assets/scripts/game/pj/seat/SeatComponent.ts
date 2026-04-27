@@ -140,7 +140,7 @@ export default class SeatComponent extends cc.Component {
            
         
 
-            console.log(userInfo.userId, userInfo.nickname, userInfo.gold)
+            // console.log(userInfo.userId, userInfo.nickname, userInfo.gold)
             if(userInfo.state == UserState.Ready){
                 this.setStautsReady(1);
             }else if(userInfo.state == UserState.Sit){

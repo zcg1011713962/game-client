@@ -5,6 +5,7 @@ import RoomManager from "../room/RoomManager";
 import CurrUserManager from "../user/CurrUserManager";
 import SeatComponentManager from "./SeatComponentManager";
 import { UserInfo } from "../user/UserInfo";
+import UIManager from "../ui/UIManager";
 @ccclass
 export default class SeatManager extends cc.Component {
 
@@ -63,17 +64,7 @@ export default class SeatManager extends cc.Component {
 
  
     private initData() {
-        let seats = [];
-        // 设置座位坐标
-        seats.push({ x : 0, y : -600, id:  0 });
-        seats.push({ x : 400, y : -380, id:  1 });
-        seats.push({ x : 480, y : 20, id:  2 });
-        seats.push({ x : 400, y : 420, id:  3});
-        seats.push({ x : 0, y : 700, id:  4});
-        seats.push({ x : -400, y : 420, id:  5 });
-        seats.push({ x : -480, y : 20, id:  6});
-        seats.push({ x : -400, y : -380, id:  7});
-
+        const seats = UIManager.instance.getSeat();
         for (let i = 0; i < seats.length; i++) {
             SeatComponentManager.getInstance().seatComponentDataList.push({
                 id: seats[i].id,
