@@ -54,29 +54,63 @@ export default class SeatComponent extends cc.Component {
     /**
      * 更新座位UI状态
      */
+    // private updateView() {
+    //     if (!this.seatData) return;
+    //     console.log("更新座位UI状态", this.seatData.state);
+
+    //     switch (this.seatData.state) {
+    //         case SeatState.EMPTY: 
+    //             this.setNormal(true);
+    //             this.setHover(false);
+    //             break;
+
+    //         case SeatState.OCCUPIED: 
+    //             this.setNormal(false);
+    //             this.setHover(false);
+    //             this.setSetOut(true); 
+    //             break;
+
+    //         case SeatState.LOCKED: // 游戏中锁定
+    //             this.setNormal(false);
+    //             this.setHover(false);
+    //             this.setSetOut(true); 
+    //             this.setResultStatusView(3);
+    //             break;
+    //     }
+    // }
+
     private updateView() {
-        if (!this.seatData) return;
+        if (!this.seatData || !this.seatData.userInfo) return;
 
-        switch (this.seatData.state) {
-            case SeatState.EMPTY: 
+        // 清理 UI
+        this.setNormal(false);
+        this.setHover(false);
+        this.setSetOut(false);
+        this.showReadyBtn(false); 
+        this.setResultStatusView(-1);
+
+        const state = this.seatData.userInfo.state;
+        switch (state) {
+            case UserState.Idle:
                 this.setNormal(true);
-                this.setHover(false);
                 break;
-
-            case SeatState.OCCUPIED: 
-                this.setNormal(false);
-                this.setHover(false);
-                this.setSetOut(true); 
+            case UserState.Sit:
+                this.setSetOut(true);
+                this.showReadyBtn(true); 
                 break;
-
-            case SeatState.LOCKED: // 游戏中锁定
-                this.setNormal(false);
-                this.setHover(false);
-                this.setSetOut(true); 
-                this.setResultStatusView(3);
+            case UserState.Ready:
+                this.setSetOut(true);
+                break;
+            case UserState.Playing:
+                this.setSetOut(true);
                 break;
         }
     }
+
+    private showReadyBtn(active : boolean){
+         UIManager.instance.setStartBtnStatus(active);
+    }
+
 
     private onEnter() {
         if (this.seatData.state === SeatState.EMPTY) {

@@ -1,7 +1,5 @@
 const { ccclass } = cc._decorator;
-import RoomManager from "../room/RoomManager";
-import { UserInfo } from "../user/UserInfo";
-import CurrUserManager from "../user/CurrUserManager";
+import ClientRoomManager from "../room/ClientRoomManager";
 import {Cmd} from "../enum/Cmd";
 @ccclass
 export default class WsClient {
@@ -41,7 +39,6 @@ export default class WsClient {
             };
 
             this.ws.onmessage = (event) => {
-                console.log(event)
                 this.handleMessage(event.data);
             };
 
@@ -116,40 +113,57 @@ export default class WsClient {
 
     private handleMessage(text: string) {
         let msg: any = null;
-        console.log("handleMessage", text);
 
         try {
             msg = JSON.parse(text);
         } catch (e) {
-            cc.error("消息JSON解析失败:", text);
+            cc.error("消息解析失败:", text);
+            return;
+        }
+
+        console.log("收到消息:", msg.cmd);
+
+        if (msg.code !== 0) {
+            cc.warn("服务端错误:", msg.cmd, msg.code, msg.msg);
             return;
         }
 
         switch (msg.cmd) {
+            case Cmd.ENTER_ROOM_RESULT:
+                ClientRoomManager.instance.applyEnterRoom(msg.data);
+                break;
+            case Cmd.ROOM_INFO_RESULT:
+                ClientRoomManager.instance.applyRoomInfo(msg.data);
+                break;
+            case Cmd.PLAYER_ENTER:
+                ClientRoomManager.instance.applyPlayerEnter(msg.data);
+                break;
+            case Cmd.SIT_DOWN_RESULT:
+                ClientRoomManager.instance.applySitDown(msg.data);
+                break;
+            case Cmd.PLAYER_SIT_DOWN:
+                ClientRoomManager.instance.applySitDown(msg.data);
+                break;    
+            case Cmd.READY_RESULT:
+                cc.log("自己准备成功");
+                break;
+            case Cmd.PLAYER_READY:
+                ClientRoomManager.instance.applyPlayerReady(msg.data);
+                break;
+
+            case Cmd.GAME_START:
+                console.log("game start", msg.data)
+                ClientRoomManager.instance.applyGameStart(msg.data);
+                break;
+            case Cmd.BET_RESULT:
+                cc.log("自己下注成功:", msg.data);
+                break;
+
+            case Cmd.PLAYER_BET:
+                ClientRoomManager.instance.applyPlayerBet(msg.data);
+                break;
             case Cmd.PONG:
                 break;
-            case Cmd.ENTER_ROOM_RESULT:
-                if(msg.code === 0 && msg.data){
-                    console.log(Cmd.ENTER_ROOM_RESULT, msg.data);
-                    const userId = msg.data.userId;
-                    const roomId =  msg.data.roomId;
-                    CurrUserManager.getInstance().currentUserId = userId;
-                    // let self = new UserInfo({ userId: userId, nickname: "玩家-me", gold: 10000 , avatar: "0"});
-                    // RoomManager.enterRoom(roomId, self);
-                }
-                break;
-            case "READY_RESULT":
-                cc.log("准备结果:", msg);
-                break;
-
-            case "BET_RESULT":
-                cc.log("投注结果:", msg);
-                break;
-
-            case "PLAYER_BET":
-                cc.log("玩家投注广播:", msg);
-                break;
-
             default:
                 cc.log("未处理消息:", msg);
                 break;

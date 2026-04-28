@@ -15,6 +15,7 @@ export default class ChipSelectPanel extends cc.Component {
         this.chipBtns = this.node.children.filter(n =>
             n.name.startsWith("Chip_")
         );
+          this.node.active = false;
         // console.log("chipBtns", this.chipBtns);
         this.chipBtns.forEach(node => {
             node.on(cc.Node.EventType.TOUCH_END, () => {

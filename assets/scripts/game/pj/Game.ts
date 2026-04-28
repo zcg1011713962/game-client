@@ -39,10 +39,9 @@ export default class Game extends cc.Component {
         const token = this.getQuery("token");
         const roomId = this.getQuery("roomId");
 
+        await this.initTable();
         const url = "ws://127.0.0.1:19001/ws";
         await WsClient.instance.connectAsync(url, token);
-
-        this.initTable();
         // 进房
         WsClient.instance.send(Cmd.ENTER_ROOM, {roomId: roomId});
     }
@@ -62,15 +61,6 @@ export default class Game extends cc.Component {
 
 
     public enterRoom(roomId : number, selftUserId: number){
-
-        // 准备
-        WsClient.instance.send("READY", {
-            roomId: roomId
-        });
-
-       
-       
-
 
         // for (let i = 1; i < 8; i++) {
         //      const userId = selftUserId + i;

@@ -2,11 +2,15 @@ const {ccclass, property} = cc._decorator;
 import RoomManager from "../room/RoomManager";
 import CurrUserManager from "../user/CurrUserManager";
 import PaiJiuUtil from "../util/PaiJiuUtil";
+import ClientRoomManager from "../room/ClientRoomManager";
+import WsClient from "../net/WsClient";
+import {Cmd} from "../enum/Cmd";
 @ccclass
 export default class UIManager extends cc.Component {
     private startBtnNode: cc.Node = null;
     private tableNode: cc.Node = null;
     private topNode: cc.Node = null;
+    private chipSelectPanel: cc.Node = null;
     private seats : { x : number, y : number, id:  number }[] = [];
 
     private static _instance: UIManager = null;
@@ -23,6 +27,7 @@ export default class UIManager extends cc.Component {
         this.startBtnNode.on(cc.Node.EventType.MOUSE_UP, this.onStartBtnClick, this);
         this.startBtnNode = cc.find("Canvas/MainLayout/Table/Table/StartBtn");
         this.topNode = cc.find("Canvas/MainLayout/Top");
+        this.chipSelectPanel = cc.find(`Canvas/MainLayout/Table/ChipSelectPanel`);
         this.init();
     }
 
@@ -56,19 +61,29 @@ export default class UIManager extends cc.Component {
     /**
      * 开始或者准备按钮点击
      */
-    private async onStartBtnClick(){
-         console.log("点击准备或开始")
-         const userId = CurrUserManager.getInstance().currentUserId;
-         const room = RoomManager.getRoom();
-         RoomManager.ready(userId);
-         const flag = await RoomManager.isAllReady(userId);
+    // private async onStartBtnClick(){
+    //      console.log("点击准备或开始")
+    //      const userId = CurrUserManager.getInstance().currentUserId;
+    //      const room = RoomManager.getRoom();
+    //      RoomManager.ready(userId);
+    //      const flag = await RoomManager.isAllReady(userId);
         
-         if(flag){
-            RoomManager.settle();
-            console.log("完成一局，进入下一局");
-            await PaiJiuUtil.wait(this, 2);
-            UIManager.instance.setStartBtnStatus(true);
-         }
+    //      if(flag){
+    //         RoomManager.settle();
+    //         console.log("完成一局，进入下一局");
+    //         await PaiJiuUtil.wait(this, 2);
+    //         UIManager.instance.setStartBtnStatus(true);
+    //      }
+    // }
+
+     private async onStartBtnClick(){
+         console.log("点击准备");
+
+         const roomId = ClientRoomManager.instance.getRoomId();
+
+         WsClient.instance.send(Cmd.READY, {
+            roomId: roomId
+         });
     }
 
 
@@ -128,6 +143,13 @@ export default class UIManager extends cc.Component {
 
     public getSeat() : { x : number, y : number, id:  number }[] {
         return this.seats;
+    }
+
+
+    public setBetPanelVisible(visible: boolean) {
+        if (this.chipSelectPanel) {
+            this.chipSelectPanel.active = visible;
+        }
     }
 
 
