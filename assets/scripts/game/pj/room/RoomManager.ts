@@ -80,16 +80,25 @@ export default class RoomManager {
         if (!RoomManager.room) return false;
 
         let user = RoomManager.room.users.get(userId);
-        if (!user) return false;
+        if (!user){
+            console.log("sitDown user is null");
+            return false;
+        } 
 
         let seat: Seat | null = null;
 
         if (seatId !== undefined) {
             seat = RoomManager.room.getSeat(seatId);
-            if (!seat || !seat.isEmpty()) return false;
+            if (!seat || !seat.isEmpty()){
+                 console.log("sitDown seat have user");
+                 return false;
+            } 
         } else {
             seat = RoomManager.room.getEmptySeat();
-            if (!seat) return false;
+            if (!seat){
+                console.log("sitDown without empty seat");
+            }
+            return false;
         }
 
         seat.sit(user);

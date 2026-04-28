@@ -6,6 +6,7 @@ import CurrUserManager from "./user/CurrUserManager";
 import UIManager from "./ui/UIManager";
 import GameRes from "./GameRes";
 import WsClient from "./net/WsClient";
+import {Cmd} from "./enum/Cmd";
 
 @ccclass
 export default class Game extends cc.Component {
@@ -34,8 +35,16 @@ export default class Game extends cc.Component {
      }
 
 
-    start() {
+    async start() {
+        const token = this.getQuery("token");
+        const roomId = this.getQuery("roomId");
+
+        const url = "ws://127.0.0.1:19001/ws";
+        await WsClient.instance.connectAsync(url, token);
+
         this.initTable();
+        // 进房
+        WsClient.instance.send(Cmd.ENTER_ROOM, {roomId: roomId});
     }
 
     async initTable() {
@@ -47,24 +56,12 @@ export default class Game extends cc.Component {
         await seatManager.init();
         // 初始化桌子
         seatManager.initSeatLayout();
-    
-        const token = "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOjEyMzQ1NiwiaWF0IjoxNzc3MzAzOTg0LCJleHAiOjE3Nzc5MDg3ODR9.xryK6TW4pAlJlEYqCPNoEoCaU8BItUUBiE3wBJWEk9c";
-        const url = "ws://127.0.0.1:19001/ws";
-        await WsClient.instance.connectAsync(url, token);
-        this.enterRoom()
     }
 
+    
 
-    public enterRoom(){
-        // 自己进房
-        const selftUserId = 123456
-        const roomId = 12345678;
-        let self = new UserInfo({ userId: selftUserId, nickname: "玩家-me", gold: 10000 , avatar: "0"});
 
-        // 进房
-        WsClient.instance.send("ENTER_ROOM", {
-            roomId: roomId
-        });
+    public enterRoom(roomId : number, selftUserId: number){
 
         // 准备
         WsClient.instance.send("READY", {
@@ -72,8 +69,7 @@ export default class Game extends cc.Component {
         });
 
        
-        CurrUserManager.getInstance().currentUserId = selftUserId;
-        RoomManager.enterRoom(roomId, self);
+       
 
 
         // for (let i = 1; i < 8; i++) {
@@ -111,6 +107,20 @@ export default class Game extends cc.Component {
             }
         });
         })();
+    }
+
+    private getQuery(name: string): string {
+        const query = window.location.search.substring(1);
+        const arr = query.split("&");
+
+        for (let i = 0; i < arr.length; i++) {
+            const kv = arr[i].split("=");
+            if (kv[0] === name) {
+                return decodeURIComponent(kv[1] || "");
+            }
+        }
+
+        return "";
     }
 
 }

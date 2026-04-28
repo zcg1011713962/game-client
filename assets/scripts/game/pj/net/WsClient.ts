@@ -1,7 +1,11 @@
 const { ccclass } = cc._decorator;
-
+import RoomManager from "../room/RoomManager";
+import { UserInfo } from "../user/UserInfo";
+import CurrUserManager from "../user/CurrUserManager";
+import {Cmd} from "../enum/Cmd";
 @ccclass
 export default class WsClient {
+    
 
     private static _instance: WsClient = null;
 
@@ -27,6 +31,7 @@ export default class WsClient {
 
             this.ws.onopen = () => {
                 cc.log("WebSocket连接成功");
+
                 this.startHeartbeat();
                 resolve(); // 👉 通知外部可以发消息了
             };
@@ -36,6 +41,7 @@ export default class WsClient {
             };
 
             this.ws.onmessage = (event) => {
+                console.log(event)
                 this.handleMessage(event.data);
             };
 
@@ -110,6 +116,7 @@ export default class WsClient {
 
     private handleMessage(text: string) {
         let msg: any = null;
+        console.log("handleMessage", text);
 
         try {
             msg = JSON.parse(text);
@@ -119,13 +126,18 @@ export default class WsClient {
         }
 
         switch (msg.cmd) {
-            case "PONG":
+            case Cmd.PONG:
                 break;
-
-            case "ENTER_ROOM_RESULT":
-                cc.log("进房结果:", msg);
+            case Cmd.ENTER_ROOM_RESULT:
+                if(msg.code === 0 && msg.data){
+                    console.log(Cmd.ENTER_ROOM_RESULT, msg.data);
+                    const userId = msg.data.userId;
+                    const roomId =  msg.data.roomId;
+                    CurrUserManager.getInstance().currentUserId = userId;
+                    // let self = new UserInfo({ userId: userId, nickname: "玩家-me", gold: 10000 , avatar: "0"});
+                    // RoomManager.enterRoom(roomId, self);
+                }
                 break;
-
             case "READY_RESULT":
                 cc.log("准备结果:", msg);
                 break;
