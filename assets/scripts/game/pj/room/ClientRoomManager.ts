@@ -79,6 +79,8 @@ export default class ClientRoomManager {
 
     private roomState: RoomState = RoomState.WAIT;
 
+    private bankerSeat: number = -1;
+
     private constructor() {}
 
     public applyEnterRoom(data: RoomSnapshot) {
@@ -169,6 +171,7 @@ export default class ClientRoomManager {
     public applyGameStart(data: {
         roomId: number,
         roomState: number,
+        bankerSeat: number;
         players: PlayerDTO[]
     }) {
         this.players.clear();
@@ -178,8 +181,9 @@ export default class ClientRoomManager {
                 this.players.set(p.userId, p);
             });
         }
+        this.bankerSeat = data.bankerSeat;
         this.setRoomState(data.roomState);
-        console.log("游戏开始，进入下注阶段 roomState", this.roomState);
+        console.log("游戏开始，进入下注阶段 roomState", this.roomState, "庄家位:", this.bankerSeat);
         this.refreshAllSeatView();
         // 所有玩家准备按钮消失
         UIManager.instance.setStartBtnStatus(false);
@@ -208,6 +212,7 @@ export default class ClientRoomManager {
                bankerSeat: data.bankerSeat,
                players: data.playerCards
         };
+        this.bankerSeat = data.bankerSeat;
         console.log("后端发牌", serverResult);
         paiJiuTable.playStartAnim(serverResult);     
      
@@ -231,6 +236,10 @@ export default class ClientRoomManager {
             }
             console.log("结算:", p.userId, p.winAmount, p.afterGold);
          });
+    }
+
+    public getBankerSeat(): number{
+        return this.bankerSeat;
     }
 
 

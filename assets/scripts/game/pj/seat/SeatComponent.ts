@@ -5,6 +5,7 @@ import RoomManager from "../room/RoomManager";
 import {Hand, HandResult, CardUtils} from "../util/CardUtils";
 import UIManager from "../ui/UIManager";
 import CurrUserManager from "../user/CurrUserManager";
+import ClientRoomManager from "../room/ClientRoomManager";
 
 @ccclass
 export default class SeatComponent extends cc.Component {
@@ -145,7 +146,7 @@ export default class SeatComponent extends cc.Component {
      */
     private setSetOut(active: boolean) {
         // 获取玩家数据
-        const serverResult = RoomManager.getRoomPlayers();
+        const bankerSeat = ClientRoomManager.instance.getBankerSeat();
         
         if(this.seatData && this.seatData.userInfo){
             const userInfo = this.seatData.userInfo;
@@ -162,7 +163,7 @@ export default class SeatComponent extends cc.Component {
             // 昵称
             const name = this.setOut.getChildByName("Name");
             const nicknameNode = name.getChildByName("nickname");
-            UIManager.instance.setNickNameView(nicknameNode, serverResult.bankerSeat === userInfo.seatId, CurrUserManager.getInstance().currentUserId === userInfo.userId , userInfo.nickname);
+            UIManager.instance.setNickNameView(nicknameNode, bankerSeat === userInfo.seatId, CurrUserManager.getInstance().currentUserId === userInfo.userId , userInfo.nickname);
 
             // 金币展示
             const coinValNode = info.getChildByName("CoinVal");
@@ -177,8 +178,8 @@ export default class SeatComponent extends cc.Component {
                 this.setStautsReady(0);
             }else if(userInfo.state == UserState.Playing){
                 this.setStautsReady(2); // 隐藏准备状态
-                if(serverResult.bankerSeat > -1){
-                     this.setBankerView(serverResult.bankerSeat == userInfo.seatId); // 展示庄闲
+                if(bankerSeat > -1){
+                     this.setBankerView(bankerSeat == userInfo.seatId); // 展示庄闲
                 }
             }
         }
