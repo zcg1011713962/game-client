@@ -179,7 +179,6 @@ export default class RoomManager {
 
                   // 玩家下注
 
-
                 //   const players = [];
                 //   // 开始发牌
                 //   const hands: Hand[] = CardUtils.deal(8);

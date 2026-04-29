@@ -1,6 +1,8 @@
 const { ccclass } = cc._decorator;
 import ClientRoomManager from "../room/ClientRoomManager";
 import {Cmd} from "../enum/Cmd";
+import {RoomState} from "../room/RoomState";
+import UIManager from "../ui/UIManager";
 @ccclass
 export default class WsClient {
     
@@ -157,11 +159,17 @@ export default class WsClient {
                 break;
             case Cmd.BET_RESULT:
                 cc.log("自己下注成功:", msg.data);
+                ClientRoomManager.instance.selfBetOk(msg.data);
                 break;
-
             case Cmd.PLAYER_BET:
                 ClientRoomManager.instance.applyPlayerBet(msg.data);
                 break;
+            case Cmd.DEAL_CARD:    
+                ClientRoomManager.instance.dealCard(msg.data);
+                break
+            case Cmd.SETTLE: 
+                ClientRoomManager.instance.settle(msg.data);
+                break;   
             case Cmd.PONG:
                 break;
             default:

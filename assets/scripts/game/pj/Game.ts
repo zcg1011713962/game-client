@@ -50,8 +50,6 @@ export default class Game extends cc.Component {
         await GameRes.instance.preload();
 
         const seatManager =  this.seatContainerNode.getComponent("SeatManager");
-        // 隐藏准备按钮
-        UIManager.instance.setStartBtnStatus(false);
         await seatManager.init();
         // 初始化桌子
         seatManager.initSeatLayout();

@@ -5,12 +5,14 @@ import PaiJiuUtil from "../util/PaiJiuUtil";
 import ClientRoomManager from "../room/ClientRoomManager";
 import WsClient from "../net/WsClient";
 import {Cmd} from "../enum/Cmd";
+import BetArea from "../chip/BetArea";
 @ccclass
 export default class UIManager extends cc.Component {
     private startBtnNode: cc.Node = null;
     private tableNode: cc.Node = null;
     private topNode: cc.Node = null;
     private chipSelectPanel: cc.Node = null;
+    private betAreaNode: cc.Node = null;
     private seats : { x : number, y : number, id:  number }[] = [];
 
     private static _instance: UIManager = null;
@@ -27,7 +29,9 @@ export default class UIManager extends cc.Component {
         this.startBtnNode.on(cc.Node.EventType.MOUSE_UP, this.onStartBtnClick, this);
         this.startBtnNode = cc.find("Canvas/MainLayout/Table/Table/StartBtn");
         this.topNode = cc.find("Canvas/MainLayout/Top");
-        this.chipSelectPanel = cc.find(`Canvas/MainLayout/Table/ChipSelectPanel`);
+        this.chipSelectPanel = cc.find("Canvas/MainLayout/Table/ChipSelectPanel");
+        this.betAreaNode = cc.find(`Canvas/MainLayout/Table/BetContainer/BetArea0`);
+        this.setStartBtnStatus(false);
         this.init();
     }
 
@@ -49,11 +53,6 @@ export default class UIManager extends cc.Component {
     }
 
     public setStartBtnStatus(active: boolean) {
-        // 如果是房主显示开始，非房主显示准备
-        if(RoomManager.roomOwerUserId == CurrUserManager.getInstance().currentUserId){
-            const btnNameNode = this.startBtnNode.getChildByName("Label");
-            btnNameNode.getComponent(cc.Label).string = "开始";
-        }
         this.startBtnNode.active = active;
     }
 
@@ -78,7 +77,6 @@ export default class UIManager extends cc.Component {
 
      private async onStartBtnClick(){
          console.log("点击准备");
-
          const roomId = ClientRoomManager.instance.getRoomId();
 
          WsClient.instance.send(Cmd.READY, {
@@ -150,6 +148,19 @@ export default class UIManager extends cc.Component {
         if (this.chipSelectPanel) {
             this.chipSelectPanel.active = visible;
         }
+    }
+
+    
+     public onSelectChip(chip: number) {
+            if(this.betAreaNode){
+                const betArea = this.betAreaNode.getComponent(BetArea);
+
+                
+                const localStartPos = cc.v2(0, 0);
+                const localEndPos = cc.v2(0, 200);
+                betArea.addChip(chip, localStartPos, localEndPos);
+                this.node.active = false;
+            }
     }
 
 

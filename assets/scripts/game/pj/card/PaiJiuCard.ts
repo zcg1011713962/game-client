@@ -3,8 +3,7 @@ const { ccclass, property } = cc._decorator;
 export interface IPaiJiuCardData {
     id?: number;
     name?: string;
-    demo?: boolean;
-    seat?: number;
+    seatId?: number;
     index?: number;
 }
 

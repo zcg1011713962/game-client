@@ -1,8 +1,10 @@
 
 import PaiJiuCard, { IPaiJiuCardData } from "./card/PaiJiuCard";
+import ClientRoomManager from "./room/ClientRoomManager";
+import PaiJiuUtil from "./util/PaiJiuUtil";
 const {ccclass, property} = cc._decorator;
 interface IPlayerDealData {
-    seat: number;
+    seatId: number;
     cards: IPaiJiuCardData[];
 }
 
@@ -20,12 +22,12 @@ export default class PaiJiuTable extends cc.Component {
     private deckContainer: cc.Node = null;
     private dealContainer: cc.Node = null;
     private cardPrefab: cc.Node = null;
+    private playerPosRoot: cc.Node = null;
 
     private cardImgMap : { [key: string]: cc.SpriteFrame }= {}; // 预加载图片资源
 
     private totalCardCount: number = 32;  // 牌九通常 32 张
     private cardsPerPlayer: number = 2;  // 每人发几张
-    private playerCount: number = 8;
     private playerPosList: cc.Node[] = []; // 牌定位坐标
     private deckOffsetX: number = 0.5; // 牌堆每张牌X间距
     private deckOffsetY: number = 1;  // 牌堆每张牌Y间距
@@ -42,20 +44,13 @@ export default class PaiJiuTable extends cc.Component {
         this.cardList = [];
         this.playerCardMap = {};
         this.isPlaying = false;
-        this.playerPosList = [];
         // 加载牌图片
         await this.loadCardImg()
         // 加载座位预制体
         await this.loadCardPrefab();
         this.deckContainer = this.node.getChildByName("DeckContainer");
         this.dealContainer = this.node.getChildByName("DealContainer");
-        let root = this.node.getChildByName("PlayerPosRoot");
-
-        for (let i = 0; i < this.playerCount; i++) {
-            let node = root.getChildByName(`Player${i}Pos`);
-            this.playerPosList.push(node);
-        }
-
+        this.playerPosRoot = this.node.getChildByName("PlayerPosRoot");
     }
 
 
@@ -271,41 +266,76 @@ export default class PaiJiuTable extends cc.Component {
         }
     }
 
+    // private buildDealOrder(serverResult?: IServerDealResult): IDealOrderItem[] {
+    //     const result: IDealOrderItem[] = [];
+    //     let playerCount = 0;
+       
+    //     if (serverResult && serverResult.players) {
+    //         const bankerSeat = serverResult.bankerSeat || 0;
+    //         playerCount = serverResult.players.length;
+
+    //         for (let round = 0; round < this.cardsPerPlayer; round++) {
+    //             for (let i = 0; i < playerCount; i++) {
+    //                 const seatId = (bankerSeat + i) % playerCount;
+    //                 const player = serverResult.players.find((p) => p.seatId === seatId);
+    //                 const cardData = player && player.cards ? player.cards[round] : null;
+
+    //                 result.push({
+    //                     seat: seat,
+    //                     cardData: cardData || null,
+    //                 });
+    //             }
+    //         }
+           
+    //         return result;
+    //     }
+    //     return result;
+    // }
     private buildDealOrder(serverResult?: IServerDealResult): IDealOrderItem[] {
         const result: IDealOrderItem[] = [];
 
-        if (serverResult && serverResult.players) {
-            const bankerSeat = serverResult.bankerSeat || 0;
-
-            for (let round = 0; round < this.cardsPerPlayer; round++) {
-                for (let i = 0; i < this.playerCount; i++) {
-                    const seat = (bankerSeat + i) % this.playerCount;
-                    const player = serverResult.players.find((p) => p.seat === seat);
-                    const cardData = player && player.cards ? player.cards[round] : null;
-
-                    result.push({
-                        seat: seat,
-                        cardData: cardData || null,
-                    });
-                }
-            }
-           
+        if (!serverResult || !serverResult.players || serverResult.players.length === 0) {
             return result;
         }
 
+        const bankerSeat = serverResult.bankerSeat ?? serverResult.players[0].seatId;
+
+        // 已坐下玩家
+        const players = serverResult.players
+            .filter(p => p.seatId >= 0 && p.cards && p.cards.length > 0);
+
+        if (players.length === 0) {
+            return result;
+        }
+
+        // 按 8 个桌位，从庄家开始顺时针找已坐下玩家
+        const orderedPlayers = this.sortPlayersFromBanker(players, bankerSeat, 8);
+
         for (let round = 0; round < this.cardsPerPlayer; round++) {
-            for (let seat = 0; seat < this.playerCount; seat++) {
+            for (const player of orderedPlayers) {
+                console.log(player.cards[round])
                 result.push({
-                    seat,
-                    cardData: {
-                        demo: true,
-                        seat,
-                        index: round,
-                    },
+                    seat: player.seatId,
+                    cardData: player.cards[round] || null,
                 });
             }
         }
-        console.log("buildDealOrder", result)
+
+        return result;
+    }
+
+    private sortPlayersFromBanker(players: any[], bankerSeat: number, seatCount: number): any[] {
+        const result: any[] = [];
+
+        for (let i = 0; i < seatCount; i++) {
+            const seatId = (bankerSeat + i) % seatCount;
+            const player = players.find(p => p.seatId === seatId);
+
+            if (player) {
+                result.push(player);
+            }
+        }
+
         return result;
     }
 
@@ -342,7 +372,8 @@ export default class PaiJiuTable extends cc.Component {
         const cardIndexInHand = seatCards.length;
         seatCards.push(card);
 
-        const targetPosNode = this.playerPosList[seat];
+
+        const targetPosNode = this.playerPosRoot.getChildByName(`Player${seat}Pos`);
         const worldPos = targetPosNode.parent.convertToWorldSpaceAR(targetPosNode.position);
         const localPos = this.dealContainer.convertToNodeSpaceAR(worldPos);
 
@@ -425,7 +456,8 @@ export default class PaiJiuTable extends cc.Component {
         const cards = this.playerCardMap[seat] || [];
         if (!cards.length) return;
 
-        const targetPosNode = this.playerPosList[seat];
+   
+        const targetPosNode = this.playerPosRoot.getChildByName(`Player${seat}Pos`);
         const worldPos = targetPosNode.parent.convertToWorldSpaceAR(targetPosNode.position);
         const localPos = this.dealContainer.convertToNodeSpaceAR(worldPos);
 
@@ -447,6 +479,20 @@ export default class PaiJiuTable extends cc.Component {
 
     public getSeatCards(seat: number): cc.Node[] {
         return this.playerCardMap[seat] || [];
+    }
+
+
+    public async showCard() {
+        console.log("翻牌");
+        await PaiJiuUtil.wait(this, 3);
+        const players = ClientRoomManager.instance.getPlayers();
+        ClientRoomManager.instance.getMySeatId();
+        players.forEach(player =>{
+            this.flipSeatCards(player.seatId, () => {
+                this.sortSeatCards(player.seatId);
+            });
+        })
+        await PaiJiuUtil.wait(this, 0.5);
     }
 
 

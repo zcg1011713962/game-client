@@ -1,4 +1,6 @@
-import BetArea from "../chip/BetArea";
+import {Cmd} from "../enum/Cmd";
+import WsClient from "../net/WsClient";
+import ClientRoomManager from "../room/ClientRoomManager";
 
 const { ccclass, property } = cc._decorator;
 
@@ -8,24 +10,21 @@ const { ccclass, property } = cc._decorator;
 export default class ChipSelectPanel extends cc.Component {
 
     private chipBtns: cc.Node[] = [];
-    private betAreaNode : cc.Node = null;
 
     onLoad() {
-        this.betAreaNode = cc.find(`Canvas/MainLayout/Table/BetContainer/BetArea0`);
         this.chipBtns = this.node.children.filter(n =>
             n.name.startsWith("Chip_")
         );
-          this.node.active = false;
+        this.node.active = false;
         // console.log("chipBtns", this.chipBtns);
         this.chipBtns.forEach(node => {
             node.on(cc.Node.EventType.TOUCH_END, () => {
-
-                const value = this.getChipValue(node);
-
-                console.log("点击筹码:", value);
-
-                this.onSelectChip(value);
-
+                const chip = this.getChipValue(node);
+                const roomId = ClientRoomManager.instance.getRoomId();
+                // 位置跟下注区域一样的索引
+                const betArea = ClientRoomManager.instance.getMySeatId();
+                // 进房
+                WsClient.instance.send(Cmd.BET, {roomId: roomId, chip: chip, betArea: betArea});
             }, this);
 
         });
@@ -41,14 +40,4 @@ export default class ChipSelectPanel extends cc.Component {
     }
 
 
-    private onSelectChip(value: number) {
-        if(this.betAreaNode){
-            const betArea = this.betAreaNode.getComponent(BetArea);
-            const localStartPos = cc.v2(0, -600);
-            const localEndPos = cc.v2(0, 200);
-            betArea.addChip(value, localStartPos, localEndPos);
-            this.node.active = false;
-        }
-        cc.log("当前选择筹码:", value);
-    }
 }

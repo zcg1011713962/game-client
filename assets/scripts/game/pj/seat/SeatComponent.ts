@@ -86,17 +86,16 @@ export default class SeatComponent extends cc.Component {
         this.setNormal(false);
         this.setHover(false);
         this.setSetOut(false);
-        this.showReadyBtn(false); 
         this.setResultStatusView(-1);
 
         const state = this.seatData.userInfo.state;
+        console.log("玩家状态", this.seatData.userInfo);
         switch (state) {
             case UserState.Idle:
                 this.setNormal(true);
                 break;
             case UserState.Sit:
                 this.setSetOut(true);
-                this.showReadyBtn(true); 
                 break;
             case UserState.Ready:
                 this.setSetOut(true);
@@ -107,9 +106,6 @@ export default class SeatComponent extends cc.Component {
         }
     }
 
-    private showReadyBtn(active : boolean){
-         UIManager.instance.setStartBtnStatus(active);
-    }
 
 
     private onEnter() {

@@ -181,4 +181,6 @@ export default class SeatManager extends cc.Component {
     }
 
 
+
+
 }

@@ -1,7 +1,13 @@
 import { UserInfo, UserState } from "../user/UserInfo";
 import UIManager from "../ui/UIManager";
 import SeatManager from "../seat/SeatManager";
-import {RoomState} from "../room/RoomState"；
+import {RoomState} from "../room/RoomState";
+import {CardInfo} from "../card/CardConfig";
+import SeatComponentManager from "../seat/SeatComponentManager";
+import WsClient from "../net/WsClient";
+import {Cmd} from "../enum/Cmd";
+import PaiJiuUtil from "../util/PaiJiuUtil";
+
 
 export interface PlayerDTO {
     userId: number;
@@ -19,6 +25,37 @@ export interface RoomSnapshot {
     seatId: number;
     roomState: number;
     players: PlayerDTO[];
+}
+
+export interface PlayerCardDTO {
+    userId: number;
+    seatId: number;
+    cards: CardInfo[]; // 每人两张牌
+}
+
+export interface DealCardPush {
+    roomId: number;
+    roomState: number;
+    bankerSeat: number;
+    playerCards: PlayerCardDTO[];
+}
+
+export interface SettlePlayerDTO {
+    userId: number;
+    seatId: number;
+    win: number;        // 0输 1平 2赢 3庄家
+    betAmount: number;
+    winAmount: number;
+    beforeGold: number;
+    afterGold: number;
+    cards: CardInfo[];
+}
+
+export interface SettlePush {
+    roomId: number;
+    roomState: number;
+    bankerSeat: number;
+    players: SettlePlayerDTO[];
 }
 
 export default class ClientRoomManager {
@@ -45,10 +82,12 @@ export default class ClientRoomManager {
     private constructor() {}
 
     public applyEnterRoom(data: RoomSnapshot) {
+        console.log("applyEnterRoom", data);
         this.roomId = data.roomId;
         this.myUserId = data.userId;
-        this.mySeatId = data.seatId;
-
+        if(data.seatId){
+            this.mySeatId = data.seatId;
+        }
         this.players.clear();
 
         if (data.players) {
@@ -56,10 +95,11 @@ export default class ClientRoomManager {
                 this.players.set(p.userId, p);
             });
         }
-
+        // 更新房间状态
+        this.setRoomState(data.roomState);
         this.refreshAllSeatView();
 
-        cc.log("进房成功 roomId:", this.roomId);
+        console.log("进房成功 roomId:", this.roomId, "roomStatus", data.roomState);
     }
 
     public applySitDown(data: {roomId: number,userId: number,seatId: number,state: number}) {
@@ -82,6 +122,8 @@ export default class ClientRoomManager {
         // 如果是自己
         if (data.userId === this.myUserId) {
             this.mySeatId = data.seatId;
+            console.log("是自己坐下，显示准备按钮")
+            UIManager.instance.setStartBtnStatus(true);
         }
 
         this.refreshAllSeatView();
@@ -129,7 +171,6 @@ export default class ClientRoomManager {
         roomState: number,
         players: PlayerDTO[]
     }) {
-        console.log("游戏开始，进入下注阶段 roomState", this.roomState);
         this.players.clear();
 
         if (data.players) {
@@ -138,8 +179,9 @@ export default class ClientRoomManager {
             });
         }
         this.setRoomState(data.roomState);
+        console.log("游戏开始，进入下注阶段 roomState", this.roomState);
         this.refreshAllSeatView();
-
+        // 所有玩家准备按钮消失
         UIManager.instance.setStartBtnStatus(false);
     }
 
@@ -152,9 +194,43 @@ export default class ClientRoomManager {
         totalBet: number
     }) {
         cc.log("玩家下注:", data);
-
         // 筹码动画
+        //UIManager.instance.onSelectChip(data.chip);
+    }
 
+    public async dealCard(deal : DealCardPush){
+        const data = deal as DealCardPush;
+        // 切换发牌状态
+        ClientRoomManager.instance.setRoomState(data.roomState);
+        const paiJiuTable = UIManager.instance.getTableNode().getComponent("PaiJiuTable");
+        console.log("后端发牌", data);
+        const serverResult = {
+               bankerSeat: data.bankerSeat,
+               players: data.playerCards
+        };
+        console.log("后端发牌", serverResult);
+        paiJiuTable.playStartAnim(serverResult);     
+     
+        // 翻牌
+        await paiJiuTable.showCard();
+        // 发送结算请求
+        WsClient.instance.send(Cmd.SETTLE, { roomId: deal.roomId});
+    }
+
+    public settle(settleInfo : SettlePush){
+        const data = settleInfo as SettlePush;
+        ClientRoomManager.instance.setRoomState(data.roomState);
+        const bankerSeat = settleInfo.bankerSeat;
+        data.players.forEach(p => {
+            const seatId = p.seatId;
+            const seatComponen = SeatComponentManager.getInstance().seatComponentList.find(s => s["seatData"].id === seatId);
+            if(seatComponen){
+                if(seatId !== bankerSeat){
+                    seatComponen.setResultStatusView(p.win);
+                }
+            }
+            console.log("结算:", p.userId, p.winAmount, p.afterGold);
+         });
     }
 
 
@@ -164,11 +240,13 @@ export default class ClientRoomManager {
     }
 
     public canBet(): boolean {
+        console.log("mySeatId", this.mySeatId, "roomState",  this.roomState);
         return this.roomState === RoomState.BET && this.mySeatId >= 0;
     }
 
     private refreshBetUI() {
         const canBet = this.canBet();
+        console.log("是否可以下注", canBet);
         UIManager.instance.setBetPanelVisible(canBet);
     }
 
@@ -194,6 +272,10 @@ export default class ClientRoomManager {
         return list.find(p => p.seatId === seatId) || null;
     }
 
+    public getPlayers(): PlayerDTO[] {
+        return Array.from(this.players.values()).filter(p => p.seatId > -1);
+    }
+
     private refreshAllSeatView() {
         this.players.forEach(player => {
             if (player.seatId == null || player.seatId < 0) {
@@ -209,4 +291,16 @@ export default class ClientRoomManager {
             SeatManager.refreshSeat(player.seatId, userInfo);
         });
     }
+
+    public selfBetOk(data: {
+        roomId: number,
+        roomState: number,
+        players: PlayerDTO[]
+    }){
+        UIManager.instance.setBetPanelVisible(false);
+    }
+
+
+    
+
 }
