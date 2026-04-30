@@ -55,33 +55,9 @@ export default class SeatComponent extends cc.Component {
     /**
      * 更新座位UI状态
      */
-    // private updateView() {
-    //     if (!this.seatData) return;
-    //     console.log("更新座位UI状态", this.seatData.state);
-
-    //     switch (this.seatData.state) {
-    //         case SeatState.EMPTY: 
-    //             this.setNormal(true);
-    //             this.setHover(false);
-    //             break;
-
-    //         case SeatState.OCCUPIED: 
-    //             this.setNormal(false);
-    //             this.setHover(false);
-    //             this.setSetOut(true); 
-    //             break;
-
-    //         case SeatState.LOCKED: // 游戏中锁定
-    //             this.setNormal(false);
-    //             this.setHover(false);
-    //             this.setSetOut(true); 
-    //             this.setResultStatusView(3);
-    //             break;
-    //     }
-    // }
-
     private updateView() {
         if (!this.seatData || !this.seatData.userInfo) return;
+        console.log("更新UI用户信息", this.seatData.userInfo);
 
         // 清理 UI
         this.setNormal(false);
@@ -89,14 +65,24 @@ export default class SeatComponent extends cc.Component {
         this.setSetOut(false);
         this.setResultStatusView(-1);
 
+       
         const state = this.seatData.userInfo.state;
-        console.log("玩家状态", this.seatData.userInfo);
+        const userId =  this.seatData.userInfo.userId;
+    
+        if(userId === ClientRoomManager.instance.getMyUserId()){
+            UIManager.instance.setStartBtnStatus(false);
+        }
+
         switch (state) {
             case UserState.Idle:
                 this.setNormal(true);
                 break;
             case UserState.Sit:
                 this.setSetOut(true);
+                // 自己入座状态
+                if (userId === ClientRoomManager.instance.getMyUserId()) {
+                    UIManager.instance.setStartBtnStatus(true);
+                }
                 break;
             case UserState.Ready:
                 this.setSetOut(true);

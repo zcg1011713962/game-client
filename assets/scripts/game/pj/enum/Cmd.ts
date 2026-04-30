@@ -43,6 +43,9 @@ export enum Cmd {
     // 发牌 / 结算
     DEAL_CARD = "DEAL_CARD",
     SETTLE = "SETTLE",
+    // 下一轮
+    NEXT_ROUND = "NEXT_ROUND",
+    NEXT_ROUND_RESULT = "NEXT_ROUND_RESULT",
 }
 
 export function parseCmd(cmd: string): Cmd | null {

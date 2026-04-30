@@ -20,11 +20,15 @@ export interface PlayerDTO {
 }
 
 export interface RoomSnapshot {
+    roundId: number;
     roomId: number;
     userId: number;
-    seatId: number;
     roomState: number;
     players: PlayerDTO[];
+    bankerSeat: number;
+    seats: Map<number, number>;
+    betMap: Map<number, number>;
+    cardMap: Map<number, CardInfo[]>;
 }
 
 export interface PlayerCardDTO {
@@ -58,6 +62,11 @@ export interface SettlePush {
     players: SettlePlayerDTO[];
 }
 
+export interface NextRoundPush {
+    roomId: number;
+    roundId: number;
+}
+
 export default class ClientRoomManager {
 
     private static _instance: ClientRoomManager = null;
@@ -69,42 +78,50 @@ export default class ClientRoomManager {
         return this._instance;
     }
 
-    private roomId: number = 0;
+    private roundId: number = -1;
 
-    private myUserId: number = 0;
+    private ownerUserId : number = -1;
+
+    private roomId: number = -1;
+
+    private myUserId: number = -1;
 
     private mySeatId: number = -1;
 
-    private players: Map<number, PlayerDTO> = new Map();
 
     private roomState: RoomState = RoomState.WAIT;
 
     private bankerSeat: number = -1;
 
+    private players: Map<number, PlayerDTO> = new Map();
+    private seats: Map<number, number> = new Map();
+    private betMap: Map<number, number> = new Map();
+    private cardMap: Map<number, CardInfo[]> = new Map();
+
+
     private constructor() {}
 
+    // 进房回包
     public applyEnterRoom(data: RoomSnapshot) {
-        console.log("applyEnterRoom", data);
+        this.roundId = data.roundId;
         this.roomId = data.roomId;
         this.myUserId = data.userId;
-        if(data.seatId){
-            this.mySeatId = data.seatId;
-        }
-        this.players.clear();
-
-        if (data.players) {
-            data.players.forEach(p => {
-                this.players.set(p.userId, p);
-            });
-        }
+        this.bankerSeat = data.bankerSeat;
+        this.seats = data.seats;
+        this.betMap = data.betMap;
+        this.cardMap = data.cardMap;
+        
+        this.updatePlayers(data.userId, data.players);
+       
         // 更新房间状态
         this.setRoomState(data.roomState);
         this.refreshAllSeatView();
 
-        console.log("进房成功 roomId:", this.roomId, "roomStatus", data.roomState);
+        console.log("进房成功 roomId:", this.roomId, "roomStatus", data.roomState, "myUserId",  this.myUserId, "mySeatId", this.mySeatId);
     }
 
-    public applySitDown(data: {roomId: number,userId: number,seatId: number,state: number}) {
+    // 坐下回包
+    public applySitDown(data: {roomId: number, userId: number, seatId: number, state: number}) {
 
         let player = this.players.get(data.userId);
 
@@ -120,21 +137,19 @@ export default class ClientRoomManager {
             player.seatId = data.seatId;
             player.state = data.state;
         }
-
-        // 如果是自己
-        if (data.userId === this.myUserId) {
-            this.mySeatId = data.seatId;
-            console.log("是自己坐下，显示准备按钮")
-            UIManager.instance.setStartBtnStatus(true);
+        if(this.myUserId === data.userId){
+             this.mySeatId = data.seatId;
         }
-
+       
         this.refreshAllSeatView();
     }
 
+    // 获取返奖信息回包
     public applyRoomInfo(data: RoomSnapshot) {
         this.applyEnterRoom(data);
     }
 
+    // 玩家进房通知
     public applyPlayerEnter(data: { roomId: number, player: PlayerDTO }) {
         if (!data || !data.player) {
             return;
@@ -145,6 +160,17 @@ export default class ClientRoomManager {
         this.refreshAllSeatView();
     }
 
+    // 准备回包
+    public selfReadyOk(data: {
+        roomId: number,
+        userId: number,
+        seatId: number,
+        state: number
+    }){
+        this.refreshAllSeatView();
+    }
+
+    // 准备通知
     public applyPlayerReady(data: {
         roomId: number,
         userId: number,
@@ -164,10 +190,12 @@ export default class ClientRoomManager {
                 online: true
             });
         }
-
+           // 更新房间状态
+        this.setRoomState(data.roomState);
         this.refreshAllSeatView();
     }
 
+    // 全准备好-游戏开始
     public applyGameStart(data: {
         roomId: number,
         roomState: number,
@@ -185,10 +213,8 @@ export default class ClientRoomManager {
         this.setRoomState(data.roomState);
         console.log("游戏开始，进入下注阶段 roomState", this.roomState, "庄家位:", this.bankerSeat);
         this.refreshAllSeatView();
-        // 所有玩家准备按钮消失
-        UIManager.instance.setStartBtnStatus(false);
     }
-
+    // 下注
     public applyPlayerBet(data: {
         roomId: number,
         userId: number,
@@ -201,7 +227,7 @@ export default class ClientRoomManager {
         // 筹码动画
         //UIManager.instance.onSelectChip(data.chip);
     }
-
+    // 发牌
     public async dealCard(deal : DealCardPush){
         const data = deal as DealCardPush;
         // 切换发牌状态
@@ -222,9 +248,12 @@ export default class ClientRoomManager {
         WsClient.instance.send(Cmd.SETTLE, { roomId: deal.roomId});
     }
 
+    // 结算
     public settle(settleInfo : SettlePush){
+        console.log("结算", settleInfo);
         const data = settleInfo as SettlePush;
         ClientRoomManager.instance.setRoomState(data.roomState);
+
         const bankerSeat = settleInfo.bankerSeat;
         data.players.forEach(p => {
             const seatId = p.seatId;
@@ -236,6 +265,14 @@ export default class ClientRoomManager {
             }
             console.log("结算:", p.userId, p.winAmount, p.afterGold);
          });
+
+         // 结算动画结束
+         WsClient.instance.send(Cmd.NEXT_ROUND, {roomId: settleInfo.roomId});
+         
+    }
+    // 下一轮
+    public nextRound(data: NextRoundPush){
+        this.roundId = data.roundId;
     }
 
     public getBankerSeat(): number{
@@ -249,13 +286,12 @@ export default class ClientRoomManager {
     }
 
     public canBet(): boolean {
-        console.log("mySeatId", this.mySeatId, "roomState",  this.roomState);
         return this.roomState === RoomState.BET && this.mySeatId >= 0;
     }
 
     private refreshBetUI() {
         const canBet = this.canBet();
-        console.log("是否可以下注", canBet);
+        console.log("是否可以下注", canBet, "roomState", this.roomState, "mySeatId", this.mySeatId);
         UIManager.instance.setBetPanelVisible(canBet);
     }
 
@@ -309,6 +345,19 @@ export default class ClientRoomManager {
         UIManager.instance.setBetPanelVisible(false);
     }
 
+    public updatePlayers(userId : number, players: PlayerDTO[]){
+        this.players.clear();
+         // 更新玩家信息
+        if (players) {
+            players.forEach(p => {
+                this.players.set(p.userId, p);
+            });
+        }
+        let player = this.players.get(userId);
+        if(player){
+            this.mySeatId = player.seatId;
+        }
+    }
 
     
 

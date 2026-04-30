@@ -150,7 +150,7 @@ export default class SeatManager extends cc.Component {
 
         // 1. 已经坐下了
         if (mySeatId >= 0) {
-            console.log("你已经坐在座位上了:", mySeatId);
+            console.log("你已经坐在座位上了mySeatId",  mySeatId);
             return;
         }
 

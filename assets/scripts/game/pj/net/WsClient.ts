@@ -91,7 +91,9 @@ export default class WsClient {
             seq: this.seq++,
             data: data
         };
-        console.log("send", msg);
+        if(Cmd.PING !== cmd){
+            console.log("send", msg);
+        }
         this.ws.send(JSON.stringify(msg));
     }
 
@@ -123,8 +125,10 @@ export default class WsClient {
             return;
         }
 
-        console.log("收到消息:", msg.cmd);
-
+        if(Cmd.PONG !== msg.cmd){
+             console.log("收到消息:", msg.cmd);
+        }
+       
         if (msg.code !== 0) {
             cc.warn("服务端错误:", msg.cmd, msg.code, msg.msg);
             return;
@@ -148,11 +152,11 @@ export default class WsClient {
                 break;    
             case Cmd.READY_RESULT:
                 cc.log("自己准备成功");
+                 ClientRoomManager.instance.selfReadyOk(msg.data);
                 break;
             case Cmd.PLAYER_READY:
                 ClientRoomManager.instance.applyPlayerReady(msg.data);
                 break;
-
             case Cmd.GAME_START:
                 console.log("game start", msg.data)
                 ClientRoomManager.instance.applyGameStart(msg.data);
@@ -170,6 +174,9 @@ export default class WsClient {
             case Cmd.SETTLE: 
                 ClientRoomManager.instance.settle(msg.data);
                 break;   
+            case Cmd.NEXT_ROUND_RESULT:
+                ClientRoomManager.instance.settle(msg.data);
+                break;    
             case Cmd.PONG:
                 break;
             default:
