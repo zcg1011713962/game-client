@@ -6,44 +6,52 @@ import GameRes from "../GameRes";
 @ccclass
 export default class BetArea extends cc.Component {
 
-    private chipsRoot: cc.Node = null;
-
-
-    public addChip(value: number, localStartPos?: cc.Vec2, localEndPos?: cc.Vec2) {
-        const chipPrefab = GameRes.instance.chipPrefab;
-        const chipImgMap = GameRes.instance.chipImgMap;
-        this.chipsRoot = this.node.getChildByName("ChipsRoot");
-
-        if (!chipPrefab || !this.chipsRoot) {
-            cc.warn("BetArea 缺少 chipPrefab 或 chipsRoot");
+    public addChip(value: number, seatId: number, worldStartPos: cc.Vec2) {
+        const targetPosNode = this.node.getChildByName(`BetArea${seatId}`);
+        if (!targetPosNode) {
+            cc.warn(`找不到下注区域 BetArea${seatId}`);
             return;
         }
-        console.log(" this.chipsRoot ", this.chipsRoot )
+
+        const chipPrefab = GameRes.instance.chipPrefab;
+        const chipImgMap = GameRes.instance.chipImgMap;
+
+        if (!chipPrefab) {
+            cc.error("缺少 chipPrefab");
+            return;
+        }
 
         const chipNode = cc.instantiate(chipPrefab);
-        if(!chipNode){
-             cc.warn("chipNode 缺少");
-             return;
+        if (!chipNode) {
+            cc.warn("chipNode 创建失败");
+            return;
         }
-        this.chipsRoot.addChild(chipNode);
+
+        // 筹码挂到下注区域节点下
+        targetPosNode.addChild(chipNode);
+
+        const startLocalPos = targetPosNode.convertToNodeSpaceAR(worldStartPos);
+        chipNode.setPosition(startLocalPos);
 
         const chipItem = chipNode.getComponent(ChipItem);
-        chipItem.init(value, chipImgMap);
-
-        if (localStartPos && localEndPos) {
-            console.log("筹码动画", localStartPos, localEndPos);
-            chipItem.playFlyAnim(localStartPos, localEndPos);
-        } 
-
-        if(!localStartPos && localEndPos){
-            chipNode.setPosition(localEndPos);
-            chipItem.playShowAnim();
+        if (!chipItem) {
+            cc.error("chipNode 缺少 ChipItem 组件");
+            chipNode.destroy();
+            return;
         }
+
+        chipItem.init(value, chipImgMap);
+        // targetPosNode中心点，chipNode挂在了这个节点
+        const endLocalPos = cc.v2(0, 0);
+
+        chipItem.playFlyAnim(startLocalPos, endLocalPos);
     }
 
 
-
-    public clearChips() {
-        this.chipsRoot.removeAllChildren();
+    public clearChips(seats : { x : number, y : number, id:  number }[]) {
+        seats.forEach(seat => {
+            const targetPosNode = this.node.getChildByName(`BetArea${seat.id}`);
+            targetPosNode.removeAllChildren();
+        });
     }
 }

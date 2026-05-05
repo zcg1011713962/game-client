@@ -1,11 +1,10 @@
 const { ccclass } = cc._decorator;
 import { UserInfo, UserState } from "../user/UserInfo";
 import { SeatData, SeatState } from "./SeatData";
-import RoomManager from "../room/RoomManager";
-import {Hand, HandResult, CardUtils} from "../util/CardUtils";
 import UIManager from "../ui/UIManager";
 import CurrUserManager from "../user/CurrUserManager";
 import ClientRoomManager from "../room/ClientRoomManager";
+import { RoomState } from "../room/RoomState";
 
 @ccclass
 export default class SeatComponent extends cc.Component {
@@ -26,7 +25,7 @@ export default class SeatComponent extends cc.Component {
         this.setOut = this.node.getChildByName("SetOut");
         this.setHover(false);
         this.setSetOut(false);
-        this.setStautsReady(0);
+        this.setStautsReady(-1);
 
 
         this.node.on(cc.Node.EventType.MOUSE_ENTER, this.onEnter, this);
@@ -56,16 +55,33 @@ export default class SeatComponent extends cc.Component {
      * 更新座位UI状态
      */
     private updateView() {
-        if (!this.seatData || !this.seatData.userInfo) return;
-        console.log("更新UI用户信息", this.seatData.userInfo);
-
+        const roomState = ClientRoomManager.instance.getRoomState();
+        console.log("更新UI用户信息", this.seatData.id, this.seatData.userInfo, "roomStatus",  roomState);
+        this.node.active = true;
         // 清理 UI
+        // 普通座位
         this.setNormal(false);
+        // 高亮座位
         this.setHover(false);
+        // 金币 昵称
         this.setSetOut(false);
+        // 准备状态
+        this.setStautsReady(-1);
+        // 庄家
+        this.setBankerView(false);
+        // 输赢
         this.setResultStatusView(-1);
 
-       
+        
+        if (!this.seatData.userInfo){ // 更换座位
+            if(roomState === RoomState.WAIT || roomState === RoomState.READY){
+                this.setNormal(true);
+            }else{
+                this.node.active = false;
+            }
+            return;
+        }
+
         const state = this.seatData.userInfo.state;
         const userId =  this.seatData.userInfo.userId;
     
@@ -79,6 +95,7 @@ export default class SeatComponent extends cc.Component {
                 break;
             case UserState.Sit:
                 this.setSetOut(true);
+                this.setStautsReady(0);
                 // 自己入座状态
                 if (userId === ClientRoomManager.instance.getMyUserId()) {
                     UIManager.instance.setStartBtnStatus(true);
@@ -86,11 +103,14 @@ export default class SeatComponent extends cc.Component {
                 break;
             case UserState.Ready:
                 this.setSetOut(true);
+                this.setStautsReady(1);
                 break;
             case UserState.Playing:
                 this.setSetOut(true);
+                this.setBankerView(true);
                 break;
         }
+
     }
 
 
@@ -134,7 +154,7 @@ export default class SeatComponent extends cc.Component {
         // 获取玩家数据
         const bankerSeat = ClientRoomManager.instance.getBankerSeat();
         
-        if(this.seatData && this.seatData.userInfo){
+        if(active && this.seatData && this.seatData.userInfo){
             const userInfo = this.seatData.userInfo;
             const info = this.setOut.getChildByName("Info");
             const avatarNode = this.setOut.getChildByName("Avatars");
@@ -154,22 +174,8 @@ export default class SeatComponent extends cc.Component {
             // 金币展示
             const coinValNode = info.getChildByName("CoinVal");
             UIManager.instance.setCoinView(coinValNode, userInfo.gold);
-           
-        
 
-            // console.log(userInfo.userId, userInfo.nickname, userInfo.gold)
-            if(userInfo.state == UserState.Ready){
-                this.setStautsReady(1);
-            }else if(userInfo.state == UserState.Sit){
-                this.setStautsReady(0);
-            }else if(userInfo.state == UserState.Playing){
-                this.setStautsReady(2); // 隐藏准备状态
-                if(bankerSeat > -1){
-                     this.setBankerView(bankerSeat == userInfo.seatId); // 展示庄闲
-                }
-            }
         }
-
         // 预制体显示
         this.setOut.active = active;
     }
@@ -189,51 +195,54 @@ export default class SeatComponent extends cc.Component {
      * 状态
      */
     private setStautsReady(status: number) {
+        const statusNode =this.setOut.getChildByName("Status");
         if(status == 0){ // 显示未准备
-            this.setOut.getChildByName("Status").getChildByName("Status1").active = true;
-            this.setOut.getChildByName("Status").getChildByName("Status2").active = false;
+            statusNode.getChildByName("Status1").active = true;
+            statusNode.getChildByName("Status2").active = false;
         }else if(status == 1){ // 显示已准备
-            this.setOut.getChildByName("Status").getChildByName("Status1").active = false;
-            this.setOut.getChildByName("Status").getChildByName("Status2").active = true;
+            statusNode.getChildByName("Status1").active = false;
+            statusNode.getChildByName("Status2").active = true;
         }else{ // 不显示
-            this.setOut.getChildByName("Status").getChildByName("Status1").active = false;
-            this.setOut.getChildByName("Status").getChildByName("Status2").active = false;
+            statusNode.getChildByName("Status1").active = false;
+            statusNode.getChildByName("Status2").active = false;
         }
-       
     }
     /**
      * 
      * 庄家闲家
      */
-    private setBankerView(isBanker: boolean) {
-        const txt = isBanker ? "庄" : "闲"; 
+    private setBankerView(active: boolean) {
         const bankerLabelNode = this.setOut.getChildByName("Banker").getChildByName("Label1");
-        if(bankerLabelNode){
-            const lable = bankerLabelNode.getComponent(cc.Label);
-            if(lable){
-                lable.string = txt;
-                
-
-                let outline = bankerLabelNode.getComponent(cc.LabelOutline);
-                if (!outline) {
-                    outline = bankerLabelNode.addComponent(cc.LabelOutline);
+        // 获取玩家数据
+        const bankerSeat = ClientRoomManager.instance.getBankerSeat();
+        if(active && this.seatData && this.seatData.userInfo){
+            const userInfo = this.seatData.userInfo;
+            const isBanker = bankerSeat === userInfo.seatId;
+            const txt = isBanker ? "庄" : "闲"; 
+            if(bankerSeat > -1 && bankerLabelNode){
+                const lable = bankerLabelNode.getComponent(cc.Label);
+                if(lable){
+                    lable.string = txt;
+                    let outline = bankerLabelNode.getComponent(cc.LabelOutline);
+                    if (!outline) {
+                        outline = bankerLabelNode.addComponent(cc.LabelOutline);
+                    }
+                    // 黑色描边
+                    outline.color = cc.Color.BLACK;
+                    // 宽度
+                    if(isBanker){
+                        // 设置字体颜色
+                        lable.node.color = cc.Color.YELLOW;
+                        outline.width = 5;
+                    }else{
+                        lable.node.color = cc.Color.WHITE;
+                        outline.width = 2;
+                    }
                 }
-
-                // 黑色描边
-                outline.color = cc.Color.BLACK;
-                // 宽度
-                if(isBanker){
-                    // 设置字体颜色
-                    lable.node.color = cc.Color.YELLOW;
-                    outline.width = 5;
-                }else{
-                     lable.node.color = cc.Color.WHITE;
-                    outline.width = 2;
-                }
-               
             }
-        }
-        bankerLabelNode.active = true;
+         }
+         bankerLabelNode.active = active;
+       
     }
 
 
@@ -243,7 +252,7 @@ export default class SeatComponent extends cc.Component {
      */
     public setResultStatusView(result: number) {
         const bankerLabelNode = this.setOut.getChildByName("Banker").getChildByName("Label2");
-        if(bankerLabelNode){
+        if(bankerLabelNode && result > 0){
             const label = bankerLabelNode.getComponent(cc.Label);
             let outline = bankerLabelNode.getComponent(cc.LabelOutline);
             if (!outline) {
@@ -266,8 +275,11 @@ export default class SeatComponent extends cc.Component {
                label.string = "--";
                label.node.color = cc.Color.WHITE; 
             }
+             bankerLabelNode.active = true;
+             console.log("展示输赢")
+        }else{
+             bankerLabelNode.active = false;
         }
-        bankerLabelNode.active = true;
     }
 
 }

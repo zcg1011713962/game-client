@@ -32,6 +32,7 @@ export default class Game extends cc.Component {
         CursorManager.init(this.canvasNode, this.cursorNode, this.cursorOkNode);
         // 鼠标移动手势
         this.canvasNode.on(cc.Node.EventType.MOUSE_MOVE, CursorManager.onMove, CursorManager);
+        this.node.on(cc.Node.EventType.MOUSE_DOWN, this.onClick, this);
      }
 
 
@@ -56,20 +57,11 @@ export default class Game extends cc.Component {
     }
 
     
+    private onClick(event: cc.Event.EventMouse){
+        const worldPos = event.getLocation(); // 世界坐标
+        console.log("世界坐标:", worldPos);
 
-
-    public enterRoom(roomId : number, selftUserId: number){
-
-        // for (let i = 1; i < 8; i++) {
-        //      const userId = selftUserId + i;
-        //      let user = new UserInfo({ userId: userId, nickname: "玩家" + i , gold: i * 10000, avatar: String(i)});
-        //      RoomManager.enterRoom(12345678, user);
-        //      RoomManager.sitDown(userId, i);
-        //      RoomManager.ready(userId);
-        // }
-       
     }
-
     
     disableVConsole(){
         (function () {

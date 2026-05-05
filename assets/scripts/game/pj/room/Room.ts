@@ -14,9 +14,7 @@ export class Room {
 
     // 禁止外部 new
     private constructor() {}
-
-
-      public static getInstance(roomId: number, maxSeat: number = 8): Room {
+    public static getInstance(roomId: number, maxSeat: number = 8): Room {
         if (!this._instance) {
             this._instance = new Room();
             this._instance.roomId = roomId;

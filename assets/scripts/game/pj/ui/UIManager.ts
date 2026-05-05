@@ -1,18 +1,17 @@
 const {ccclass, property} = cc._decorator;
-import RoomManager from "../room/RoomManager";
-import CurrUserManager from "../user/CurrUserManager";
-import PaiJiuUtil from "../util/PaiJiuUtil";
 import ClientRoomManager from "../room/ClientRoomManager";
 import WsClient from "../net/WsClient";
 import {Cmd} from "../enum/Cmd";
 import BetArea from "../chip/BetArea";
+import { RoomState } from "../room/RoomState";
+import SeatComponentManager from "../seat/SeatComponentManager";
 @ccclass
 export default class UIManager extends cc.Component {
     private startBtnNode: cc.Node = null;
     private tableNode: cc.Node = null;
     private topNode: cc.Node = null;
     private chipSelectPanel: cc.Node = null;
-    private betAreaNode: cc.Node = null;
+    private betContainer: cc.Node = null;
     private seats : { x : number, y : number, id:  number }[] = [];
 
     private static _instance: UIManager = null;
@@ -30,7 +29,7 @@ export default class UIManager extends cc.Component {
         this.startBtnNode = cc.find("Canvas/MainLayout/Table/Table/StartBtn");
         this.topNode = cc.find("Canvas/MainLayout/Top");
         this.chipSelectPanel = cc.find("Canvas/MainLayout/Table/ChipSelectPanel");
-        this.betAreaNode = cc.find(`Canvas/MainLayout/Table/BetContainer/BetArea0`);
+        this.betContainer = cc.find("Canvas/MainLayout/Table/BetContainer");
         this.setStartBtnStatus(false);
         this.init();
     }
@@ -53,32 +52,14 @@ export default class UIManager extends cc.Component {
     }
 
     public setStartBtnStatus(active: boolean) {
+        console.log("准备按钮状态", active);
         this.startBtnNode.active = active;
     }
 
 
-    /**
-     * 开始或者准备按钮点击
-     */
-    // private async onStartBtnClick(){
-    //      console.log("点击准备或开始")
-    //      const userId = CurrUserManager.getInstance().currentUserId;
-    //      const room = RoomManager.getRoom();
-    //      RoomManager.ready(userId);
-    //      const flag = await RoomManager.isAllReady(userId);
-        
-    //      if(flag){
-    //         RoomManager.settle();
-    //         console.log("完成一局，进入下一局");
-    //         await PaiJiuUtil.wait(this, 2);
-    //         UIManager.instance.setStartBtnStatus(true);
-    //      }
-    // }
-
      private async onStartBtnClick(){
          console.log("点击准备");
          const roomId = ClientRoomManager.instance.getRoomId();
-
          WsClient.instance.send(Cmd.READY, {
             roomId: roomId
          });
@@ -151,16 +132,28 @@ export default class UIManager extends cc.Component {
     }
 
     
-     public onSelectChip(chip: number) {
-            if(this.betAreaNode){
-                const betArea = this.betAreaNode.getComponent(BetArea);
+    public onSelectChip(chip: number, seatId: number) {
+        const betArea = this.betContainer.getComponent(BetArea);
+         const seatComponen = SeatComponentManager.getInstance().seatComponentList.find(s => s["seatData"].id === seatId);
+        if(seatComponen){
+            // 起点：座位世界坐标
+            const worldStartPos = seatComponen.node.convertToWorldSpaceAR(cc.v2(0, 0));
+            betArea.addChip(chip, seatId, worldStartPos);
+        }
+        
+    }
+    
 
-                
-                const localStartPos = cc.v2(0, 0);
-                const localEndPos = cc.v2(0, 200);
-                betArea.addChip(chip, localStartPos, localEndPos);
-                this.node.active = false;
-            }
+    public clearTable(){
+         // 清理发牌区
+         const paiJiuTable = UIManager.instance.getTableNode().getComponent("PaiJiuTable");
+         paiJiuTable.clearTable();
+         // 清理筹码区
+         if(ClientRoomManager.instance.getRoomState() === RoomState.WAIT || ClientRoomManager.instance.getRoomState() === RoomState.READY){
+             const betArea = this.betContainer.getComponent(BetArea);
+             betArea.clearChips(this.seats);
+             console.log("清理筹码区")
+         }
     }
 
 

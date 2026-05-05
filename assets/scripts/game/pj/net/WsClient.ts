@@ -1,8 +1,6 @@
 const { ccclass } = cc._decorator;
 import ClientRoomManager from "../room/ClientRoomManager";
 import {Cmd} from "../enum/Cmd";
-import {RoomState} from "../room/RoomState";
-import UIManager from "../ui/UIManager";
 @ccclass
 export default class WsClient {
     
@@ -121,7 +119,8 @@ export default class WsClient {
         try {
             msg = JSON.parse(text);
         } catch (e) {
-            cc.error("消息解析失败:", text);
+            console.error("解析JSON失败");
+            console.error(text)
             return;
         }
 
@@ -130,7 +129,7 @@ export default class WsClient {
         }
        
         if (msg.code !== 0) {
-            cc.warn("服务端错误:", msg.cmd, msg.code, msg.msg);
+            console.error("服务端错误:", msg.cmd, msg.code, msg.msg);
             return;
         }
 
@@ -175,7 +174,7 @@ export default class WsClient {
                 ClientRoomManager.instance.settle(msg.data);
                 break;   
             case Cmd.NEXT_ROUND_RESULT:
-                ClientRoomManager.instance.settle(msg.data);
+                ClientRoomManager.instance.nextRound(msg.data);
                 break;    
             case Cmd.PONG:
                 break;
