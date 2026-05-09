@@ -120,6 +120,8 @@ export default class UIManager extends cc.Component {
         this.seats.push({ x : -400, y : -380, id:  7});
     }
 
+
+
     public getSeat() : { x : number, y : number, id:  number }[] {
         return this.seats;
     }
@@ -151,8 +153,10 @@ export default class UIManager extends cc.Component {
          // 清理筹码区
          if(ClientRoomManager.instance.getRoomState() === RoomState.WAIT || ClientRoomManager.instance.getRoomState() === RoomState.READY){
              const betArea = this.betContainer.getComponent(BetArea);
-             betArea.clearChips(this.seats);
-             console.log("清理筹码区")
+             if(betArea){
+                betArea.clearChips(this.seats);
+                console.log("清理筹码区")
+             }
          }
     }
 

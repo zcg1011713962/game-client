@@ -1,12 +1,9 @@
 const { ccclass, property } = cc._decorator;
 import CursorManager from "./common/CursorManager";
-import RoomManager from "./room/RoomManager";
-import { UserInfo } from "./user/UserInfo";
-import CurrUserManager from "./user/CurrUserManager";
-import UIManager from "./ui/UIManager";
 import GameRes from "./GameRes";
 import WsClient from "./net/WsClient";
 import {Cmd} from "./enum/Cmd";
+import {SceneData, SceneUtil} from "../../util/SceneUtil";
 
 @ccclass
 export default class Game extends cc.Component {
@@ -37,14 +34,16 @@ export default class Game extends cc.Component {
 
 
     async start() {
-        const token = this.getQuery("token");
-        const roomId = this.getQuery("roomId");
-
-        await this.initTable();
-        const url = "ws://127.0.0.1:19001/ws";
-        await WsClient.instance.connectAsync(url, token);
-        // 进房
-        WsClient.instance.send(Cmd.ENTER_ROOM, {roomId: roomId});
+        const data = SceneData.getData<any>();
+        const token = data.token;
+        const roomId = data.roomId;
+        if(token && roomId){
+            await this.initTable();
+            const url = "ws://127.0.0.1:19001/ws";
+            await WsClient.instance.connectAsync(url, token);
+            // 进房
+            WsClient.instance.send(Cmd.ENTER_ROOM, {roomId: roomId});
+        }
     }
 
     async initTable() {
