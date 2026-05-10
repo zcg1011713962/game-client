@@ -7,17 +7,7 @@ export interface User {
     /**
      * 用户ID
      */
-    id: number;
-
-    /**
-     * 账号
-     */
-    username: string;
-
-    /**
-     * 密码
-     */
-    pwd: string;
+    userId: number;
 
     /**
      * 昵称
@@ -33,4 +23,8 @@ export interface User {
      * 金币
      */
     gold: number;
+    /**
+     * token
+     */
+    token: string;
 }

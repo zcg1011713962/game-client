@@ -1,40 +1,28 @@
 const { ccclass, property } = cc._decorator;
-import CursorManager from "./common/CursorManager";
 import GameRes from "./GameRes";
 import WsClient from "./net/WsClient";
 import {Cmd} from "./enum/Cmd";
 import {SceneData, SceneUtil} from "../../util/SceneUtil";
+import ClientRoomManager from "./room/ClientRoomManager";
 
 @ccclass
 export default class Game extends cc.Component {
-
-    private cursorNode: cc.Node = null;
-    private cursorOkNode: cc.Node = null;
-    private canvasNode: cc.Node = null;
     private seatContainerNode: cc.Node = null;
-    
-
+    private destroyed: boolean = false;
     onLoad () {
         console.log("Game onLoad");
-        this.disableVConsole();
-
-        this.canvasNode = cc.find("Canvas");
-        this.cursorNode = cc.find("Canvas/CursorLayer/Hand");
-        this.cursorOkNode = cc.find("Canvas/CursorLayer/Hand_ok");
         this.seatContainerNode = cc.find("Canvas/MainLayout/Table/SeatContainer");
-        if (!this.cursorNode) {
-            cc.error("找不到 Hand 节点！");
-            return;
-        }
-        CursorManager.init(this.canvasNode, this.cursorNode, this.cursorOkNode);
-        // 鼠标移动手势
-        this.canvasNode.on(cc.Node.EventType.MOUSE_MOVE, CursorManager.onMove, CursorManager);
-        this.node.on(cc.Node.EventType.MOUSE_DOWN, this.onClick, this);
+        //this.node.on(cc.Node.EventType.MOUSE_DOWN, this.onClick, this);
      }
 
 
     async start() {
         const data = SceneData.getData<any>();
+        if(!data){
+            // 切换到大厅场景
+            SceneUtil.loadScene("login", null);
+            return;
+        }
         const token = data.token;
         const roomId = data.roomId;
         if(token && roomId){
@@ -43,6 +31,8 @@ export default class Game extends cc.Component {
             await WsClient.instance.connectAsync(url, token);
             // 进房
             WsClient.instance.send(Cmd.ENTER_ROOM, {roomId: roomId});
+        }else{
+            console.log("进入游戏失败", token, roomId);
         }
     }
 
@@ -59,47 +49,17 @@ export default class Game extends cc.Component {
     private onClick(event: cc.Event.EventMouse){
         const worldPos = event.getLocation(); // 世界坐标
         console.log("世界坐标:", worldPos);
-
+    }
+   
+    protected onDestroy(): void {
+        if(!this.destroyed){
+            this.destroyed = true;
+            console.log("game onDestroy")
+            WsClient.instance.disconnect();
+            ClientRoomManager.instance.cleanRoom();
+        }
+        
     }
     
-    disableVConsole(){
-        (function () {
-        const w: any = window;
-
-        // 1. 干掉已存在
-        if (w.vConsole) {
-            try { w.vConsole.destroy(); } catch (e) {}
-            w.vConsole = null;
-        }
-
-        // 2. 删DOM
-        const el = document.getElementById('__vconsole');
-        if (el) el.remove();
-
-        // 3. 拦截未来创建
-        Object.defineProperty(w, "VConsole", {
-            configurable: true,
-            get() {
-                return function () {
-                    return { destroy() {} };
-                };
-            }
-        });
-        })();
-    }
-
-    private getQuery(name: string): string {
-        const query = window.location.search.substring(1);
-        const arr = query.split("&");
-
-        for (let i = 0; i < arr.length; i++) {
-            const kv = arr[i].split("=");
-            if (kv[0] === name) {
-                return decodeURIComponent(kv[1] || "");
-            }
-        }
-
-        return "";
-    }
 
 }

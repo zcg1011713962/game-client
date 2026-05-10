@@ -43,9 +43,16 @@ export default class WsClient {
             };
 
             this.ws.onclose = () => {
+                console.log("WebSocket断开连接");
                 this.stopHeartbeat();
             };
         });
+    }
+
+    public disconnect(){
+        if(this.ws){
+            this.ws.close();
+        }
     }
 
     private reconnect() {
@@ -155,6 +162,13 @@ export default class WsClient {
                 break;
             case Cmd.PLAYER_READY:
                 ClientRoomManager.instance.applyPlayerReady(msg.data);
+                break;
+             case Cmd.CANCEL_READY_RESULT:
+                cc.log("自己取消准备成功");
+                 ClientRoomManager.instance.selfCancelReadyOk(msg.data);
+                break;
+            case Cmd.CANCEL_PLAYER_READY:
+                ClientRoomManager.instance.applyCancelPlayerReady(msg.data);
                 break;
             case Cmd.GAME_START:
                 console.log("game start", msg.data)

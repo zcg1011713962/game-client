@@ -7,6 +7,9 @@ import SeatComponentManager from "../seat/SeatComponentManager";
 import WsClient from "../net/WsClient";
 import {Cmd} from "../enum/Cmd";
 import {DelayTaskUtil} from "../util/DelayTaskUtil";
+import SettleManager from "../../../common/SettleManager";
+import CurrUserManager from "../user/CurrUserManager";
+import UserData from "../../../login/entity/UserData";
 
 export interface PlayerDTO {
     userId: number;
@@ -105,10 +108,9 @@ export default class ClientRoomManager {
     private bankerSeat: number = -1;
 
     private players: Map<number, PlayerDTO> = new Map();
-    private seats: Map<string, number> = new Map();
-    private betMap: Map<string, number> = new Map();
-    private cardMap: Map<string, CardInfo[]> = new Map();
-
+    private seats: Record<number, number> = {};
+    private betMap: Record<number, number> = {};
+    private cardMap: Record<number, CardInfo[]> = {};
 
     private constructor() {}
 
@@ -187,8 +189,19 @@ export default class ClientRoomManager {
         seatId: number,
         state: number
     }){
-        this.updatePlayerStatusByUser(UserState.Ready, data.userId);
+        this.updatePlayerStatusByUser(data.state, data.userId);
         this.refreshAllSeatView();
+    }
+
+    public selfCancelReadyOk(data: {
+        roomId: number,
+        userId: number,
+        seatId: number,
+        state: number
+    }){
+        this.updatePlayerStatusByUser(data.state, data.userId);
+        this.refreshAllSeatView();
+        UIManager.instance.setCancelReadyBtnStatus(false);
     }
 
     // 准备通知
@@ -213,6 +226,30 @@ export default class ClientRoomManager {
         }
            // 更新房间状态
         this.setRoomState(RoomState.READY);
+        this.refreshAllSeatView();
+    }
+
+    public applyCancelPlayerReady(data: {
+        roomId: number,
+        userId: number,
+        seatId: number,
+        state: number,
+        roomStatus: number
+    }){
+        const player = this.players.get(data.userId);
+        if (player) {
+            player.state = data.state;
+            player.seatId = data.seatId;
+        } else {
+            this.players.set(data.userId, {
+                userId: data.userId,
+                seatId: data.seatId,
+                state: data.state,
+                online: true
+            });
+        }
+        // 更新房间状态
+        this.setRoomState(data.roomStatus);
         this.refreshAllSeatView();
     }
 
@@ -281,7 +318,13 @@ export default class ClientRoomManager {
                     seatComponen.setResultStatusView(p.win);
                 }
             }
-            console.log("结算:", p.userId, p.winAmount, p.afterGold);
+            const user = UserData.get();
+            if(user){
+                console.log("结算:", p.userId, p.winAmount, p.afterGold, "self:", user.userId);
+                if(p.userId === user.userId){
+                    SettleManager.show(p.win, p.winAmount, "");
+                }
+            }
          });
         }
         
@@ -377,6 +420,14 @@ export default class ClientRoomManager {
         return Array.from(this.players.values()).filter(p => p.seatId > -1);
     }
 
+    public getPlayerStatusByUserId(userId: number): number {
+        const player = this.players.get(userId);
+        if(player){
+            return player.state;
+        }
+        return UserState.Idle;
+    }
+
     private refreshAllSeatView() {
         // 更新非空闲玩家座位
         const seats: number[] = [];
@@ -396,8 +447,12 @@ export default class ClientRoomManager {
         });
         // 更新空闲座位
         SeatComponentManager.getInstance().seatComponentList.forEach(s =>{
-            if(!seats.includes(s["seatData"].id)){
-                 SeatManager.refreshSeat(s["seatData"].id, null);
+            if(s && s["seatData"] && !seats.includes(s["seatData"].id)){
+                if(s["seatData"].id !== undefined && s["seatData"].id !== null){
+                    SeatManager.refreshSeat(s["seatData"].id, null);
+                }else{
+                    console.error("sssssss null", s["seatData"], SeatComponentManager.getInstance().seatComponentList);
+                }
             }
         })
     }
@@ -455,6 +510,22 @@ export default class ClientRoomManager {
             bankerSeat: snapshot.bankerSeat,
             playerCards
         };
+    }
+
+
+    public cleanRoom(){
+ 
+        this.players.clear();
+        this.betMap = {};
+        this.seats = {};
+        this.cardMap = {};
+        this.roundId = -1;
+        this.ownerUserId = -1;
+        this.roomId =-1;
+        this.myUserId = -1;
+        this.mySeatId = -1;
+        this.roomState = RoomState.WAIT;
+        this.bankerSeat = -1;
     }
 
 

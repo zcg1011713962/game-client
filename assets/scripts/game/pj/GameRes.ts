@@ -1,8 +1,9 @@
+import SettleManager from "../../common/SettleManager";
 export default class GameRes {
     private static _instance: GameRes = null;
     public chipPrefab: cc.Prefab = null;
     public chipImgMap: { [key: string]: cc.SpriteFrame } = {};
-
+    public settlePrefab: cc.Prefab = null;
 
     public static get instance(): GameRes {
         if (!this._instance) {
@@ -16,9 +17,28 @@ export default class GameRes {
     public async preload() {
         await Promise.all([
             this.loadChipPrefab(),
-            this.loadChipImgs()
+            this.loadChipImgs(),
+            this.loadSettlePrefab()
         ]);
+        SettleManager.init(this.settlePrefab);
     }
+
+    private loadSettlePrefab(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            cc.resources.load("prefabs/SettlePopup", cc.Prefab, (err, prefab) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                this.settlePrefab = prefab;
+                console.log("结算预制体加载完成");
+                resolve();
+            });
+        });
+    }
+
+    
 
     private loadChipPrefab(): Promise<void> {
         return new Promise((resolve, reject) => {

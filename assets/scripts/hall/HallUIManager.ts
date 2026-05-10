@@ -1,5 +1,6 @@
 
 const {ccclass, property} = cc._decorator;
+import MouseCursorManager from "../common/MouseCursorManager";
 
 @ccclass
 export default class HallUIManager extends cc.Component {
@@ -20,8 +21,6 @@ export default class HallUIManager extends cc.Component {
         this.intGameCardPos();
     }
 
-
-
      public intGameCardPos(){
         this.gameCardPos = [];
         // 设置座位坐标
@@ -34,6 +33,8 @@ export default class HallUIManager extends cc.Component {
         return this.gameCardPos;
     }
 
+
+ 
 
     public setCardIconNameView(labelNode: cc.Node, name : string) {
         const label = labelNode.getComponent(cc.Label);

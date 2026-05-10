@@ -87,6 +87,7 @@ export default class SeatComponent extends cc.Component {
     
         if(userId === ClientRoomManager.instance.getMyUserId()){
             UIManager.instance.setStartBtnStatus(false);
+            UIManager.instance.setCancelReadyBtnStatus(false);
         }
 
         switch (state) {
@@ -102,6 +103,9 @@ export default class SeatComponent extends cc.Component {
                 }
                 break;
             case UserState.Ready:
+                if (userId === ClientRoomManager.instance.getMyUserId()) {
+                    UIManager.instance.setCancelReadyBtnStatus(true);
+                }
                 this.setSetOut(true);
                 this.setStautsReady(1);
                 break;

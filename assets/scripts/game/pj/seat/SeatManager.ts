@@ -29,6 +29,7 @@ export default class SeatManager extends cc.Component {
         await this.loadAvatarImg();
         // 初始化数据
         this.initData();
+        console.log("座位数据初始完毕");
     }
 
 
@@ -67,6 +68,7 @@ export default class SeatManager extends cc.Component {
  
     private initData() {
         const seats = UIManager.instance.getSeat();
+        SeatComponentManager.getInstance().seatComponentDataList = [];
         for (let i = 0; i < seats.length; i++) {
             SeatComponentManager.getInstance().seatComponentDataList.push({
                 id: seats[i].id,
@@ -89,6 +91,7 @@ export default class SeatManager extends cc.Component {
         }
         this.seatContainerNode.removeAllChildren();
 
+        SeatComponentManager.getInstance().seatComponentList = [];
 
         SeatComponentManager.getInstance().seatComponentDataList.forEach((data, i) => {
             const node = cc.instantiate(this.seatPrefab);
@@ -126,15 +129,20 @@ export default class SeatManager extends cc.Component {
      * 刷新单个座位
      */
     public static refreshSeat(seatId: number, userInfo: UserInfo | null) {
-       
-        const seat = SeatComponentManager.getInstance().seatComponentList.find(s => s["seatData"].id === seatId);
-        const data = SeatComponentManager.getInstance().seatComponentDataList.find(s => s.id === seatId);
+        const seatComponentList = SeatComponentManager.getInstance().seatComponentList;
+        const seatComponentDataList = SeatComponentManager.getInstance().seatComponentDataList;
+        if(seatComponentList && seatComponentDataList){
+            const seat = seatComponentList.find(s => s["seatData"].id === seatId);
+            const data = seatComponentDataList.find(s => s.id === seatId);
 
-        if (seat && data) {
-            // 更新座位用户信息
-            data.userInfo = userInfo;
-            seat.setData(data);
+            if (seat && data) {
+                // 更新座位用户信息
+                data.userInfo = userInfo;
+                seat.setData(data);
+            }
         }
+        
+       
     }
 
 

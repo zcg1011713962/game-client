@@ -7,9 +7,9 @@ import { RoomState } from "../room/RoomState";
 import SeatComponentManager from "../seat/SeatComponentManager";
 @ccclass
 export default class UIManager extends cc.Component {
-    private startBtnNode: cc.Node = null;
+    private readyBtnNode: cc.Node = null;
+    private cancelReadyBtn: cc.Node = null;
     private tableNode: cc.Node = null;
-    private topNode: cc.Node = null;
     private chipSelectPanel: cc.Node = null;
     private betContainer: cc.Node = null;
     private seats : { x : number, y : number, id:  number }[] = [];
@@ -23,28 +23,20 @@ export default class UIManager extends cc.Component {
         // 保存单例引用
         UIManager._instance = this;
         this.tableNode = cc.find("Canvas/MainLayout/Table");
-        this.startBtnNode = cc.find("Canvas/MainLayout/Table/Table/StartBtn");
+        this.readyBtnNode = cc.find("Canvas/UI/ReadyBtn");
+        this.cancelReadyBtn = cc.find("Canvas/UI/CancelReadyBtn");
          // 准备按钮点击
-        this.startBtnNode.on(cc.Node.EventType.MOUSE_UP, this.onStartBtnClick, this);
-        this.startBtnNode = cc.find("Canvas/MainLayout/Table/Table/StartBtn");
-        this.topNode = cc.find("Canvas/MainLayout/Top");
+        this.readyBtnNode.on(cc.Node.EventType.MOUSE_UP, this.onReadyBtnClick, this);
+        this.cancelReadyBtn.on(cc.Node.EventType.MOUSE_UP, this.onCancelReadyBtnClick, this);
         this.chipSelectPanel = cc.find("Canvas/MainLayout/Table/ChipSelectPanel");
         this.betContainer = cc.find("Canvas/MainLayout/Table/BetContainer");
         this.setStartBtnStatus(false);
+        this.setCancelReadyBtnStatus(false);
         this.init();
     }
 
     private init(){
          this.intSeatPos();
-         const label1 = this.topNode.getChildByName("label1");
-         const label2 = this.topNode.getChildByName("label2");
-         const label3 = this.topNode.getChildByName("label3");
-         const label4 = this.topNode.getChildByName("label4");
-         const label5 = this.topNode.getChildByName("label5");
-
-        this.setLabelView(label1);
-        this.setLabelView(label3);
-        this.setLabelView(label5);
     }
 
     public getTableNode(){
@@ -53,14 +45,29 @@ export default class UIManager extends cc.Component {
 
     public setStartBtnStatus(active: boolean) {
         console.log("准备按钮状态", active);
-        this.startBtnNode.active = active;
+        this.readyBtnNode.active = active;
+        const labelNode = this.readyBtnNode.getChildByName("Label");
+        this.setLabelView(labelNode);
+    }
+
+     public setCancelReadyBtnStatus(active: boolean) {
+        console.log("取消准备按钮状态", active);
+        this.cancelReadyBtn.active = active;
+        const labelNode = this.cancelReadyBtn.getChildByName("Label");
+        this.setLabelView(labelNode);
     }
 
 
-     private async onStartBtnClick(){
-         console.log("点击准备");
+     private onReadyBtnClick(){
          const roomId = ClientRoomManager.instance.getRoomId();
          WsClient.instance.send(Cmd.READY, {
+            roomId: roomId
+         });
+    }
+
+    private onCancelReadyBtnClick(){
+         const roomId = ClientRoomManager.instance.getRoomId();
+         WsClient.instance.send(Cmd.CANCEL_READY, {
             roomId: roomId
          });
     }
@@ -72,12 +79,11 @@ export default class UIManager extends cc.Component {
             let outline = labelNode.getComponent(cc.LabelOutline);
             if (!outline) {
                 outline = labelNode.addComponent(cc.LabelOutline);
-                // 黑色描边
-                outline.color = cc.Color.BLACK;
+                outline.color = new cc.Color(255, 240, 180);
                 // 宽度
-                outline.width = 5;
+                outline.width = 2;
             }
-            label.node.color = cc.Color.YELLOW; 
+            label.node.color = new cc.Color(90, 40, 0);
         }
     }
 
@@ -136,11 +142,15 @@ export default class UIManager extends cc.Component {
     
     public onSelectChip(chip: number, seatId: number) {
         const betArea = this.betContainer.getComponent(BetArea);
-         const seatComponen = SeatComponentManager.getInstance().seatComponentList.find(s => s["seatData"].id === seatId);
-        if(seatComponen){
-            // 起点：座位世界坐标
-            const worldStartPos = seatComponen.node.convertToWorldSpaceAR(cc.v2(0, 0));
-            betArea.addChip(chip, seatId, worldStartPos);
+        if(betArea){
+            const seatComponen = SeatComponentManager.getInstance().seatComponentList.find(s => s["seatData"].id === seatId);
+            if(seatComponen){
+                // 起点：座位世界坐标
+                const worldStartPos = seatComponen.node.convertToWorldSpaceAR(cc.v2(0, 0));
+                betArea.addChip(chip, seatId, worldStartPos);
+            }
+        }else{
+            console.error("betArea节点为空");
         }
         
     }

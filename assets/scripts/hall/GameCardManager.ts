@@ -2,6 +2,8 @@ import HallUIManager from "./HallUIManager";
 import CameCardComponentManager from "./CameCardComponentManager";
 import GameCardComponent from "./GameCardComponent";
 import {SceneUtil} from "../util/SceneUtil";
+import UserData from "../login/entity/UserData";
+import RoomTopBar from "../game/top/RoomTopBar";
 const {ccclass, property} = cc._decorator;
 
 
@@ -115,11 +117,14 @@ export default class GameCardManager extends cc.Component {
 
     public onGameCardClick(id : number){
         console.log("onGameCardClick");
-        // 切换到游戏场景
-        SceneUtil.loadScene(`game_${id}`, {
-            roomId: 325689,
-            token: ""
-        });
+        const guest = UserData.get();
+        if(guest){
+            // 切换到游戏场景
+            SceneUtil.loadScene(`game_${id}`, {
+                roomId: 325689,
+                token: guest.token
+            });
+        }
     }
 
 
