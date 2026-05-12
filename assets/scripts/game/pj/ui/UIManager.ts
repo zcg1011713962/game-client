@@ -54,7 +54,7 @@ export default class UIManager extends cc.Component {
         this.setLabelView(labelNode);
     }
 
-     public setCancelReadyBtnStatus(active: boolean) {
+    public setCancelReadyBtnStatus(active: boolean) {
         console.log("取消准备按钮状态", active);
         this.cancelReadyBtn.active = active;
         const labelNode = this.cancelReadyBtn.getChildByName("Label");
@@ -62,7 +62,7 @@ export default class UIManager extends cc.Component {
     }
 
 
-     private onReadyBtnClick(){
+    public onReadyBtnClick(){
          const roomId = ClientRoomManager.instance.getRoomId();
          WsClient.instance.send(Cmd.READY, {
             roomId: roomId

@@ -56,7 +56,7 @@ export default class SeatComponent extends cc.Component {
      */
     private updateView() {
         const roomState = ClientRoomManager.instance.getRoomState();
-        console.log("更新UI用户信息", this.seatData.id, this.seatData.userInfo, "roomStatus",  roomState);
+        //console.log("更新UI用户信息", this.seatData.id, this.seatData.userInfo, "roomStatus",  roomState);
         this.node.active = true;
         // 清理 UI
         // 普通座位

@@ -17,6 +17,8 @@ export default class SettleManager {
     public static show(
         win: number,
         gold: number,
+        afterGold: number,
+        cardTypeName : string,
         detail: string = ""
     ) {
         if (!this.settlePrefab) {
@@ -32,8 +34,8 @@ export default class SettleManager {
 
         const node = cc.instantiate(this.settlePrefab);
         canvas.addChild(node);
-        node.zIndex = 98;
+        node.zIndex = 998;
         const comp = node.getComponent(SettlePopup);
-        comp.show(win, gold, detail);
+        comp.show(win, gold, afterGold, cardTypeName , detail);
     }
 }

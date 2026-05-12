@@ -26,10 +26,11 @@ export default class HallTopBar extends cc.Component {
         const user = UserData.get();
         if(user){
             console.log(nameLabelNode, idLabelNode, coinValNode)
-            console.log("update top bar", user, user.nickname);
             this.setNickNameView(nameLabelNode, user.nickname);
             this.setIdValView(idLabelNode, String(user.userId));
             this.setGoldView(coinValNode, String(user.gold));
+
+            console.log("update top bar", user, user.nickname);
         }
        
     }

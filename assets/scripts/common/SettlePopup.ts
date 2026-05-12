@@ -1,3 +1,5 @@
+import UIManager from "../game/pj/ui/UIManager";
+
 const { ccclass, property } = cc._decorator;
 export enum SettleResult {
     LOSE = 0,
@@ -20,10 +22,13 @@ export default class SettlePopup extends cc.Component {
     private titleDraw: cc.Node = null;
 
     private goldLabel: cc.Label = null;
+    private totalGoldLabel: cc.Label = null;
 
-    private detailLabel: cc.Label = null;
+    private label1: cc.Label = null;
+    private label2: cc.Label = null;
 
     private btnClose: cc.Node = null;
+    private btnCon: cc.Node = null;
 
     private finalGold: number = 0;
 
@@ -34,13 +39,17 @@ export default class SettlePopup extends cc.Component {
         this.titleLose = this.panel.getChildByName("titleLose");
         this.titleDraw = this.panel.getChildByName("titleDraw");
         this.goldLabel = this.panel.getChildByName("goldLabel").getComponent(cc.Label);
-        this.detailLabel = this.panel.getChildByName("detailLabel").getComponent(cc.Label);
+        this.totalGoldLabel = this.panel.getChildByName("totalGoldLabel").getComponent(cc.Label);
+        this.label1 = this.panel.getChildByName("px").getChildByName("label1").getComponent(cc.Label);
+        this.label2 = this.panel.getChildByName("px").getChildByName("label2").getComponent(cc.Label);
         this.btnClose = this.panel.getChildByName("btnClose");
+        this.btnCon = this.panel.getChildByName("btnCon");
 
         this.btnClose.on(cc.Node.EventType.TOUCH_END, this.close, this);
+        this.btnCon.on(cc.Node.EventType.TOUCH_END, this.continueGame, this);
     }
 
-    public show(win: number, gold: number, detail: string = "") {
+    public show(win: number, gold: number, afterGold: number, cardTypeName: string="" , detail: string = "") {
         this.finalGold = gold;
 
         this.node.active = true;
@@ -66,7 +75,9 @@ export default class SettlePopup extends cc.Component {
         }
 
         this.goldLabel.string = "0";
-        this.detailLabel.string = detail;
+        this.label1.string = cardTypeName;
+        this.label2.string = detail;
+        this.totalGoldLabel.string = `总金币: ${afterGold}`;
         this.btnClose.active = false;
 
         cc.tween(this.mask)
@@ -84,7 +95,6 @@ export default class SettlePopup extends cc.Component {
 
     private playGoldAnim() {
         const obj = { value: 0 };
-
         cc.tween(obj)
             .to(0.8, { value: this.finalGold }, {
                 progress: (start, end, current, ratio) => {
@@ -95,7 +105,7 @@ export default class SettlePopup extends cc.Component {
             })
             .call(() => {
                 this.goldLabel.string =
-                    this.finalGold > 0 ? `+${this.finalGold}` : `${this.finalGold}`;
+                    this.finalGold > 0 ? `+ ${this.finalGold}` : `${this.finalGold}`;
 
                 this.btnClose.active = true;
                 this.btnClose.scale = 0.6;
@@ -115,5 +125,10 @@ export default class SettlePopup extends cc.Component {
                 this.node.destroy();
             })
             .start();
+    }
+
+    private continueGame(){
+        this.close();
+        UIManager.instance.onReadyBtnClick();
     }
 }

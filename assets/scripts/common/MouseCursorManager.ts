@@ -31,6 +31,7 @@ export default class MouseCursorManager extends cc.Component {
         if (cc.sys.isBrowser && cc.game.canvas) {
             cc.game.canvas.style.cursor = "none";
         }
+        this.node.zIndex = 999;
     }
     
     public show() {

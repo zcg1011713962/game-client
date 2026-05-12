@@ -2,6 +2,7 @@ const { ccclass } = cc._decorator;
 import ClientRoomManager from "../room/ClientRoomManager";
 import {Cmd} from "../enum/Cmd";
 import ToastManager from "../../../common/ToastManager";
+import { SceneUtil } from "../../../util/SceneUtil";
 @ccclass
 export default class WsClient {
     
@@ -139,6 +140,10 @@ export default class WsClient {
         if (msg.code !== 0) {
             console.error("服务端错误:", msg.cmd, msg.code, msg.msg);
             ToastManager.show(msg.msg)
+            if(msg.code === 2002){
+                SceneUtil.loadScene("login")
+                return;
+            }
             return;
         }
 
@@ -160,14 +165,14 @@ export default class WsClient {
                 break;    
             case Cmd.READY_RESULT:
                 cc.log("自己准备成功");
-                 ClientRoomManager.instance.selfReadyOk(msg.data);
+                ClientRoomManager.instance.selfReadyOk(msg.data);
                 break;
             case Cmd.PLAYER_READY:
                 ClientRoomManager.instance.applyPlayerReady(msg.data);
                 break;
              case Cmd.CANCEL_READY_RESULT:
                 cc.log("自己取消准备成功");
-                 ClientRoomManager.instance.selfCancelReadyOk(msg.data);
+                ClientRoomManager.instance.selfCancelReadyOk(msg.data);
                 break;
             case Cmd.CANCEL_PLAYER_READY:
                 ClientRoomManager.instance.applyCancelPlayerReady(msg.data);

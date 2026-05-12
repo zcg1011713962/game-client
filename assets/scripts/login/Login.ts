@@ -30,6 +30,7 @@ export default class Login extends cc.Component {
         await this.loadToastPrefab();
         ToastManager.init(this.toastPrefab);
         console.log("Login加载完毕");
+        this.init();
     }
 
     public init(){
@@ -59,20 +60,23 @@ export default class Login extends cc.Component {
             },
             (err, res) => {
                 if (err) {
-                    console.error("请求失败:", err);
+                    ToastManager.show("请检查网络");
                     return;
                 }
 
                 if (!res) {
                     return;
                 }
-
+                if(res.code === 2001){ 
+                    this.autoLogin({userId: -1, token: ""});
+                    return;
+                }
                 // 服务端业务错误
                 if (res.code !== 0) {
+                    ToastManager.show("服务器异常");
                     console.error("登录失败:", res.msg);
                     return;
                 }
-
                 // 用户数据
                 const user = res.data;
                 if(user){

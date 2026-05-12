@@ -322,9 +322,9 @@ export default class ClientRoomManager {
             }
             const user = UserData.get();
             if(user){
-                console.log("结算:", p.userId, p.winAmount, p.afterGold, "self:", user.userId);
+                console.log("结算:", p.userId, "输赢:", p.winAmount);
                 if(p.userId === user.userId){
-                    SettleManager.show(p.win, p.winAmount, "");
+                    SettleManager.show(p.win, p.winAmount, p.afterGold, "至尊宝", "通杀");
                 }
             }
          });
@@ -399,12 +399,12 @@ export default class ClientRoomManager {
     
 
     public canBet(): boolean {
-        return this.roomState === RoomState.BET && this.mySeatId >= 0;
+        return this.roomState === RoomState.BET && this.mySeatId >= 0 && this.bankerSeat > -1 && this.bankerSeat !== this.mySeatId;
     }
 
     private refreshBetUI() {
         const canBet = this.canBet();
-        console.log("是否可以下注", canBet, "roomState", this.roomState, "mySeatId", this.mySeatId);
+        //console.log("是否可以下注:", canBet, "roomState:", this.roomState, "mySeatId:", this.mySeatId, "bankerSeat:", this.bankerSeat);
         UIManager.instance.setBetPanelVisible(canBet);
     }
 

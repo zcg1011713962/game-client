@@ -2,7 +2,6 @@ const { ccclass, property } = cc._decorator;
 import UserData from "../../login/entity/UserData";
 import {SceneData, SceneUtil} from "../../util/SceneUtil";
 import ClientRoomManager from "../pj/room/ClientRoomManager";
-import UIManager from "../pj/ui/UIManager";
 import { UserState } from "../pj/user/UserInfo";
 import ToastManager from "../../common/ToastManager";
 import WsClient from "../pj/net/WsClient";
