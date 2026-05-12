@@ -5,6 +5,8 @@ import {Cmd} from "../enum/Cmd";
 import BetArea from "../chip/BetArea";
 import { RoomState } from "../room/RoomState";
 import SeatComponentManager from "../seat/SeatComponentManager";
+import {RoomBarData, RooomTopBar} from "../../top/RoomTopBar";
+import PaiJiuTable from "../PaiJiuTable";
 @ccclass
 export default class UIManager extends cc.Component {
     private readyBtnNode: cc.Node = null;
@@ -12,6 +14,7 @@ export default class UIManager extends cc.Component {
     private tableNode: cc.Node = null;
     private chipSelectPanel: cc.Node = null;
     private betContainer: cc.Node = null;
+    private rooomTopBarNode: cc.Node = null;
     private seats : { x : number, y : number, id:  number }[] = [];
 
     private static _instance: UIManager = null;
@@ -30,6 +33,7 @@ export default class UIManager extends cc.Component {
         this.cancelReadyBtn.on(cc.Node.EventType.MOUSE_UP, this.onCancelReadyBtnClick, this);
         this.chipSelectPanel = cc.find("Canvas/MainLayout/Table/ChipSelectPanel");
         this.betContainer = cc.find("Canvas/MainLayout/Table/BetContainer");
+        this.rooomTopBarNode = cc.find("Canvas/MainLayout/RoomTopBar");
         this.setStartBtnStatus(false);
         this.setCancelReadyBtnStatus(false);
         this.init();
@@ -158,8 +162,11 @@ export default class UIManager extends cc.Component {
 
     public clearTable(){
          // 清理发牌区
-         const paiJiuTable = UIManager.instance.getTableNode().getComponent("PaiJiuTable");
-         paiJiuTable.clearTable();
+         const tableNode = UIManager.instance.getTableNode();
+         if(tableNode){
+            const paiJiuTableNode = tableNode.getComponent(PaiJiuTable);
+            paiJiuTableNode.clearTable();
+         }
          // 清理筹码区
          if(ClientRoomManager.instance.getRoomState() === RoomState.WAIT || ClientRoomManager.instance.getRoomState() === RoomState.READY){
              const betArea = this.betContainer.getComponent(BetArea);
@@ -168,6 +175,17 @@ export default class UIManager extends cc.Component {
                 console.log("清理筹码区")
              }
          }
+    }
+
+    public updateTopView(roomId: number, curPlayer: number, baseScore: number){
+        const rooomTopBar : RooomTopBar = this.rooomTopBarNode.getComponent(RooomTopBar);
+        const roomBarData: RoomBarData = {
+            roomId: roomId,
+            curPlayer: curPlayer,
+            baseScore: baseScore,
+        };
+        console.log("update RoomTopBar", roomBarData);
+        rooomTopBar.setRoomInfo(roomBarData);
     }
 
 

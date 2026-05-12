@@ -5,6 +5,8 @@ import ClientRoomManager from "../pj/room/ClientRoomManager";
 import UIManager from "../pj/ui/UIManager";
 import { UserState } from "../pj/user/UserInfo";
 import ToastManager from "../../common/ToastManager";
+import WsClient from "../pj/net/WsClient";
+import { Cmd } from "../pj/enum/Cmd";
 
 export interface RoomBarData {
     roomId: number | string;
@@ -13,7 +15,7 @@ export interface RoomBarData {
 }
 
 @ccclass
-export default class RooomTopBar extends cc.Component {
+export class RooomTopBar extends cc.Component {
 
     private btnBack: cc.Node = null;
 
@@ -44,22 +46,9 @@ export default class RooomTopBar extends cc.Component {
         this.bindBtn(this.btnRule, this.onRuleClick);
         this.bindBtn(this.btnSetting, this.onSettingClick);
 
-        const user = UserData.get();
-        const data = SceneData.getData<any>();
-        if(user && data){
-            const roomBarData: RoomBarData = {
-                roomId: data.roomId,
-                curPlayer: 1,
-                baseScore: 10,
-            };
-            console.log("init RoomTopBar", roomBarData);
-            this.init(roomBarData);
-        }
     }
 
-    public init(data: RoomBarData) {
-        this.setRoomInfo(data);
-    }
+ 
 
     public setRoomInfo(data: RoomBarData) {
         this.setText(
@@ -96,13 +85,14 @@ export default class RooomTopBar extends cc.Component {
         const user = UserData.get();
         if(user){
             const userStatus = ClientRoomManager.instance.getPlayerStatusByUserId(user.userId);
+            const roomId = ClientRoomManager.instance.getRoomId();
             if(userStatus === UserState.Ready || userStatus === UserState.Playing){
                 console.log("当前状态不允许返回 status:", userStatus);
                 ToastManager.show("非空闲状态不允许返回");
                 return;
             }
             // 返回
-            UIManager.instance.clearTable();
+            WsClient.instance.send(Cmd.LEAVE_ROOM, {roomId: roomId});
             cc.director.loadScene("hall");
         }
     }

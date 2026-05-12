@@ -24,15 +24,14 @@ export default class Game extends cc.Component {
             return;
         }
         const token = data.token;
-        const roomId = data.roomId;
-        if(token && roomId){
+        if(token){
             await this.initTable();
             const url = "ws://127.0.0.1:19001/ws";
             await WsClient.instance.connectAsync(url, token);
             // 进房
-            WsClient.instance.send(Cmd.ENTER_ROOM, {roomId: roomId});
+            WsClient.instance.send(Cmd.FREE_MATCH, "");
         }else{
-            console.log("进入游戏失败", token, roomId);
+            console.log("进入游戏失败", token);
         }
     }
 
@@ -55,7 +54,7 @@ export default class Game extends cc.Component {
         if(!this.destroyed){
             this.destroyed = true;
             console.log("game onDestroy")
-            WsClient.instance.disconnect();
+            SceneData.clear();
             ClientRoomManager.instance.cleanRoom();
         }
         

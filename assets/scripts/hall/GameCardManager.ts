@@ -121,7 +121,7 @@ export default class GameCardManager extends cc.Component {
         if(guest){
             // 切换到游戏场景
             SceneUtil.loadScene(`game_${id}`, {
-                roomId: 325689,
+                roomId: null,
                 token: guest.token
             });
         }

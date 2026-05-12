@@ -26,6 +26,7 @@ export interface RoomSnapshot {
     roomId: number;
     userId: number;
     roomState: number;
+    baseScore: number;
 
     players: PlayerDTO[];
 
@@ -126,6 +127,7 @@ export default class ClientRoomManager {
         this.betMap = data.betMap;
         this.cardMap = data.cardMap;
         
+        UIManager.instance.updateTopView(data.roomId, data.players.length, data.baseScore);
         this.updatePlayer(data.userId, data.players);
        
         // 更新房间状态
@@ -349,7 +351,19 @@ export default class ClientRoomManager {
         this.refreshAllSeatView();
     }
 
+    public leaveRoom(data : any){
+        WsClient.instance.close();
+    }
 
+ 
+    public playerLeaveRoom(data: { roomId: number, player: PlayerDTO }) {
+        if (!data || !data.player) {
+            return;
+        }
+        this.players.delete(data.player.userId);
+
+        this.refreshAllSeatView();
+    }
 
     public updatePlayerStatus(status : UserState){
         this.players.forEach(p =>{

@@ -1,6 +1,7 @@
 const { ccclass } = cc._decorator;
 import ClientRoomManager from "../room/ClientRoomManager";
 import {Cmd} from "../enum/Cmd";
+import ToastManager from "../../../common/ToastManager";
 @ccclass
 export default class WsClient {
     
@@ -137,6 +138,7 @@ export default class WsClient {
        
         if (msg.code !== 0) {
             console.error("服务端错误:", msg.cmd, msg.code, msg.msg);
+            ToastManager.show(msg.msg)
             return;
         }
 
@@ -189,7 +191,13 @@ export default class WsClient {
                 break;   
             case Cmd.NEXT_ROUND_RESULT:
                 ClientRoomManager.instance.nextRound(msg.data);
-                break;    
+                break;
+            case Cmd.LEAVE_ROOM_RESULT:
+                ClientRoomManager.instance.leaveRoom(msg.data);
+                break;
+            case Cmd.PLAYER_LEAVE:
+                  ClientRoomManager.instance.playerLeaveRoom(msg.data);
+                break;            
             case Cmd.PONG:
                 break;
             default:

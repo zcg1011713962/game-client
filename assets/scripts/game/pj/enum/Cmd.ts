@@ -10,6 +10,9 @@ export enum Cmd {
     PING = "PING",
     PONG = "PONG",
 
+    CREATE_ROOM = "CREATE_ROOM",
+    FREE_MATCH = "FREE_MATCH",
+
     // 房间
     ENTER_ROOM = "ENTER_ROOM",
     ENTER_ROOM_RESULT = "ENTER_ROOM_RESULT",
@@ -21,6 +24,7 @@ export enum Cmd {
     PLAYER_SIT_DOWN = "PLAYER_SIT_DOWN",
 
     LEAVE_ROOM = "LEAVE_ROOM",
+    LEAVE_ROOM_RESULT = "LEAVE_ROOM_RESULT",
     PLAYER_LEAVE = "PLAYER_LEAVE",
 
     ROOM_INFO = "ROOM_INFO",
