@@ -702,8 +702,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 145.7,
-      "height": 50.4
+      "width": 300,
+      "height": 50
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -714,8 +714,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        -24,
-        110,
+        27.355,
+        111.657,
         0,
         0,
         0,
@@ -754,13 +754,15 @@
     ],
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
-    "_string": "+ 40000",
-    "_N$string": "+ 40000",
-    "_fontSize": 40,
-    "_lineHeight": 40,
+    "_string": "+40000",
+    "_N$string": "+40000",
+    "_fontSize": 50,
+    "_lineHeight": 50,
     "_enableWrapText": true,
-    "_N$file": null,
-    "_isSystemFontUsed": true,
+    "_N$file": {
+      "__uuid__": "cf921c64-1b42-435a-a32f-de6f2a5222bf"
+    },
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_batchAsBitmap": false,
     "_styleFlags": 0,
@@ -1317,7 +1319,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 38,
+      "width": 50,
       "height": 31.5
     },
     "_anchorPoint": {
@@ -1329,7 +1331,7 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        50,
+        63.252,
         26,
         0,
         0,
@@ -1369,13 +1371,13 @@
     ],
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
-    "_string": "111",
-    "_N$string": "111",
+    "_string": "至尊",
+    "_N$string": "至尊",
     "_fontSize": 25,
     "_lineHeight": 25,
     "_enableWrapText": true,
     "_N$file": null,
-    "_isSystemFontUsed": true,
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_batchAsBitmap": false,
     "_styleFlags": 0,

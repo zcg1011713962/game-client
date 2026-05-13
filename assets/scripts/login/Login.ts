@@ -26,7 +26,7 @@ export default class Login extends cc.Component {
         this.guestBtnNode = cc.find("Canvas/LoginPanel/Btn_Guest");
         this.agreementNode = cc.find("Canvas/Agreement");
         // 游客登录点击
-        this.guestBtnNode.on(cc.Node.EventType.MOUSE_DOWN, this.onStartBtnClick, this);
+        this.guestBtnNode.on(cc.Node.EventType.TOUCH_END, this.onStartBtnClick, this);
         await this.loadToastPrefab();
         ToastManager.init(this.toastPrefab);
         console.log("Login加载完毕");
@@ -44,6 +44,7 @@ export default class Login extends cc.Component {
     private onStartBtnClick(){
         const agreementCheck = this.agreementNode.getComponent(AgreementCheck);
         if(!agreementCheck.isChecked()){
+            ToastManager.show("请阅读并勾选协议");
             return;
         }
         const guest = UserData.get();
