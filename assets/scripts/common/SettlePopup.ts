@@ -22,7 +22,6 @@ export default class SettlePopup extends cc.Component {
     private titleDraw: cc.Node = null;
 
     private goldLabel: cc.Label = null;
-    private totalGoldLabel: cc.Label = null;
 
     private label1: cc.Label = null;
     private label2: cc.Label = null;
@@ -39,7 +38,6 @@ export default class SettlePopup extends cc.Component {
         this.titleLose = this.panel.getChildByName("titleLose");
         this.titleDraw = this.panel.getChildByName("titleDraw");
         this.goldLabel = this.panel.getChildByName("goldLabel").getComponent(cc.Label);
-        this.totalGoldLabel = this.panel.getChildByName("totalGoldLabel").getComponent(cc.Label);
         this.label1 = this.panel.getChildByName("px").getChildByName("label1").getComponent(cc.Label);
         this.label2 = this.panel.getChildByName("px").getChildByName("label2").getComponent(cc.Label);
         this.btnClose = this.panel.getChildByName("btnClose");
@@ -77,7 +75,6 @@ export default class SettlePopup extends cc.Component {
         this.goldLabel.string = "0";
         this.label1.string = cardTypeName;
         this.label2.string = detail;
-        this.totalGoldLabel.string = `总金币: ${afterGold}`;
         this.btnClose.active = false;
 
         cc.tween(this.mask)

@@ -66,6 +66,8 @@ export interface SettlePlayerDTO {
     beforeGold: number;
     afterGold: number;
     cards: CardInfo[];
+    cardTypeName: string;
+    settleDesc: string;
 }
 
 export interface SettlePush {
@@ -324,7 +326,7 @@ export default class ClientRoomManager {
             if(user){
                 console.log("结算:", p.userId, "输赢:", p.winAmount);
                 if(p.userId === user.userId){
-                    SettleManager.show(p.win, p.winAmount, p.afterGold, "至尊宝", "通杀");
+                    SettleManager.show(p.win, p.winAmount, p.afterGold, p.cardTypeName, p.settleDesc);
                 }
             }
          });
