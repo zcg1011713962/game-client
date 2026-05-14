@@ -1,4 +1,5 @@
 import ToastView from "./ToastView";
+import UIZOrder from "./ui/UIZOrder";
 
 export default class ToastManager {
 
@@ -24,8 +25,7 @@ export default class ToastManager {
 
         const node = cc.instantiate(this.toastPrefab);
         canvas.addChild(node);
-
-        node.zIndex = 999;
+        node.zIndex = UIZOrder.TOAST;
         node.setPosition(0, 0);
 
         node.getComponent(ToastView).show(msg);

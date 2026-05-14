@@ -277,18 +277,22 @@ export default class ClientRoomManager {
         console.log("游戏开始，进入下注阶段 roomState", this.roomState, "庄家位:", this.bankerSeat);
         this.refreshAllSeatView();
     }
-    // 下注
+      // 下注
     public applyPlayerBet(data: {
         roomId: number,
         userId: number,
         seatId: number,
         betArea: number,
         chip: number,
-        totalBet: number
+        totalBet: number,
+        players: PlayerDTO[]
     }) {
         cc.log("玩家下注通知:", data);
+        this.updatePlayer(data.userId, data.players);
         // 筹码动画
         UIManager.instance.onSelectChip(data.chip, data.seatId);
+        // 更新座位信息
+        this.refreshAllSeatView();
     }
     // 发牌
     public async dealCard(deal : DealCardPush){
@@ -475,7 +479,11 @@ export default class ClientRoomManager {
 
     public selfBetOk(data: {
         roomId: number,
-        roomState: number,
+        userId: number,
+        seatId: number,
+        betArea: number,
+        chip: number,
+        totalBet: number,
         players: PlayerDTO[]
     }){
         UIManager.instance.setBetPanelVisible(false);

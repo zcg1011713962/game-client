@@ -1,4 +1,5 @@
 import SettlePopup from "../common/SettlePopup";
+import UIZOrder from "./ui/UIZOrder";
 
 export default class SettleManager {
 
@@ -34,7 +35,7 @@ export default class SettleManager {
 
         const node = cc.instantiate(this.settlePrefab);
         canvas.addChild(node);
-        node.zIndex = 998;
+        node.zIndex = UIZOrder.POPUP;
         const comp = node.getComponent(SettlePopup);
         comp.show(win, gold, afterGold, cardTypeName , detail);
     }
