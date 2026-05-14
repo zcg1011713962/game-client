@@ -9,7 +9,7 @@ export default class GameCardComponent extends cc.Component {
     private gameCardData: GameCardData = null;
 
     onLoad () {
-        this.node.on(cc.Node.EventType.MOUSE_DOWN, this.onClick, this);
+        this.node.on(cc.Node.EventType.TOUCH_END, this.onClick, this);
     }
 
     public init(gameCardData: GameCardData, bg1Map : { [key: string]: cc.SpriteFrame }, gameIconMap : { [key: string]: cc.SpriteFrame }){

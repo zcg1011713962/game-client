@@ -4,6 +4,7 @@ import WsClient from "./net/WsClient";
 import {Cmd} from "./enum/Cmd";
 import {SceneData, SceneUtil} from "../../util/SceneUtil";
 import ClientRoomManager from "./room/ClientRoomManager";
+import Config from "../../config/Config";
 
 @ccclass
 export default class Game extends cc.Component {
@@ -12,7 +13,7 @@ export default class Game extends cc.Component {
     onLoad () {
         console.log("Game onLoad");
         this.seatContainerNode = cc.find("Canvas/MainLayout/Table/SeatContainer");
-        //this.node.on(cc.Node.EventType.MOUSE_DOWN, this.onClick, this);
+        //this.node.on(cc.Node.EventType.TOUCH_END, this.onClick, this);
      }
 
 
@@ -26,8 +27,7 @@ export default class Game extends cc.Component {
         const token = data.token;
         if(token){
             await this.initTable();
-            const url = "ws://127.0.0.1:19001/ws";
-            await WsClient.instance.connectAsync(url, token);
+            await WsClient.instance.connectAsync(Config.WS_URL, token);
             // 进房
             WsClient.instance.send(Cmd.FREE_MATCH, "");
         }else{

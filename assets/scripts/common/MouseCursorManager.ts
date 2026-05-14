@@ -20,14 +20,16 @@ export default class MouseCursorManager extends cc.Component {
         this.cursorDown = this.node.getChildByName("cursorDown");
 
         if (this.canvasNode) {
-            this.canvasNode.off(cc.Node.EventType.MOUSE_MOVE, this.onMouseMove, this);
-            this.canvasNode.off(cc.Node.EventType.MOUSE_DOWN, this.onMouseDown, this);
-            this.canvasNode.off(cc.Node.EventType.MOUSE_UP, this.onMouseUp, this);
+            this.canvasNode.off(cc.Node.EventType.TOUCH_MOVE, this.onMouseMove, this);
+            this.canvasNode.off(cc.Node.EventType.TOUCH_START, this.onMouseDown, this);
+            this.canvasNode.off(cc.Node.EventType.TOUCH_END, this.onMouseUp, this);
+            this.canvasNode.off(cc.Node.EventType.TOUCH_CANCEL, this.onMouseUp, this);
         }
         this.canvasNode = canvas;
-        this.canvasNode.on(cc.Node.EventType.MOUSE_MOVE, this.onMouseMove, this);
-        this.canvasNode.on(cc.Node.EventType.MOUSE_DOWN, this.onMouseDown, this);
-        this.canvasNode.on(cc.Node.EventType.MOUSE_UP, this.onMouseUp, this);
+        this.canvasNode.on(cc.Node.EventType.TOUCH_MOVE, this.onMouseMove, this);
+        this.canvasNode.on(cc.Node.EventType.TOUCH_START, this.onMouseDown, this);
+        this.canvasNode.on(cc.Node.EventType.TOUCH_END, this.onMouseUp, this);
+        this.canvasNode.on(cc.Node.EventType.TOUCH_CANCEL, this.onMouseUp, this);
         if (cc.sys.isBrowser && cc.game.canvas) {
             cc.game.canvas.style.cursor = "none";
         }

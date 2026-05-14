@@ -30,7 +30,7 @@ export default class SeatComponent extends cc.Component {
 
         this.node.on(cc.Node.EventType.MOUSE_ENTER, this.onEnter, this);
         this.node.on(cc.Node.EventType.MOUSE_LEAVE, this.onLeave, this);
-        this.node.on(cc.Node.EventType.MOUSE_DOWN, this.onClick, this);
+        this.node.on(cc.Node.EventType.TOUCH_END, this.onClick, this);
     }
 
     public init(seatData: SeatData, avatarMap : { [key: string]: cc.SpriteFrame }){

@@ -7,6 +7,7 @@ import { ServerMsg } from "./entity/ServerMsg";
 import {SceneUtil} from "../util/SceneUtil";
 import UserData from "./entity/UserData";
 import ToastManager from "../common/ToastManager";
+import Config from "../config/Config";
 
 export interface LoginData {
     uid: number;
@@ -19,7 +20,6 @@ export default class Login extends cc.Component {
     private agreementNode: cc.Node = null;
     private guestBtnNode : cc.Node = null;
     private toastPrefab: cc.Prefab = null;
-    private apiUrl : String = "http://127.0.0.1:18080/api";
 
 
     async onLoad () { 
@@ -55,7 +55,7 @@ export default class Login extends cc.Component {
         console.log("游客登录");
         // 游客登录
         Http.post<ServerMsg<User>>(
-            `${this.apiUrl}/login/guest`,
+            `${Config.API_URL}/login/guest`,
             {
                 token: guest !== null ? guest.token : "",
             },

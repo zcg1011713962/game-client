@@ -14,7 +14,7 @@ export default class AgreementCheck extends cc.Component {
         this.checkbox = this.node.getChildByName("Checkbox");
         this.onNode = this.checkbox.getChildByName("checkbox_on");
         this.offNode = this.checkbox.getChildByName("checkbox_off");
-        this.checkbox.on(cc.Node.EventType.MOUSE_DOWN, this.onClickAgreement, this);
+        this.checkbox.on(cc.Node.EventType.TOUCH_END, this.onClickAgreement, this);
     }
 
     start() {

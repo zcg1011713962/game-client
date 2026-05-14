@@ -25,6 +25,8 @@ export default class SettlePopup extends cc.Component {
 
     private label1: cc.Label = null;
     private label2: cc.Label = null;
+    private labelDesc1: cc.Node = null;
+    private labelDesc2: cc.Node = null;
 
     private btnClose: cc.Node = null;
     private btnCon: cc.Node = null;
@@ -38,13 +40,26 @@ export default class SettlePopup extends cc.Component {
         this.titleLose = this.panel.getChildByName("titleLose");
         this.titleDraw = this.panel.getChildByName("titleDraw");
         this.goldLabel = this.panel.getChildByName("goldLabel").getComponent(cc.Label);
-        this.label1 = this.panel.getChildByName("px").getChildByName("label1").getComponent(cc.Label);
-        this.label2 = this.panel.getChildByName("px").getChildByName("label2").getComponent(cc.Label);
-        this.btnClose = this.panel.getChildByName("btnClose");
-        this.btnCon = this.panel.getChildByName("btnCon");
 
+        // 牌型
+        this.labelDesc1 = this.panel.getChildByName("px").getChildByName("labelDesc1");
+        this.label1 = this.panel.getChildByName("px").getChildByName("label1").getComponent(cc.Label);
+        // 结算详情
+        this.labelDesc2 = this.panel.getChildByName("px").getChildByName("labelDesc2");
+        this.label2 = this.panel.getChildByName("px").getChildByName("label2").getComponent(cc.Label);
+        // 继续按钮
+        this.btnClose = this.panel.getChildByName("btnClose");
+        // 关闭按钮
+        this.btnCon = this.panel.getChildByName("btnCon");
         this.btnClose.on(cc.Node.EventType.TOUCH_END, this.close, this);
         this.btnCon.on(cc.Node.EventType.TOUCH_END, this.continueGame, this);
+
+        this.init();
+    }
+
+    private init(){
+        UIManager.instance.setFrontView(this.labelDesc1, "", 1, cc.Color.GREEN);
+        UIManager.instance.setFrontView(this.labelDesc2, "", 1, cc.Color.GREEN);
     }
 
     public show(win: number, gold: number, afterGold: number, cardTypeName: string="" , detail: string = "") {

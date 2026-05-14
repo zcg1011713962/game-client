@@ -189,4 +189,21 @@ export default class UIManager extends cc.Component {
     }
 
 
+     public setFrontView(labelNode: cc.Node, name : string, outlineWidth: number, color : cc.Color) {
+        const label = labelNode.getComponent(cc.Label);
+        let outline = labelNode.getComponent(cc.LabelOutline);
+        if (!outline) {
+                outline = labelNode.addComponent(cc.LabelOutline);
+                // 黑色描边
+                outline.color = cc.Color.BLACK;
+                // 宽度
+                outline.width = outlineWidth;
+        }
+        if(name.length > 0){
+            label.string = name;
+        }
+        label.node.color = color; 
+    }
+
+
 }
