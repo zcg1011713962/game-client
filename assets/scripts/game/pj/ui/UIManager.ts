@@ -16,6 +16,7 @@ export default class UIManager extends cc.Component {
     private betContainer: cc.Node = null;
     private rooomTopBarNode: cc.Node = null;
     private seats : { x : number, y : number, id:  number }[] = [];
+    
 
     private static _instance: UIManager = null;
     public static get instance(): UIManager {
@@ -204,6 +205,8 @@ export default class UIManager extends cc.Component {
         }
         label.node.color = color; 
     }
+
+    
 
 
 }

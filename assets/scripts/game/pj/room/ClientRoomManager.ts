@@ -10,6 +10,8 @@ import {DelayTaskUtil} from "../util/DelayTaskUtil";
 import SettleManager from "../../../common/SettleManager";
 import CurrUserManager from "../user/CurrUserManager";
 import UserData from "../../../login/entity/UserData";
+import GameRes from "../GameRes";
+import CountDownManager from "../../../common/CountDownManager";
 
 export interface PlayerDTO {
     userId: number;
@@ -182,7 +184,7 @@ export default class ClientRoomManager {
         }
 
         this.players.set(data.player.userId, data.player);
-
+        UIManager.instance.updateTopView(data.roomId, this.players.size, -1);
         this.refreshAllSeatView();
     }
 
@@ -261,8 +263,9 @@ export default class ClientRoomManager {
     public applyGameStart(data: {
         roomId: number,
         roomState: number,
-        bankerSeat: number;
-        players: PlayerDTO[]
+        bankerSeat: number,
+        players: PlayerDTO[],
+        betSeconds: number
     }) {
         this.players.clear();
         UIManager.instance.clearTable();
@@ -274,10 +277,24 @@ export default class ClientRoomManager {
         }
         this.bankerSeat = data.bankerSeat;
         this.setRoomState(data.roomState);
-        console.log("游戏开始，进入下注阶段 roomState", this.roomState, "庄家位:", this.bankerSeat);
+        cc.log("游戏开始，进入下注阶段 roomState", this.roomState, "庄家位:", this.bankerSeat);
         this.refreshAllSeatView();
+        // 倒计时
+        CountDownManager.show(data.betSeconds);
     }
-      // 下注
+    // 下注回包
+    public selfBetOk(data: {
+        roomId: number,
+        userId: number,
+        seatId: number,
+        betArea: number,
+        chip: number,
+        totalBet: number,
+        players: PlayerDTO[]
+    }){
+        UIManager.instance.setBetPanelVisible(false);
+    }
+    // 下注通知
     public applyPlayerBet(data: {
         roomId: number,
         userId: number,
@@ -289,6 +306,9 @@ export default class ClientRoomManager {
     }) {
         cc.log("玩家下注通知:", data);
         this.updatePlayer(data.userId, data.players);
+        if(data.seatId === this.mySeatId){
+            UIManager.instance.setBetPanelVisible(false);
+        }
         // 筹码动画
         UIManager.instance.onSelectChip(data.chip, data.seatId);
         // 更新座位信息
@@ -477,17 +497,6 @@ export default class ClientRoomManager {
         })
     }
 
-    public selfBetOk(data: {
-        roomId: number,
-        userId: number,
-        seatId: number,
-        betArea: number,
-        chip: number,
-        totalBet: number,
-        players: PlayerDTO[]
-    }){
-        UIManager.instance.setBetPanelVisible(false);
-    }
 
     public updatePlayer(userId : number, players: PlayerDTO[]){
         this.players.clear();

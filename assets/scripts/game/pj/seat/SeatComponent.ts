@@ -173,7 +173,7 @@ export default class SeatComponent extends cc.Component {
             // 昵称
             const name = this.setOut.getChildByName("Name");
             const nicknameNode = name.getChildByName("nickname");
-            UIManager.instance.setNickNameView(nicknameNode, bankerSeat === userInfo.seatId, CurrUserManager.getInstance().currentUserId === userInfo.userId , userInfo.nickname);
+            UIManager.instance.setNickNameView(nicknameNode, bankerSeat === userInfo.seatId, CurrUserManager.getCurrentUserId() === userInfo.userId , userInfo.nickname);
 
             // 金币展示
             const coinValNode = info.getChildByName("CoinVal");

@@ -50,29 +50,36 @@ export class RooomTopBar extends cc.Component {
  
 
     public setRoomInfo(data: RoomBarData) {
-        this.setText(
-            this.roomIdLabel,
-            `${data.roomId}`,
-            new cc.Color(255, 245, 120),
-            cc.Color.BLACK,
-            3
-        );
-
-        this.setText(
-            this.playerNumLabel,
-            `${data.curPlayer}`,
-            new cc.Color(255, 245, 120),
-            cc.Color.BLACK,
-            3
-        );
-
-        this.setText(
-            this.baseScoreLabel,
-            `${data.baseScore}`,
-            new cc.Color(255, 245, 120),
-            cc.Color.BLACK,
-            3
-        );
+        if(data.roomId){
+            this.setText(
+                this.roomIdLabel,
+                `${data.roomId}`,
+                new cc.Color(255, 245, 120),
+                cc.Color.BLACK,
+                3
+            );
+        }
+        
+        if(data.curPlayer > -1){
+            this.setText(
+                this.playerNumLabel,
+                `${data.curPlayer}`,
+                new cc.Color(255, 245, 120),
+                cc.Color.BLACK,
+                3
+            );
+        }
+        
+        if(data.baseScore > -1){
+            this.setText(
+                this.baseScoreLabel,
+                `${data.baseScore}`,
+                new cc.Color(255, 245, 120),
+                cc.Color.BLACK,
+                3
+            );
+        }
+        
     }
 
     private bindBtn(node: cc.Node, handler: Function) {
