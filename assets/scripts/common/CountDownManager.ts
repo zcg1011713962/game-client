@@ -4,6 +4,7 @@ import GameRes from "../game/pj/GameRes";
 export default class CountDownManager {
 
     private static clockPrefab: cc.Prefab = null;
+    private static clockNode: cc.Node | null = null;
 
     /**
      * 初始化
@@ -25,16 +26,25 @@ export default class CountDownManager {
             return;
         }
         
-        const node = cc.instantiate(this.clockPrefab);
-        canvas.addChild(node);
-        const comp = node.getComponent(BetCountdown);
+        CountDownManager.clockNode = cc.instantiate(this.clockPrefab);
+        canvas.addChild(CountDownManager.clockNode);
+        const comp = CountDownManager.clockNode.getComponent(BetCountdown);
 
         comp.startCountdown(time, () => {
             cc.log("投注倒计时结束");
-            let audioId = cc.audioEngine.playEffect(GameRes.instance.warnAudio, false);
-            // 停止
-            cc.audioEngine.stopEffect(audioId);
-            comp.close();
+            this.close();
         });
+    }
+
+    public static close(){
+        let audioId = cc.audioEngine.playEffect(GameRes.instance.warnAudio, false);
+        // 停止
+        cc.audioEngine.stopEffect(audioId);
+        if(!CountDownManager.clockNode || !cc.isValid(CountDownManager.clockNode)){
+            return;
+        }
+        const comp = CountDownManager.clockNode.getComponent(BetCountdown);
+        comp.close();
+        CountDownManager.clockNode = null;
     }
 }

@@ -107,6 +107,7 @@ export default class ClientRoomManager {
 
     private mySeatId: number = -1;
 
+    private seatCount: number = 8;
 
     private roomState: RoomState = RoomState.WAIT;
 
@@ -166,11 +167,12 @@ export default class ClientRoomManager {
             player.state = data.state;
         }
         if(this.myUserId === data.userId){
-             this.mySeatId = data.seatId;
+             this.updateMySeatId(data.seatId);
         }
        
         this.refreshAllSeatView();
     }
+
 
     // 获取返奖信息回包
     public applyRoomInfo(data: RoomSnapshot) {
@@ -234,7 +236,7 @@ export default class ClientRoomManager {
         this.setRoomState(RoomState.READY);
         this.refreshAllSeatView();
     }
-
+    // 取消准备
     public applyCancelPlayerReady(data: {
         roomId: number,
         userId: number,
@@ -267,6 +269,7 @@ export default class ClientRoomManager {
         players: PlayerDTO[],
         betSeconds: number
     }) {
+        cc.log("游戏开始，进入下注阶段 roomState", this.roomState, "庄家位:", this.bankerSeat);
         this.players.clear();
         UIManager.instance.clearTable();
         
@@ -277,7 +280,6 @@ export default class ClientRoomManager {
         }
         this.bankerSeat = data.bankerSeat;
         this.setRoomState(data.roomState);
-        cc.log("游戏开始，进入下注阶段 roomState", this.roomState, "庄家位:", this.bankerSeat);
         this.refreshAllSeatView();
         // 倒计时
         CountDownManager.show(data.betSeconds);
@@ -292,7 +294,10 @@ export default class ClientRoomManager {
         totalBet: number,
         players: PlayerDTO[]
     }){
+        // 投注面板隐藏
         UIManager.instance.setBetPanelVisible(false);
+        // 移除倒计时
+        CountDownManager.close();
     }
     // 下注通知
     public applyPlayerBet(data: {
@@ -318,6 +323,8 @@ export default class ClientRoomManager {
     public async dealCard(deal : DealCardPush){
         const data = deal as DealCardPush;
         console.log("发牌通知", data);
+        // 移除倒计时
+        CountDownManager.close();
         // 切换发牌状态
         ClientRoomManager.instance.setRoomState(data.roomState);
         const paiJiuTable = UIManager.instance.getTableNode().getComponent("PaiJiuTable");
@@ -363,9 +370,9 @@ export default class ClientRoomManager {
             WsClient.instance.send(Cmd.NEXT_ROUND, {roomId: settleInfo.roomId, roundId: this.roundId});
         }, 3000);
     }
-    // 下一轮
+    // 下一局
     public nextRound(data: NextRoundPush){
-        console.log("下一轮通知", data);
+        console.log("下一局通知", data);
         UIManager.instance.clearTable();
         ClientRoomManager.instance.setRoomState(data.roomState);
         this.roundId = data.roundId;
@@ -430,7 +437,7 @@ export default class ClientRoomManager {
 
     private refreshBetUI() {
         const canBet = this.canBet();
-        //console.log("是否可以下注:", canBet, "roomState:", this.roomState, "mySeatId:", this.mySeatId, "bankerSeat:", this.bankerSeat);
+        cc.log("是否可以下注:", canBet, "roomState:", this.roomState, "mySeatId:", this.mySeatId, "bankerSeat:", this.bankerSeat);
         UIManager.instance.setBetPanelVisible(canBet);
     }
 
@@ -475,6 +482,7 @@ export default class ClientRoomManager {
             if (player.seatId == null || player.seatId < 0) {
                 return;
             }
+            
             const userInfo = new UserInfo();
             userInfo.userId = player.userId;
             userInfo.seatId = player.seatId;
@@ -507,8 +515,8 @@ export default class ClientRoomManager {
             });
         }
         let player = this.players.get(userId);
-        if(player){
-            this.mySeatId = player.seatId;
+        if(player && userId === this.myUserId){
+            this.updateMySeatId(player.seatId);
         }
     }
 
@@ -543,6 +551,23 @@ export default class ClientRoomManager {
             bankerSeat: snapshot.bankerSeat,
             playerCards
         };
+    }
+
+    public updateMySeatId(seatId : number){
+        this.mySeatId = seatId;
+        cc.log("最新的座位号", this.mySeatId);
+    }
+
+    /**
+     * 服务端座位 -> 本地视角座位
+     */
+    public getLocalSeatId(serverSeatId: number): number {
+
+        if (serverSeatId < 0 || this.mySeatId < 0) {
+            return serverSeatId;
+        }
+
+        return (serverSeatId - this.mySeatId + this.seatCount) % this.seatCount;
     }
 
 

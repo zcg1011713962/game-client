@@ -47,15 +47,11 @@ export default class WsClient {
             this.ws.onclose = () => {
                 console.log("WebSocket断开连接");
                 this.stopHeartbeat();
+                this.reconnect();
             };
         });
     }
 
-    public disconnect(){
-        if(this.ws){
-            this.ws.close();
-        }
-    }
 
     private reconnect() {
         if (!this.token || !this.url) return;
@@ -90,6 +86,7 @@ export default class WsClient {
     public send(cmd: string, data: any = {}) {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
             console.log("WebSocket未连接，发送失败:", cmd);
+            ToastManager.show("网络中断,操作无效!");
             return;
         }
 
@@ -107,6 +104,7 @@ export default class WsClient {
     public sendWithSeq(cmd: string, data: any = {}): number {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
             cc.warn("WebSocket未连接，发送失败:", cmd);
+            ToastManager.show("网络中断,操作无效!");
             return 0;
         }
 
@@ -193,8 +191,9 @@ export default class WsClient {
                 break
             case Cmd.SETTLE: 
                 ClientRoomManager.instance.settle(msg.data);
-                break;   
+                break;       
             case Cmd.NEXT_ROUND_RESULT:
+                // 下一局
                 ClientRoomManager.instance.nextRound(msg.data);
                 break;
             case Cmd.LEAVE_ROOM_RESULT:

@@ -52,7 +52,6 @@ export default class Login extends cc.Component {
     }
 
     public autoLogin(guest :{userId : number, token: string} | null){
-        console.log("游客登录");
         // 游客登录
         Http.post<ServerMsg<User>>(
             `${Config.API_URL}/login/guest`,
@@ -75,7 +74,7 @@ export default class Login extends cc.Component {
                 // 服务端业务错误
                 if (res.code !== 0) {
                     ToastManager.show("服务器异常");
-                    console.error("登录失败:", res.msg);
+                    cc.error("登录失败:", res.msg);
                     return;
                 }
                 // 用户数据

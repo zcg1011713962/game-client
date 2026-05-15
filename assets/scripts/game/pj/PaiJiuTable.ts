@@ -110,7 +110,8 @@ export default class PaiJiuTable extends cc.Component {
          cc.log("回前台，RoomState", ClientRoomManager.instance.getRoomState(), "tableState" ,this.tableState);
 
           if(ClientRoomManager.instance.getRoomState() === RoomState.WAIT || ClientRoomManager.instance.getRoomState() === RoomState.READY || ClientRoomManager.instance.getRoomState() === RoomState.BET){
-            UIManager.instance.clearTable();
+            UIManager.instance.clearCardContainer();
+            UIManager.instance.clearBetContainer();
           }else if(ClientRoomManager.instance.getRoomState() === RoomState.DEAL){
                 /**
              * 回前台时，浏览器后台可能导致 tween / scheduleOnce 延迟。
@@ -216,7 +217,7 @@ export default class PaiJiuTable extends cc.Component {
             await this.loadCardPrefab();
         }
 
-        this.clearTable();
+        this.clearCardContainer();
 
         for (let i = 0; i < this.totalCardCount; i++) {
             const card = cc.instantiate(this.cardPrefab);
@@ -239,8 +240,8 @@ export default class PaiJiuTable extends cc.Component {
         }
     }
 
-    /** 清理整张桌子 */
-    public clearTable() {
+    /** 清理牌堆和牌区 */
+    public clearCardContainer() {
         this.clearDeck();
 
         if (this.dealContainer) {

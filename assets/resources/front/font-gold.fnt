@@ -1,0 +1,19 @@
+info face="Arial" size=32 bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=1 aa=1 padding=0,0,0,0 spacing=1,1 outline=0
+common lineHeight=32 base=26 scaleW=512 scaleH=512 pages=1 packed=0 alphaChnl=1 redChnl=0 greenChnl=0 blueChnl=0
+page id=0 file="font-gold_0.png"
+chars count=15
+char id=37   x=0     y=0     width=129   height=139   xoffset=0     yoffset=0     xadvance=129   page=0  chnl=15
+char id=44   x=464   y=0     width=43    height=139   xoffset=0     yoffset=0     xadvance=43    page=0  chnl=15
+char id=46   x=414   y=280   width=43    height=139   xoffset=0     yoffset=0     xadvance=43    page=0  chnl=15
+char id=48   x=0     y=280   width=104   height=139   xoffset=0     yoffset=0     xadvance=104   page=0  chnl=15
+char id=49   x=431   y=140   width=69    height=139   xoffset=0     yoffset=0     xadvance=69    page=0  chnl=15
+char id=50   x=105   y=280   width=104   height=139   xoffset=0     yoffset=0     xadvance=104   page=0  chnl=15
+char id=51   x=217   y=140   width=106   height=139   xoffset=0     yoffset=0     xadvance=106   page=0  chnl=15
+char id=52   x=130   y=0     width=113   height=139   xoffset=0     yoffset=0     xadvance=113   page=0  chnl=15
+char id=53   x=109   y=140   width=107   height=139   xoffset=0     yoffset=0     xadvance=107   page=0  chnl=15
+char id=54   x=324   y=140   width=106   height=139   xoffset=0     yoffset=0     xadvance=106   page=0  chnl=15
+char id=55   x=210   y=280   width=103   height=139   xoffset=0     yoffset=0     xadvance=103   page=0  chnl=15
+char id=56   x=244   y=0     width=109   height=139   xoffset=0     yoffset=0     xadvance=109   page=0  chnl=15
+char id=57   x=0     y=140   width=108   height=139   xoffset=0     yoffset=0     xadvance=108   page=0  chnl=15
+char id=75   x=314   y=280   width=99    height=139   xoffset=0     yoffset=0     xadvance=99    page=0  chnl=15
+char id=77   x=354   y=0     width=109   height=139   xoffset=0     yoffset=0     xadvance=109   page=0  chnl=15

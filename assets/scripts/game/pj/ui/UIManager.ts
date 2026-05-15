@@ -15,6 +15,7 @@ export default class UIManager extends cc.Component {
     private chipSelectPanel: cc.Node = null;
     private betContainer: cc.Node = null;
     private rooomTopBarNode: cc.Node = null;
+    private clockContainerNode: cc.Node = null;
     private seats : { x : number, y : number, id:  number }[] = [];
     
 
@@ -35,6 +36,7 @@ export default class UIManager extends cc.Component {
         this.chipSelectPanel = cc.find("Canvas/MainLayout/Table/ChipSelectPanel");
         this.betContainer = cc.find("Canvas/MainLayout/Table/BetContainer");
         this.rooomTopBarNode = cc.find("Canvas/MainLayout/RoomTopBar");
+        this.clockContainerNode = cc.find("Canvas/MainLayout/Table/ClockContainer");
         this.setStartBtnStatus(false);
         this.setCancelReadyBtnStatus(false);
         this.init();
@@ -160,23 +162,39 @@ export default class UIManager extends cc.Component {
         
     }
     
-
+    // 清理桌子
     public clearTable(){
-         // 清理发牌区
+        this.clearCardContainer();
+        this.clearBetContainer();
+        this.clearClockContainer();
+    }
+
+    // 清理发牌区
+    public clearCardContainer(){
          const tableNode = UIManager.instance.getTableNode();
          if(tableNode){
             const paiJiuTableNode = tableNode.getComponent(PaiJiuTable);
-            paiJiuTableNode.clearTable();
+            paiJiuTableNode.clearCardContainer();
+            cc.log("清理牌区")
          }
-         // 清理筹码区
+    }
+
+    // 清理投注的筹码
+    public clearBetContainer(){
          if(ClientRoomManager.instance.getRoomState() === RoomState.WAIT || ClientRoomManager.instance.getRoomState() === RoomState.READY){
              const betArea = this.betContainer.getComponent(BetArea);
              if(betArea){
                 betArea.clearChips(this.seats);
-                console.log("清理筹码区")
+                cc.log("清理筹码区")
              }
          }
     }
+
+    public clearClockContainer(){
+        this.clockContainerNode.removeAllChildren();
+        cc.log("清理倒计时钟")
+    }
+
 
     public updateTopView(roomId: number, curPlayer: number, baseScore: number){
         const rooomTopBar : RooomTopBar = this.rooomTopBarNode.getComponent(RooomTopBar);
