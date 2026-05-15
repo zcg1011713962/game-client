@@ -114,7 +114,6 @@ export default class ClientRoomManager {
     private bankerSeat: number = -1;
 
     private players: Map<number, PlayerDTO> = new Map();
-    private seats: Record<number, number> = {};
     private betMap: Record<number, number> = {};
     private cardMap: Record<number, CardInfo[]> = {};
 
@@ -123,12 +122,10 @@ export default class ClientRoomManager {
     // 进房回包
     public applyEnterRoom(data: RoomSnapshot) {
         console.log("进房回报包", data);
-
         this.roundId = data.roundId;
         this.roomId = data.roomId;
         this.myUserId = data.userId;
-        this.bankerSeat = data.bankerSeat;
-        this.seats = data.seats;
+        this.bankerSeat = this.getLocalSeatId(data.bankerSeat);
         this.betMap = data.betMap;
         this.cardMap = data.cardMap;
         
@@ -482,7 +479,6 @@ export default class ClientRoomManager {
             if (player.seatId == null || player.seatId < 0) {
                 return;
             }
-            
             const userInfo = new UserInfo();
             userInfo.userId = player.userId;
             userInfo.seatId = player.seatId;
@@ -575,7 +571,6 @@ export default class ClientRoomManager {
  
         this.players.clear();
         this.betMap = {};
-        this.seats = {};
         this.cardMap = {};
         this.roundId = -1;
         this.ownerUserId = -1;
