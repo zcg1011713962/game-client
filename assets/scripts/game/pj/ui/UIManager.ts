@@ -30,8 +30,8 @@ export default class UIManager extends cc.Component {
         this.readyBtnNode = cc.find("Canvas/UI/ReadyBtn");
         this.cancelReadyBtn = cc.find("Canvas/UI/CancelReadyBtn");
          // 准备按钮点击
-        this.readyBtnNode.on(cc.Node.EventType.MOUSE_UP, this.onReadyBtnClick, this);
-        this.cancelReadyBtn.on(cc.Node.EventType.MOUSE_UP, this.onCancelReadyBtnClick, this);
+        this.readyBtnNode.on(cc.Node.EventType.TOUCH_END, this.onReadyBtnClick, this);
+        this.cancelReadyBtn.on(cc.Node.EventType.TOUCH_END, this.onCancelReadyBtnClick, this);
         this.chipSelectPanel = cc.find("Canvas/MainLayout/Table/ChipSelectPanel");
         this.betContainer = cc.find("Canvas/MainLayout/Table/BetContainer");
         this.rooomTopBarNode = cc.find("Canvas/MainLayout/RoomTopBar");
