@@ -10,6 +10,7 @@ import Config from "../../config/Config";
 export default class Game extends cc.Component {
     private seatContainerNode: cc.Node = null;
     private destroyed: boolean = false;
+    private gameBgmAudio: number | null = null;
     onLoad () {
         console.log("Game onLoad");
         this.seatContainerNode = cc.find("Canvas/MainLayout/Table/SeatContainer");
@@ -37,6 +38,11 @@ export default class Game extends cc.Component {
 
     async initTable() {
         await GameRes.instance.preload();
+        // 播放大厅BGM
+        if(this.gameBgmAudio === null){
+            this.gameBgmAudio = cc.audioEngine.playEffect(GameRes.instance.gameBgmAudio, true);
+            cc.audioEngine.setVolume(this.gameBgmAudio, 0.3);
+        }
 
         const seatManager =  this.seatContainerNode.getComponent("SeatManager");
         await seatManager.init();
@@ -52,6 +58,10 @@ export default class Game extends cc.Component {
    
     protected onDestroy(): void {
         if(!this.destroyed){
+            if(this.gameBgmAudio !== null){
+                cc.audioEngine.stopEffect(this.gameBgmAudio);
+                this.gameBgmAudio = null;
+            }
             this.destroyed = true;
             console.log("game onDestroy")
             SceneData.clear();

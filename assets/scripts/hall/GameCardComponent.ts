@@ -1,5 +1,7 @@
 const {ccclass, property} = cc._decorator;
+import GameRes from "../game/pj/GameRes";
 import {GameCardData} from "./entity/GameCardData";
+import HallRes from "./HallRes";
 import HallUIManager from "./HallUIManager";
 
 @ccclass
@@ -72,7 +74,9 @@ export default class GameCardComponent extends cc.Component {
 
 
     private onClick() {
-        console.log("onClick", this.gameCardData);
+        // 游戏卡片点击
+        cc.audioEngine.playEffect(HallRes.instance.hallClickAudio, false);
+        cc.log("onClick", this.gameCardData);
         if (!this.gameCardData) return;
         cc.systemEvent.emit("GameCard_CLICK", this.gameCardData.id);
     }

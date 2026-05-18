@@ -117,8 +117,8 @@ export default class ClientRoomManager {
     // 进房回包
     public applyEnterRoom(data: RoomSnapshot) {
         console.log("进房回报包", data);
-        const bankerSeat = this.getLocalSeatId(data.bankerSeat);
-        const players = this.getPlayer(data.players);
+        const bankerSeat = data.bankerSeat;
+        const players = data.players;
 
         this.roundId = data.roundId;
         this.roomId = data.roomId;
@@ -149,7 +149,7 @@ export default class ClientRoomManager {
     public applySitDown(data: {roomId: number, userId: number, seatId: number, state: number}) {
 
         let player = this.players.get(data.userId);
-        const seatId = this.getLocalSeatId(data.seatId);
+        const seatId = data.seatId;
 
         if (!player) {
             player = {
@@ -166,8 +166,9 @@ export default class ClientRoomManager {
         if(this.myUserId === data.userId){
              this.updateMySeatId(seatId);
         }
-       
+        UIManager.instance.clearTable();
         this.refreshAllSeatView();
+        
     }
 
 
@@ -216,7 +217,7 @@ export default class ClientRoomManager {
         state: number
     }) {
         const player = this.players.get(data.userId);
-        const seatId = this.getLocalSeatId(data.seatId)
+        const seatId = data.seatId;
 
         if (player) {
             player.state = data.state;
@@ -242,7 +243,7 @@ export default class ClientRoomManager {
         roomStatus: number
     }){
         const player = this.players.get(data.userId);
-        const seatId = this.getLocalSeatId(data.seatId)
+        const seatId = data.seatId;
         if (player) {
             player.state = data.state;
             player.seatId = seatId;
@@ -270,8 +271,8 @@ export default class ClientRoomManager {
         cc.log("游戏开始，进入下注阶段 roomState", this.roomState, "庄家位:", this.bankerSeat);
         this.players.clear();
         UIManager.instance.clearTable();
-        const bankerSeat = this.getLocalSeatId(data.bankerSeat)
-        const players = this.getPlayer(data.players);
+        const bankerSeat = data.bankerSeat;
+        const players = data.players;
         
         players.forEach(p => {
             this.players.set(p.userId, p);
@@ -292,8 +293,8 @@ export default class ClientRoomManager {
         totalBet: number,
         players: PlayerDTO[]
     }){
-        const players= this.getPlayer(data.players);
-        const seatId = this.getLocalSeatId(data.seatId);
+        const players= data.players;
+        const seatId = data.seatId;
         // 投注面板隐藏
         UIManager.instance.setBetPanelVisible(false);
         // 移除倒计时
@@ -310,8 +311,8 @@ export default class ClientRoomManager {
         players: PlayerDTO[]
     }) {
         cc.log("玩家下注通知:", data);
-        const players = this.getPlayer(data.players);
-        const seatId = this.getLocalSeatId(data.seatId);
+        const players = data.players;
+        const seatId = data.seatId;
         this.updatePlayer(data.userId, players);
         if(seatId === this.mySeatId){
             UIManager.instance.setBetPanelVisible(false);
@@ -325,8 +326,8 @@ export default class ClientRoomManager {
     public async dealCard(deal : DealCardPush){
         const data = deal as DealCardPush;
         console.log("发牌通知", data);
-        const bankerSeat = this.getLocalSeatId(data.bankerSeat);
-        const playerCards = this.getPlayerCards(data.playerCards);
+        const bankerSeat = data.bankerSeat;
+        const playerCards = data.playerCards;
         // 移除倒计时
         CountDownManager.close();
         // 切换发牌状态
@@ -346,8 +347,8 @@ export default class ClientRoomManager {
         console.log("结算", settleInfo);
         const data = settleInfo as SettlePush;
         ClientRoomManager.instance.setRoomState(data.roomState);
-        const bankerSeat = this.getLocalSeatId(settleInfo.bankerSeat);
-        const settlePlayer = this.getSettlePlayer(settleInfo.players);
+        const bankerSeat = settleInfo.bankerSeat;
+        const settlePlayer = settleInfo.players;
 
         settlePlayer.forEach(p => {
             const seatId = p.seatId;
@@ -371,15 +372,15 @@ export default class ClientRoomManager {
             // 结算动画结束-进入下一轮
             this.refreshAllSeatView();
             WsClient.instance.send(Cmd.NEXT_ROUND, {roomId: settleInfo.roomId, roundId: this.roundId});
-        }, 3000);
+        }, 5000);
     }
     // 下一局
     public nextRound(data: NextRoundPush){
         console.log("下一局通知", data);
-        UIManager.instance.clearTable();
+        // UIManager.instance.clearTable();
         ClientRoomManager.instance.setRoomState(data.roomState);
         this.roundId = data.roundId;
-        const players = this.getPlayer(data.players);
+        const players = data.players;
         
         this.updatePlayers(players);
      
@@ -402,19 +403,7 @@ export default class ClientRoomManager {
         this.refreshAllSeatView();
     }
 
-    public getPlayerCards(playerCards: PlayerCardDTO[]){
-         playerCards.forEach(p =>{
-            p.seatId = this.getLocalSeatId(p.seatId);
-        });
-        return playerCards;
-    }
 
-    public getSettlePlayer(players: SettlePlayerDTO[]) : SettlePlayerDTO[]{
-        players.forEach(p =>{
-            p.seatId = this.getLocalSeatId(p.seatId);
-        });
-        return players;
-    }
 
     public updatePlayerStatus(status : UserState){
         this.players.forEach(p =>{
@@ -548,21 +537,10 @@ export default class ClientRoomManager {
         }
     }
 
-    public getPlayer(players: PlayerDTO[]){
-        if (players) {
-            players.forEach(p => {
-                p.seatId = this.getLocalSeatId(p.seatId);
-                this.players.set(p.userId, p);
-            });
-        }
-        return players;
-    }
 
     public buildDealCardPush(snapshot: RoomSnapshot): DealCardPush {
         const { roomId, roomState, players, cardMap } = snapshot;
-
-        const playersDto = this.getPlayer(players);
-        const playerCards: PlayerCardDTO[] = playersDto.map(player => {
+        const playerCards: PlayerCardDTO[] = players.map(player => {
             const userId = player.userId;
             const cards = cardMap[userId] || [];
 
@@ -585,19 +563,6 @@ export default class ClientRoomManager {
         this.mySeatId = seatId;
         cc.log("最新的座位号", this.mySeatId);
     }
-
-    /**
-     * 服务端座位 -> 本地视角座位
-     */
-    public getLocalSeatId(serverSeatId: number): number {
-
-        if (serverSeatId < 0 || this.mySeatId < 0) {
-            return serverSeatId;
-        }
-
-        return (serverSeatId - this.mySeatId + this.seatCount) % this.seatCount;
-    }
-
 
     public cleanRoom(){
  

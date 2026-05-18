@@ -1,3 +1,5 @@
+import GameRes from "../GameRes";
+
 const { ccclass, property } = cc._decorator;
 
 @ccclass
@@ -49,6 +51,7 @@ export default class Chip extends cc.Component {
                 cc.tween().to(0.28, { angle: this.node.angle + 360 })
             )
             .call(() => {
+                cc.audioEngine.playEffect(GameRes.instance.betAudio, false);
                 if (callback) callback();
             })
             .start();

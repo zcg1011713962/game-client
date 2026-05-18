@@ -7,6 +7,7 @@ import UIManager from "../ui/UIManager";
 import ClientRoomManager from "../room/ClientRoomManager";
 import {Cmd} from "../enum/Cmd";
 import WsClient from "../net/WsClient";
+import GameRes from "../GameRes";
 
 @ccclass
 export default class SeatManager extends cc.Component {
@@ -109,7 +110,7 @@ export default class SeatManager extends cc.Component {
 
 
     private onSeatClick(seatId: number) {
-
+        cc.audioEngine.playEffect(GameRes.instance.clickAudio, false);
         const roomId = ClientRoomManager.instance.getRoomId();
         const mySeatId = ClientRoomManager.instance.getMySeatId();
 

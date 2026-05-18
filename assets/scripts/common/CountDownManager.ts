@@ -37,9 +37,6 @@ export default class CountDownManager {
     }
 
     public static close(){
-        let audioId = cc.audioEngine.playEffect(GameRes.instance.warnAudio, false);
-        // 停止
-        cc.audioEngine.stopEffect(audioId);
         if(!CountDownManager.clockNode || !cc.isValid(CountDownManager.clockNode)){
             return;
         }

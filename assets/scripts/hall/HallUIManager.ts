@@ -1,27 +1,32 @@
+import HallRes from "./HallRes";
 
 const {ccclass, property} = cc._decorator;
-import MouseCursorManager from "../common/MouseCursorManager";
 
 @ccclass
 export default class HallUIManager extends cc.Component {
-
+    public hallBmgAudioId: number | null = null;
     private gameCardPos : { x : number, y : number, id:  number, name: string }[] = [];
     private static _instance: HallUIManager = null;
     public static get instance(): HallUIManager {
         return this._instance;
     }
 
-    onLoad() {
+    async onLoad() {
         // 保存单例引用
         HallUIManager._instance = this;
         this.init();
     }
 
-    public init(){
+    public async init(){
         this.intGameCardPos();
+        await HallRes.instance.preload();
+        if(this.hallBmgAudioId === null){
+            this.hallBmgAudioId = cc.audioEngine.playEffect(HallRes.instance.hallBgmAudio, true);
+            cc.audioEngine.setVolume(this.hallBmgAudioId, 0.3);
+        } 
     }
 
-     public intGameCardPos(){
+    public intGameCardPos(){
         this.gameCardPos = [];
         // 设置座位坐标
         this.gameCardPos.push({ x : -278, y : 50, id:  1 , name: "牌九"});
@@ -62,6 +67,13 @@ export default class HallUIManager extends cc.Component {
         }
         label.string = String(count);
         label.node.color = new cc.Color(255, 215, 0); // 金色
+    }
+
+     onDestroy() {
+        if(this.hallBmgAudioId !== null){
+            cc.audioEngine.stopEffect(this.hallBmgAudioId);
+            this.hallBmgAudioId = null;
+        }
     }
 
 }

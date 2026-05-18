@@ -9,6 +9,7 @@ export default class ClockCountdown extends cc.Component {
     private timeLabel: cc.Label = null;
 
     private warnSecond: number = 5;
+    private audioId: number | null = null;
 
     private totalTime = 0;
     private running = false;
@@ -113,8 +114,8 @@ export default class ClockCountdown extends cc.Component {
     }
 
     private playWarn() {
-        if (GameRes.instance.warnAudio) {
-            cc.audioEngine.playEffect(GameRes.instance.warnAudio, false);
+        if (GameRes.instance.warnAudio && this.audioId === null) {
+            this.audioId = cc.audioEngine.playEffect(GameRes.instance.warnAudio, false);
         }
 
         if (!this.clock || !this.originPos) return;
@@ -142,6 +143,11 @@ export default class ClockCountdown extends cc.Component {
 
     public close() {
         if(this.node){
+            if(this.audioId !== null){
+                // 停止
+                cc.audioEngine.stopEffect(this.audioId);
+            }
+            this.audioId = null;
             this.node.destroy();
         }
     }

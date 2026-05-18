@@ -1,4 +1,5 @@
 import {Cmd} from "../enum/Cmd";
+import GameRes from "../GameRes";
 import WsClient from "../net/WsClient";
 import ClientRoomManager from "../room/ClientRoomManager";
 
@@ -19,6 +20,7 @@ export default class ChipSelectPanel extends cc.Component {
         // console.log("chipBtns", this.chipBtns);
         this.chipBtns.forEach(node => {
             node.on(cc.Node.EventType.TOUCH_END, () => {
+                cc.audioEngine.playEffect(GameRes.instance.clickAudio, false);
                 const chip = this.getChipValue(node);
                 const roomId = ClientRoomManager.instance.getRoomId();
                 // 位置跟下注区域一样的索引

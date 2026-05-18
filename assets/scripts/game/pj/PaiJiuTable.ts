@@ -1,4 +1,5 @@
 import PaiJiuCard, { IPaiJiuCardData } from "./card/PaiJiuCard";
+import GameRes from "./GameRes";
 import ClientRoomManager from "./room/ClientRoomManager";
 import { RoomState } from "./room/RoomState";
 import UIManager from "./ui/UIManager";
@@ -34,6 +35,7 @@ export default class PaiJiuTable extends cc.Component {
     private dealContainer: cc.Node = null;
     private cardPrefab: cc.Prefab = null;
     private playerPosRoot: cc.Node = null;
+    private audioId: number | null= null;
 
     /** 牌图片缓存，key 例如 pai_1 */
     private cardImgMap: { [key: string]: cc.SpriteFrame } = {};
@@ -50,8 +52,8 @@ export default class PaiJiuTable extends cc.Component {
     private dealGapY: number = 0;
 
     /** 发牌动画时间和间隔 */
-    private dealDuration: number = 0.18;
-    private dealInterval: number = 0.12;
+    private dealDuration: number = 0.28;
+    private dealInterval: number = 0.18;
 
     /** 牌堆中的牌 */
     private cardList: cc.Node[] = [];
@@ -259,6 +261,13 @@ export default class PaiJiuTable extends cc.Component {
         }
     }
 
+    /** 播放洗牌音效 */
+    private playShuffleAudio() {
+        if (this.tableState !== PaiJiuTableState.SHUFFLING) return;
+
+        cc.audioEngine.playEffect(GameRes.instance.shuffingAudio, false);
+    }
+
     /** 洗牌动画 */
     private shuffleAnim(cb?: Function) {
         if (!this.cardList.length) {
@@ -269,6 +278,9 @@ export default class PaiJiuTable extends cc.Component {
         const mid = Math.floor(this.cardList.length / 2);
         const leftGroup = this.cardList.slice(0, mid);
         const rightGroup = this.cardList.slice(mid);
+
+        // 开始乱牌音效
+        this.playShuffleAudio();
 
         for (let i = 0; i < this.cardList.length; i++) {
             const card = this.cardList[i];
@@ -286,11 +298,13 @@ export default class PaiJiuTable extends cc.Component {
                 .start();
         }
 
+        // 分成两堆
         this.scheduleOnce(() => {
             if (this.tableState !== PaiJiuTableState.SHUFFLING) return;
 
-            for (let i = 0; i < leftGroup.length; i++) {
-                const card = leftGroup[i];
+            this.playShuffleAudio();
+
+            leftGroup.forEach((card, i) => {
                 cc.tween(card)
                     .to(0.15, {
                         x: -90 + i * 2,
@@ -298,10 +312,9 @@ export default class PaiJiuTable extends cc.Component {
                         angle: (Math.random() - 0.5) * 10,
                     })
                     .start();
-            }
+            });
 
-            for (let i = 0; i < rightGroup.length; i++) {
-                const card = rightGroup[i];
+            rightGroup.forEach((card, i) => {
                 cc.tween(card)
                     .to(0.15, {
                         x: 90 + i * 2,
@@ -309,11 +322,14 @@ export default class PaiJiuTable extends cc.Component {
                         angle: (Math.random() - 0.5) * 10,
                     })
                     .start();
-            }
+            });
         }, 0.15);
 
+        // 合牌
         this.scheduleOnce(() => {
             if (this.tableState !== PaiJiuTableState.SHUFFLING) return;
+
+            this.playShuffleAudio();
 
             const merged: cc.Node[] = [];
             let l = 0;
@@ -326,8 +342,7 @@ export default class PaiJiuTable extends cc.Component {
 
             this.cardList = merged;
 
-            for (let i = 0; i < this.cardList.length; i++) {
-                const card = this.cardList[i];
+            this.cardList.forEach((card, i) => {
                 card.zIndex = i;
 
                 cc.tween(card)
@@ -342,19 +357,21 @@ export default class PaiJiuTable extends cc.Component {
                         { easing: "sineOut" }
                     )
                     .start();
-            }
+            });
         }, 0.38);
 
+        // 压牌 / 整理牌堆
         this.scheduleOnce(() => {
             if (this.tableState !== PaiJiuTableState.SHUFFLING) return;
 
-            for (let i = 0; i < this.cardList.length; i++) {
-                const card = this.cardList[i];
+            this.playShuffleAudio();
+
+            this.cardList.forEach(card => {
                 cc.tween(card)
                     .to(0.06, { scale: 0.98 })
                     .to(0.08, { scale: 1.0 })
                     .start();
-            }
+            });
         }, 0.65);
 
         this.scheduleOnce(() => {
@@ -513,7 +530,9 @@ export default class PaiJiuTable extends cc.Component {
                     scale: 1.0,
                 },
                 { easing: "sineOut" }
-            )
+            ).call(() =>{
+                cc.audioEngine.playEffect(GameRes.instance.dealCardAudio, false);
+            })
             .start();
     }
 

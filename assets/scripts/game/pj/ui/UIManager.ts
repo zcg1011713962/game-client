@@ -7,6 +7,7 @@ import { RoomState } from "../room/RoomState";
 import SeatComponentManager from "../seat/SeatComponentManager";
 import {RoomBarData, RooomTopBar} from "../../top/RoomTopBar";
 import PaiJiuTable from "../PaiJiuTable";
+import GameRes from "../GameRes";
 @ccclass
 export default class UIManager extends cc.Component {
     private readyBtnNode: cc.Node = null;
@@ -66,6 +67,8 @@ export default class UIManager extends cc.Component {
 
 
     public onReadyBtnClick(){
+         UIManager.instance.clearTable();
+         cc.audioEngine.playEffect(GameRes.instance.clickAudio, false);
          const roomId = ClientRoomManager.instance.getRoomId();
          WsClient.instance.send(Cmd.READY, {
             roomId: roomId
@@ -73,6 +76,7 @@ export default class UIManager extends cc.Component {
     }
 
     private onCancelReadyBtnClick(){
+         cc.audioEngine.playEffect(GameRes.instance.clickAudio, false);
          const roomId = ClientRoomManager.instance.getRoomId();
          WsClient.instance.send(Cmd.CANCEL_READY, {
             roomId: roomId
