@@ -5,6 +5,7 @@ import {Cmd} from "./enum/Cmd";
 import {SceneData, SceneUtil} from "../../util/SceneUtil";
 import ClientRoomManager from "./room/ClientRoomManager";
 import Config from "../../config/Config";
+import { RoomCardType } from "../../hall/room/RoomSelectPopup";
 
 @ccclass
 export default class Game extends cc.Component {
@@ -26,11 +27,21 @@ export default class Game extends cc.Component {
             return;
         }
         const token = data.token;
+        const roomCardType = data.type;
+        cc.log("加载游戏场景", data);
         if(token){
             await this.initTable();
             await WsClient.instance.connectAsync(Config.WS_URL, token);
-            // 进房
-            WsClient.instance.send(Cmd.FREE_MATCH, "");
+            if(roomCardType === RoomCardType.MATCH){
+                // 匹配
+                WsClient.instance.send(Cmd.FREE_MATCH, "");
+            }else if(roomCardType === RoomCardType.CREATE){
+                // 创房
+                WsClient.instance.send(Cmd.CREATE_ROOM, "");
+            }else if(roomCardType === RoomCardType.JOIN){
+                // 加入
+                WsClient.instance.send(Cmd.ENTER_ROOM, "");
+            }
         }else{
             console.log("进入游戏失败", token);
         }

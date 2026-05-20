@@ -6,6 +6,8 @@ const {ccclass, property} = cc._decorator;
 export default class HallUIManager extends cc.Component {
     public hallBmgAudioId: number | null = null;
     private gameCardPos : { x : number, y : number, id:  number, name: string }[] = [];
+    public cardPopLayerNode: cc.Node | null = null;
+    public gameCardNode: cc.Node | null = null;
     private static _instance: HallUIManager = null;
     public static get instance(): HallUIManager {
         return this._instance;
@@ -24,6 +26,8 @@ export default class HallUIManager extends cc.Component {
             this.hallBmgAudioId = cc.audioEngine.playEffect(HallRes.instance.hallBgmAudio, true);
             cc.audioEngine.setVolume(this.hallBmgAudioId, 0.3);
         } 
+        this.cardPopLayerNode = cc.find("Canvas/PopLayer");
+        this.gameCardNode = cc.find("Canvas/GameCard");
     }
 
     public intGameCardPos(){

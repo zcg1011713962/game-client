@@ -4,6 +4,7 @@ import GameCardComponent from "./GameCardComponent";
 import {SceneUtil} from "../util/SceneUtil";
 import UserData from "../login/entity/UserData";
 import RoomTopBar from "../game/top/RoomTopBar";
+import RoomSelectPopup from "./room/RoomSelectPopup";
 const {ccclass, property} = cc._decorator;
 
 
@@ -116,14 +117,10 @@ export default class GameCardManager extends cc.Component {
     
 
     public onGameCardClick(id : number){
-        console.log("onGameCardClick");
-        const guest = UserData.get();
-        if(guest){
-            // 切换到游戏场景
-            SceneUtil.loadScene(`game_${id}`, {
-                roomId: null,
-                token: guest.token
-            });
+        const cardPopLayerNode = HallUIManager.instance.cardPopLayerNode;
+        if(cardPopLayerNode){
+            const roomSelectPopup = cardPopLayerNode.getComponent(RoomSelectPopup);
+            roomSelectPopup.show();
         }
     }
 
