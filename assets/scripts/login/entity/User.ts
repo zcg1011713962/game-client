@@ -24,6 +24,10 @@ export interface User {
      */
     gold: number;
     /**
+     * 钻石
+     */
+    diamond: number;
+    /**
      * token
      */
     token: string;

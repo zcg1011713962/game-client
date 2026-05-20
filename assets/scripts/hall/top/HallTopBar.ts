@@ -22,15 +22,17 @@ export default class HallTopBar extends cc.Component {
         const nameLabelNode = this.playerInfoNode.getChildByName("NameLabel");
         const idLabelNode = this.playerInfoNode.getChildByName("IdLabel");
         const coinValNode = this.coinBoxNode.getChildByName("CoinVal");
+        const diamondValNode = this.diamondBoxNode.getChildByName("DiamondVal");
         
         const user = UserData.get();
         if(user){
             console.log(nameLabelNode, idLabelNode, coinValNode)
             this.setNickNameView(nameLabelNode, user.nickname);
-            this.setIdValView(idLabelNode, String(user.userId));
+            this.setIdValView(idLabelNode, `ID: ${user.userId}`);
             this.setGoldView(coinValNode, String(user.gold));
+            this.setDiamondView(diamondValNode, String(user.diamond));
 
-            console.log("update top bar", user, user.nickname);
+            cc.log("update top bar", user, user.nickname);
         }
        
     }
@@ -43,26 +45,12 @@ export default class HallTopBar extends cc.Component {
                 // 黑色描边
                 outline.color = cc.Color.BLACK;
                 // 宽度
-                outline.width = 3;
-        }
-        label.string = name;
-        label.node.color =  new cc.Color(255, 220, 40);
-    }
-
-
-    public setIdView(labelNode: cc.Node, name : string) {
-        const label = labelNode.getComponent(cc.Label);
-        let outline = labelNode.getComponent(cc.LabelOutline);
-        if (!outline) {
-                outline = labelNode.addComponent(cc.LabelOutline);
-                // 黑色描边
-                outline.color = new cc.Color(20, 40, 120);
-                // 宽度
                 outline.width = 2;
         }
         label.string = name;
-        label.node.color = cc.Color.WHITE; 
+        label.node.color =  cc.Color.WHITE;
     }
+
 
     public setIdValView(labelNode: cc.Node, name : string) {
         const label = labelNode.getComponent(cc.Label);
@@ -70,9 +58,9 @@ export default class HallTopBar extends cc.Component {
         if (!outline) {
                 outline = labelNode.addComponent(cc.LabelOutline);
                 // 黑色描边
-                outline.color = new cc.Color(20, 40, 120);
+                outline.color = cc.Color.BLACK;
                 // 宽度
-                outline.width = 1;
+                outline.width = 2;
         }
         label.string = name;
         label.node.color = cc.Color.WHITE; 
@@ -86,7 +74,20 @@ export default class HallTopBar extends cc.Component {
                 outline = labelNode.addComponent(cc.LabelOutline);
                 outline.color = new cc.Color(80, 40, 0)
                 // 宽度
-                outline.width = 3;
+                outline.width = 1;
+        }
+        label.string = name;
+        label.node.color = new cc.Color(255, 215, 0); // 金色
+    }
+
+     public setDiamondView(labelNode: cc.Node, name : string) {
+        const label = labelNode.getComponent(cc.Label);
+        let outline = labelNode.getComponent(cc.LabelOutline);
+        if (!outline) {
+                outline = labelNode.addComponent(cc.LabelOutline);
+                outline.color = new cc.Color(80, 40, 0)
+                // 宽度
+                outline.width = 1;
         }
         label.string = name;
         label.node.color = new cc.Color(255, 215, 0); // 金色

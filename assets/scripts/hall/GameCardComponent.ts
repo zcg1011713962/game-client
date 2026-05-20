@@ -1,5 +1,4 @@
 const {ccclass, property} = cc._decorator;
-import GameRes from "../game/pj/GameRes";
 import {GameCardData} from "./entity/GameCardData";
 import HallRes from "./HallRes";
 import HallUIManager from "./HallUIManager";
@@ -36,18 +35,15 @@ export default class GameCardComponent extends cc.Component {
             if(bg1Node && bg1Sprite){
                 const bg1NodeSprite = bg1Node.getComponent(cc.Sprite)
                 bg1NodeSprite.spriteFrame = bg1Sprite;
-                bg1NodeSprite.node.opacity = 200;
             }
             const gameIconNode = this.node.getChildByName("gameIcon");
             if(gameIconNode && gameIconSprite){
                 const gameIconNodeSprite = gameIconNode.getComponent(cc.Sprite);
                 gameIconNodeSprite.spriteFrame = gameIconSprite;
             }
-            const nameLabelNode = this.node.getChildByName("nameLabel");
-            HallUIManager.instance.setCardIconNameView(nameLabelNode, this.gameCardData.name);
-           
+    
             const numLabeNode = this.node.getChildByName("numLabel");
-            HallUIManager.instance.setGameOnlineCountView(numLabeNode, 0);
+            HallUIManager.instance.setGameOnlineCountView(numLabeNode, 120);
         }
     }
 

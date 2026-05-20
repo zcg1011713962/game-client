@@ -11,7 +11,7 @@ export default class MouseCursorManager extends cc.Component {
     private canvasNode: cc.Node = null;
 
     onLoad() {
-      
+        
     }
 
     /**
@@ -20,15 +20,25 @@ export default class MouseCursorManager extends cc.Component {
     public bindCanvas(canvas: cc.Node) {
         this.cursorNormal = this.node.getChildByName("cursorNormal");
         this.cursorDown = this.node.getChildByName("cursorDown");
+        this.cursorNormal.active = false;
+        this.cursorDown.active = false;
 
         if (this.canvasNode) {
-            this.canvasNode.off(cc.Node.EventType.MOUSE_MOVE, this.onMouseMove, this);
+            if (cc.sys.isMobile) {
+                 this.canvasNode.off(cc.Node.EventType.TOUCH_MOVE, this.onMouseMove, this);
+            } else {
+                 this.canvasNode.off(cc.Node.EventType.MOUSE_MOVE, this.onMouseMove, this);
+            }
             this.canvasNode.off(cc.Node.EventType.TOUCH_START, this.onMouseDown, this);
             this.canvasNode.off(cc.Node.EventType.TOUCH_END, this.onMouseUp, this);
             this.canvasNode.off(cc.Node.EventType.TOUCH_CANCEL, this.onMouseUp, this);
         }
         this.canvasNode = canvas;
-        this.canvasNode.on(cc.Node.EventType.MOUSE_MOVE, this.onMouseMove, this);
+        if (cc.sys.isMobile) {
+            this.canvasNode.on(cc.Node.EventType.TOUCH_MOVE, this.onMouseMove, this);
+        }else{
+            this.canvasNode.on(cc.Node.EventType.MOUSE_MOVE, this.onMouseMove, this);
+        }
         this.canvasNode.on(cc.Node.EventType.TOUCH_START, this.onMouseDown, this);
         this.canvasNode.on(cc.Node.EventType.TOUCH_END, this.onMouseUp, this);
         this.canvasNode.on(cc.Node.EventType.TOUCH_CANCEL, this.onMouseUp, this);
