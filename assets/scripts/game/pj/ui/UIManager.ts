@@ -202,13 +202,15 @@ export default class UIManager extends cc.Component {
 
     public updateTopView(roomId: number, curPlayer: number, baseScore: number){
         const rooomTopBar : RooomTopBar = this.rooomTopBarNode.getComponent(RooomTopBar);
-        const roomBarData: RoomBarData = {
+        if(rooomTopBar){
+            const roomBarData: RoomBarData = {
             roomId: roomId,
             curPlayer: curPlayer,
             baseScore: baseScore,
-        };
-        console.log("update RoomTopBar", roomBarData);
-        rooomTopBar.setRoomInfo(roomBarData);
+            };
+            console.log("update RoomTopBar", roomBarData);
+            rooomTopBar.setRoomInfo(roomBarData);
+        }
     }
 
 

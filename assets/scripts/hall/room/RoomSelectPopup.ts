@@ -1,6 +1,10 @@
+import Config from "../../config/Config";
+import { Cmd } from "../../game/pj/enum/Cmd";
+import WsClient from "../../game/pj/net/WsClient";
 import UserData from "../../login/entity/UserData";
 import { SceneUtil } from "../../util/SceneUtil";
 import HallUIManager from "../HallUIManager";
+import JoinRoomPopup from "./JoinRoomPopup";
 
 const { ccclass, property } = cc._decorator;
 export enum RoomCardType {
@@ -39,14 +43,13 @@ export default class RoomSelectPopup extends cc.Component {
     private matchCard: cc.Node = null!;
 
     onLoad() {
-
         // 默认隐藏
         this.node.active = false;
 
         // 获取节点
         this.mask = this.node.getChildByName("Mask");
 
-        this.cardRoot = this.node.getChildByName("RoomSelectPanel");
+        this.cardRoot = this.node.getChildByName("Panel");
 
         // 获取所有卡片
         // 获取卡片
@@ -63,6 +66,7 @@ export default class RoomSelectPopup extends cc.Component {
         // 点击Mask关闭
         this.mask.on(cc.Node.EventType.TOUCH_END, () => {
             this.hide();
+            HallUIManager.instance.gameCardShow();
         }, this);
 
         // 创建房间
@@ -73,8 +77,10 @@ export default class RoomSelectPopup extends cc.Component {
 
         // 加入房间
         this.joinCard.on(cc.Node.EventType.TOUCH_END, () => {
+            this.hide();
             this.playClickAnim(this.joinCard);
-            this.onClickCard(RoomCardType.JOIN);
+            const joinRoomPopupNode = HallUIManager.instance.joinRoomPanelNode?.getComponent(JoinRoomPopup);
+            joinRoomPopupNode?.show();
         }, this);
 
         // 自由匹配
@@ -91,10 +97,7 @@ export default class RoomSelectPopup extends cc.Component {
      * 显示弹窗
      */
     show() {
-        const gameCardNode = HallUIManager.instance.gameCardNode;
-        if(gameCardNode){
-            gameCardNode.active = false;
-        }
+        HallUIManager.instance.gameCardHide();
         this.node.active = true;
 
         // 遮罩渐变
@@ -135,14 +138,11 @@ export default class RoomSelectPopup extends cc.Component {
 
     }
 
+
     /**
      * 隐藏弹窗
      */
     hide() {
-        const gameCardNode = HallUIManager.instance.gameCardNode;
-        if(gameCardNode){
-            gameCardNode.active = true;
-        }
         // 遮罩淡出
         cc.tween(this.mask)
             .to(0.15, {
@@ -198,16 +198,13 @@ export default class RoomSelectPopup extends cc.Component {
     }
 
 
-    private onClickCard(type: RoomCardType) {
-        this.hide();
-        const guest = UserData.get();
-        if(guest){
-            // 切换到游戏场景
-            SceneUtil.loadScene(`game_1`, {
-                roomId: null,
-                token: guest.token,
-                type: type
-            });
+    private async onClickCard(roomCardType: RoomCardType) {
+        if(roomCardType === RoomCardType.MATCH){
+            // 匹配
+            WsClient.instance.send(Cmd.FREE_MATCH, "");
+        }else if(roomCardType === RoomCardType.CREATE){
+            // 创房
+            WsClient.instance.send(Cmd.CREATE_ROOM, "");
         }
     }
 

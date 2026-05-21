@@ -1,9 +1,15 @@
+import { Cmd } from "../../game/pj/enum/Cmd";
+import WsClient from "../../game/pj/net/WsClient";
+import UserData from "../../login/entity/UserData";
+import { SceneUtil } from "../../util/SceneUtil";
+import HallUIManager from "../HallUIManager";
+import { RoomCardType } from "./RoomSelectPopup";
+
 const { ccclass, property } = cc._decorator;
 
 @ccclass
 export default class JoinRoomPopup extends cc.Component {
 
-    private mask: cc.Node = null!;
     private panel: cc.Node = null!;
     private closeBtn: cc.Node = null!;
     private enterBtn: cc.Node = null!;
@@ -17,7 +23,6 @@ export default class JoinRoomPopup extends cc.Component {
     onLoad() {
         this.node.active = false;
 
-        this.mask = this.node.getChildByName("Mask");
         this.panel = this.node.getChildByName("Panel");
 
         this.closeBtn = this.panel.getChildByName("CloseBtn");
@@ -32,8 +37,7 @@ export default class JoinRoomPopup extends cc.Component {
     }
 
     private bindEvents() {
-        this.mask.on(cc.Node.EventType.TOUCH_END, this.hide, this);
-        this.closeBtn.on(cc.Node.EventType.TOUCH_END, this.hide, this);
+        this.closeBtn.on(cc.Node.EventType.TOUCH_END, this.close, this);
         this.enterBtn.on(cc.Node.EventType.TOUCH_END, this.onEnterRoom, this);
 
         for (let i = 0; i <= 9; i++) {
@@ -57,13 +61,8 @@ export default class JoinRoomPopup extends cc.Component {
         this.roomId = "";
         this.refreshInput();
 
-        this.mask.opacity = 0;
         this.panel.scale = 0.85;
         this.panel.opacity = 0;
-
-        cc.tween(this.mask)
-            .to(0.2, { opacity: 180 })
-            .start();
 
         cc.tween(this.panel)
             .to(0.25, {
@@ -74,9 +73,6 @@ export default class JoinRoomPopup extends cc.Component {
     }
 
     hide() {
-        cc.tween(this.mask)
-            .to(0.15, { opacity: 0 })
-            .start();
 
         cc.tween(this.panel)
             .to(0.15, {
@@ -87,6 +83,11 @@ export default class JoinRoomPopup extends cc.Component {
                 this.node.active = false;
             })
             .start();
+    }
+
+    close(){
+        this.hide();
+        HallUIManager.instance.roomSelectPanelShow();
     }
 
     private inputNumber(num: number) {
@@ -128,12 +129,8 @@ export default class JoinRoomPopup extends cc.Component {
             cc.log("请输入完整房号");
             return;
         }
-
         cc.log("进房，房号：", this.roomId);
-
-        // TODO 调用进房协议
-        // GameNet.joinRoom(this.roomId);
-
-        this.hide();
+        // 加入房间
+        WsClient.instance.send(Cmd.ENTER_ROOM, {roomId: this.roomId});
     }
 }

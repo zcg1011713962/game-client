@@ -117,9 +117,9 @@ export default class GameCardManager extends cc.Component {
     
 
     public onGameCardClick(id : number){
-        const cardPopLayerNode = HallUIManager.instance.cardPopLayerNode;
-        if(cardPopLayerNode){
-            const roomSelectPopup = cardPopLayerNode.getComponent(RoomSelectPopup);
+        const roomSelectPanelNode = HallUIManager.instance.roomSelectPanelNode;
+        if(roomSelectPanelNode){
+            const roomSelectPopup = roomSelectPanelNode.getComponent(RoomSelectPopup);
             roomSelectPopup.show();
         }
     }

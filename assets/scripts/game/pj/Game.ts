@@ -15,36 +15,13 @@ export default class Game extends cc.Component {
     onLoad () {
         console.log("Game onLoad");
         this.seatContainerNode = cc.find("Canvas/MainLayout/Table/SeatContainer");
-        //this.node.on(cc.Node.EventType.TOUCH_END, this.onClick, this);
      }
 
 
     async start() {
-        const data = SceneData.getData<any>();
-        if(!data){
-            // 切换到大厅场景
-            SceneUtil.loadScene("login", null);
-            return;
-        }
-        const token = data.token;
-        const roomCardType = data.type;
-        cc.log("加载游戏场景", data);
-        if(token){
-            await this.initTable();
-            await WsClient.instance.connectAsync(Config.WS_URL, token);
-            if(roomCardType === RoomCardType.MATCH){
-                // 匹配
-                WsClient.instance.send(Cmd.FREE_MATCH, "");
-            }else if(roomCardType === RoomCardType.CREATE){
-                // 创房
-                WsClient.instance.send(Cmd.CREATE_ROOM, "");
-            }else if(roomCardType === RoomCardType.JOIN){
-                // 加入
-                WsClient.instance.send(Cmd.ENTER_ROOM, "");
-            }
-        }else{
-            console.log("进入游戏失败", token);
-        }
+        cc.log("加载游戏场景");
+        await this.initTable();
+        ClientRoomManager.instance.onGameSceneReady();
     }
 
     async initTable() {
@@ -62,10 +39,7 @@ export default class Game extends cc.Component {
     }
 
     
-    private onClick(event: cc.Event.EventMouse){
-        const worldPos = event.getLocation(); // 世界坐标
-        console.log("世界坐标:", worldPos);
-    }
+
    
     protected onDestroy(): void {
         if(!this.destroyed){

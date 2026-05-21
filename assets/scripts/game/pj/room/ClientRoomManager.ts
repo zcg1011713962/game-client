@@ -10,6 +10,7 @@ import {DelayTaskUtil} from "../util/DelayTaskUtil";
 import SettleManager from "../../../common/SettleManager";
 import UserData from "../../../login/entity/UserData";
 import CountDownManager from "../../../common/CountDownManager";
+import { SceneUtil } from "../../../util/SceneUtil";
 
 export interface PlayerDTO {
     userId: number;
@@ -91,6 +92,9 @@ export default class ClientRoomManager {
         }
         return this._instance;
     }
+    private gameReady: boolean = false;
+
+    private roomSnapshot: RoomSnapshot | null= null;
 
     private roundId: number = -1;
 
@@ -108,15 +112,26 @@ export default class ClientRoomManager {
 
     private bankerSeat: number = -1;
 
+    private baseScore: number = -1;
+
     private players: Map<number, PlayerDTO> = new Map();
     private betMap: Record<number, number> = {};
     private cardMap: Record<number, CardInfo[]> = {};
 
     private constructor() {}
 
-    // 进房回包
-    public applyEnterRoom(data: RoomSnapshot) {
-        console.log("进房回报包", data);
+
+    
+    // 游戏场景初始化完成后调用
+    public onGameSceneReady() {
+        cc.log("游戏场景准备完成");
+        this.gameReady = true;
+        if (this.roomSnapshot) {
+            this.renderRoom(this.roomSnapshot);
+        }
+    }
+
+    private renderRoom(data: RoomSnapshot){
         const bankerSeat = data.bankerSeat;
         const players = data.players;
 
@@ -126,9 +141,11 @@ export default class ClientRoomManager {
         this.bankerSeat = bankerSeat;
         this.betMap = data.betMap;
         this.cardMap = data.cardMap;
+        this.baseScore = data.baseScore;
         
-        
-        UIManager.instance.updateTopView(data.roomId, players.length, data.baseScore);
+        if(UIManager.instance){
+            UIManager.instance.updateTopView(data.roomId, players.length, data.baseScore);
+        }
         this.updatePlayer(data.userId, players);
        
         // 更新房间状态
@@ -143,6 +160,19 @@ export default class ClientRoomManager {
                 this.settle(data.settlePush);
             }
         }
+    }
+
+    // 进房回包
+    public applyEnterRoom(data: RoomSnapshot) {
+        console.log("进房回报包", data);
+        cc.log("进房回包", data);
+
+        // 1. 先缓存房间数据
+        this.roomSnapshot = data;
+
+        // 2. 切换到游戏场景
+        SceneUtil.loadScene("game_1");
+        
     }
 
     // 坐下回包
@@ -181,10 +211,12 @@ export default class ClientRoomManager {
         if (!data || !data.player) {
             return;
         }
-
         this.players.set(data.player.userId, data.player);
-        UIManager.instance.updateTopView(data.roomId, this.players.size, -1);
-        this.refreshAllSeatView();
+        if(!this.gameReady){
+            UIManager.instance.updateTopView(data.roomId, this.players.size, this.baseScore);
+            this.refreshAllSeatView();
+        }
+       
     }
 
     // 准备回包
@@ -389,18 +421,23 @@ export default class ClientRoomManager {
         this.refreshAllSeatView();
     }
 
+
+    // 离开房间回包
     public leaveRoom(data : any){
         WsClient.instance.close();
     }
 
- 
-    public playerLeaveRoom(data: { roomId: number, player: PlayerDTO }) {
+    // 离开房间通知
+    public playerLeaveRoom(data: { roomId: number, player: PlayerDTO}) {
         if (!data || !data.player) {
             return;
         }
         this.players.delete(data.player.userId);
-
+        
         this.refreshAllSeatView();
+        if(UIManager.instance){
+            UIManager.instance.updateTopView(data.roomId, this.players.size, this.baseScore);
+        }
     }
 
 
