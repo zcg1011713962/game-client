@@ -14,6 +14,8 @@ export default class HallUIManager extends cc.Component {
     public gameCardNode: cc.Node | null = null;
     public joinRoomPanelNode: cc.Node | null = null;
     public roomSelectPanelNode: cc.Node | null = null;
+    public canvas: cc.Node | null = null;
+    private shopNode: cc.Node |null = null;
     private static _instance: HallUIManager = null;
     public static get instance(): HallUIManager {
         return this._instance;
@@ -32,9 +34,11 @@ export default class HallUIManager extends cc.Component {
             this.hallBmgAudioId = cc.audioEngine.playEffect(HallRes.instance.hallBgmAudio, true);
             cc.audioEngine.setVolume(this.hallBmgAudioId, 0.3);
         } 
+        this.canvas = cc.find("Canvas");
         this.gameCardNode = cc.find("Canvas/GameCard");
         this.joinRoomPanelNode = cc.find("Canvas/JoinRoomPanel");
         this.roomSelectPanelNode = cc.find("Canvas/RoomSelectPanel");
+        
 
         const guest = UserData.get();
         if(!guest){
@@ -111,6 +115,26 @@ export default class HallUIManager extends cc.Component {
         }
         label.string = String(count);
         label.node.color = new cc.Color(255, 215, 0); // 金色
+    }
+
+    public async showShop(){
+        let shopPrefab = HallRes.instance.shopPrefab;
+        if(!shopPrefab){
+            await HallRes.instance.loadShopPrefab();
+            shopPrefab = HallRes.instance.shopPrefab;
+        }
+        if(!this.shopNode){
+            this.shopNode = cc.instantiate(shopPrefab);
+            this.canvas?.addChild(this.shopNode);
+        }else{
+            this.shopNode.active = true;
+        }
+    }
+
+    public hideShop(){
+        if(this.shopNode){
+             this.shopNode.active = false;
+        }
     }
 
      onDestroy() {

@@ -2,6 +2,7 @@ export default class HallRes {
     private static _instance: HallRes = null;
     public hallBgmAudio: cc.AudioClip = null;
     public hallClickAudio: cc.AudioClip = null;
+    public shopPrefab: cc.Prefab = null;
     public static get instance(): HallRes {
         if (!this._instance) {
             this._instance = new HallRes();
@@ -46,6 +47,22 @@ export default class HallRes {
             cc.log("大厅点击音乐加载完成");
             resolve();
         });
+        });
+    }
+
+
+     public loadShopPrefab(): Promise<void>{
+        return new Promise((resolve, reject) => {
+            cc.resources.load("prefabs/Shop", cc.Prefab, (err, prefab) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                this.shopPrefab = prefab;
+                console.log("商城预制体加载完成");
+                resolve();
+            });
         });
     }
 
