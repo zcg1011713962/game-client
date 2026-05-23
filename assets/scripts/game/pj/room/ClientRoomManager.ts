@@ -424,7 +424,7 @@ export default class ClientRoomManager {
 
     // 离开房间回包
     public leaveRoom(data : any){
-        WsClient.instance.close();
+        //WsClient.instance.close();
     }
 
     // 离开房间通知
