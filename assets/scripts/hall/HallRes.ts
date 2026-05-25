@@ -1,3 +1,5 @@
+import UserData from "../login/entity/UserData";
+
 export default class HallRes {
     private static _instance: HallRes = null;
 
@@ -21,24 +23,26 @@ export default class HallRes {
 
 
     public async preload(): Promise<void> {
+        const user = UserData.get();
         const t = Date.now();
 
         await this.loadHallBundle();
 
-        // BGM 不阻塞大厅进入
+        // 不阻塞
         this.loadHallBgmAudio();
+        this.loadHallClickAudio();
 
-        await Promise.all([
-            this.loadHallClickAudio(),
-            this.loadGameCardPrefabs(),
-            this.loadBg1Img(),
-            this.loadGameIconImg(),
-            this.loadAvatarImg()
-        ]);
+        // 必须资源
+        await this.loadGameCardPrefabs();
+        console.log("大厅可显示耗时:", Date.now() - t, "ms");
 
-         console.log("初始化大厅资源耗时:", Date.now() - t, "ms");
+      
+
+        const avatar = user != null ? user.avatar : "0";
+        this.loadAvatarImg("avatar_" + avatar);
+
+        console.log("初始化大厅资源耗时:", Date.now() - t, "ms");
     }
-
 
     private loadHallBundle(): Promise<cc.AssetManager.Bundle> {
         return new Promise((resolve, reject) => {
@@ -60,36 +64,36 @@ export default class HallRes {
         });
     }
 
-     public async loadAvatarImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
-       
-        if (Object.keys(this.avatarMap).length > 0) {
-            return this.avatarMap;
+     public async loadAvatarImg(name: string): Promise<cc.SpriteFrame> {
+
+        // 已缓存
+        if (this.avatarMap[name]) {
+            return this.avatarMap[name];
         }
-    
+
         const bundle = await this.loadHallBundle();
-    
+
         return new Promise((resolve, reject) => {
-    
-            bundle.loadDir("avatar", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
-    
+
+            bundle.load(`avatar/${name}`, cc.SpriteFrame, (err, sp: cc.SpriteFrame) => {
+
                 if (err) {
-                    cc.error("头像加载失败", err);
+                    cc.error(`头像加载失败: ${name}`, err);
                     reject(err);
                     return;
                 }
-    
-                assets.forEach(sp => {
-                    this.avatarMap[sp.name] = sp;
-                });
-    
-                cc.log("所有头像加载完成");
-                resolve(this.avatarMap);
-    
+
+                // 缓存
+                this.avatarMap[name] = sp;
+
+                cc.log(`头像加载完成: ${name}`);
+
+                resolve(sp);
+
             });
-    
+
         });
     }
-
     private async loadHallBgmAudio(): Promise<void> {
         if (this.hallBgmAudio) return;
 
@@ -156,48 +160,40 @@ export default class HallRes {
         });
     }
 
-    public async loadBg1Img(): Promise<{ [key: string]: cc.SpriteFrame }> {
-        if (Object.keys(this.bg1Map).length > 0) return this.bg1Map;
+    public async loadBg1Img(name: string): Promise<cc.SpriteFrame> {
+        if (this.bg1Map[name]) return this.bg1Map[name];
 
         const bundle = await this.loadHallBundle();
 
         return new Promise((resolve, reject) => {
-            bundle.loadDir("hall/game/bg1", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
+            bundle.load(`hall/game/bg1/${name}`, cc.SpriteFrame, (err, sp: cc.SpriteFrame) => {
                 if (err) {
-                    cc.error("游戏卡片背景加载失败:", err);
+                    cc.error("游戏卡片背景加载失败:", name, err);
                     reject(err);
                     return;
                 }
 
-                assets.forEach(sp => {
-                    this.bg1Map[sp.name] = sp;
-                });
-
-                cc.log("所有游戏卡片背景加载完成");
-                resolve(this.bg1Map);
+                this.bg1Map[name] = sp;
+                resolve(sp);
             });
         });
     }
 
-    public async loadGameIconImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
-        if (Object.keys(this.gameIconMap).length > 0) return this.gameIconMap;
+    public async loadGameIconImg(name: string): Promise<cc.SpriteFrame> {
+        if (this.gameIconMap[name]) return this.gameIconMap[name];
 
         const bundle = await this.loadHallBundle();
 
         return new Promise((resolve, reject) => {
-            bundle.loadDir("hall/game/game_icon", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
+            bundle.load(`hall/game/game_icon/${name}`, cc.SpriteFrame, (err, sp: cc.SpriteFrame) => {
                 if (err) {
-                    cc.error("游戏ICON加载失败:", err);
+                    cc.error("游戏ICON加载失败:", name, err);
                     reject(err);
                     return;
                 }
 
-                assets.forEach(sp => {
-                    this.gameIconMap[sp.name] = sp;
-                });
-
-                cc.log("所有游戏ICON加载完成");
-                resolve(this.gameIconMap);
+                this.gameIconMap[name] = sp;
+                resolve(sp);
             });
         });
     }

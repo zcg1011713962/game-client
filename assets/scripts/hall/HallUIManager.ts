@@ -38,7 +38,6 @@ export default class HallUIManager extends cc.Component {
     }
 
     public async init(){
-        let t = Date.now();
         await HallRes.instance.preload();
         this.intGameCardPos();
         this.initData();
@@ -49,9 +48,10 @@ export default class HallUIManager extends cc.Component {
             cc.log("用户数据为空，进入游戏失败");
             return;
         }
+        let t = Date.now();
         await WsClient.instance.connectAsync(Config.WS_URL, guest.token);
         WsClient.instance.send(Cmd.ROOM_INFO, "")
-        console.log("初始化大厅耗时:", Date.now() - t, "ms");
+        console.log("连接socket耗时:", Date.now() - t, "ms");
     }
 
 
@@ -84,12 +84,14 @@ export default class HallUIManager extends cc.Component {
             node.parent = this.gameCardContainerNode;
             node.setPosition(data.x, data.y);
             const gameCardComponent = node.getComponent(GameCardComponent);
-            gameCardComponent.init(data, HallRes.instance.bg1Map, HallRes.instance.gameIconMap);
+            gameCardComponent.init(data, HallRes.instance.bg1Map);
             CameCardComponentManager.getInstance().gameCardComponentList.push(gameCardComponent);
     
         });
         console.log('GameCardLayout OK')
     }
+
+    
 
     
 

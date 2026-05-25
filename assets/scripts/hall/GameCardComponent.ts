@@ -1,81 +1,82 @@
-const {ccclass, property} = cc._decorator;
-import {GameCardData} from "./entity/GameCardData";
+const { ccclass, property } = cc._decorator;
+
+import { GameCardData } from "./entity/GameCardData";
 import HallRes from "./HallRes";
 import HallUIManager from "./HallUIManager";
 
 @ccclass
 export default class GameCardComponent extends cc.Component {
-    private bg1Map : { [key: string]: cc.SpriteFrame } = {}; // 预加载图片资源
-    private gameIconMap : { [key: string]: cc.SpriteFrame } = {}; // 预加载图片资源
-    private gameCardData: GameCardData = null;
 
-    onLoad () {
+    private gameCardData: GameCardData = null;
+    private loadToken: number = 0;
+
+    onLoad() {
         this.node.on(cc.Node.EventType.TOUCH_END, this.onClick, this);
     }
 
-    public init(gameCardData: GameCardData, bg1Map : { [key: string]: cc.SpriteFrame }, gameIconMap : { [key: string]: cc.SpriteFrame }){
-        this.bg1Map = bg1Map;
-        this.gameIconMap = gameIconMap;
+    onDestroy() {
+        this.node.off(cc.Node.EventType.TOUCH_END, this.onClick, this);
+    }
+
+    public init(gameCardData: GameCardData) {
         this.setData(gameCardData);
     }
 
-    /**
-    * 更新数据
-    */
     public setData(gameCardData: GameCardData) {
         this.gameCardData = gameCardData;
         this.updateView();
     }
 
-    public updateView(){
-        if(this.gameCardData){
+    public updateView() {
+        if (!this.gameCardData) return;
+
+        const token = ++this.loadToken;
+
+        this.updateTextView();
+        this.loadCardImageAsync(this.gameCardData.id, token);
+    }
+
+    private async loadCardImageAsync(id: number, token: number) {
+        try {
+            const bgKey = `bg1_${id}`;
+            const iconKey = `game_${id}`;
+
+            const [bg1Sprite, gameIconSprite] = await Promise.all([
+                HallRes.instance.loadBg1Img(bgKey),
+                HallRes.instance.loadGameIconImg(iconKey),
+            ]);
+
+            if (!cc.isValid(this.node)) return;
+            if (token !== this.loadToken) return;
+
             const bg1Node = this.node.getChildByName("bg1");
-            const bg1Sprite = this.getBg1Sprite(this.gameCardData.id);
-            const gameIconSprite = this.getGameIconSprite(this.gameCardData.id);
-            if(bg1Node && bg1Sprite){
-                const bg1NodeSprite = bg1Node.getComponent(cc.Sprite)
-                bg1NodeSprite.spriteFrame = bg1Sprite;
+            if (bg1Node && bg1Sprite) {
+                bg1Node.getComponent(cc.Sprite).spriteFrame = bg1Sprite;
             }
+
             const gameIconNode = this.node.getChildByName("gameIcon");
-            if(gameIconNode && gameIconSprite){
-                const gameIconNodeSprite = gameIconNode.getComponent(cc.Sprite);
-                gameIconNodeSprite.spriteFrame = gameIconSprite;
+            if (gameIconNode && gameIconSprite) {
+                gameIconNode.getComponent(cc.Sprite).spriteFrame = gameIconSprite;
             }
-    
-            const numLabeNode = this.node.getChildByName("numLabel");
-            HallUIManager.instance.setGameOnlineCountView(numLabeNode, 120);
+
+        } catch (e) {
+            cc.error("游戏卡片图片加载失败:", id, e);
         }
     }
 
-
-    private getBg1Sprite(id : number){
-        const key = `bg1_${id}`;
-        const spriteFrame = this.bg1Map[key];
-        if (!spriteFrame) {
-            console.error("找不到游戏卡片背景:", key, this.bg1Map);
-            return;
-        }
-        return spriteFrame; 
+    private updateTextView() {
+        const numLabeNode = this.node.getChildByName("numLabel");
+        HallUIManager.instance.setGameOnlineCountView(numLabeNode, 120);
     }
-
-    private getGameIconSprite(id : number){
-        const key = `game_${id}`;
-        const spriteFrame = this.gameIconMap[key];
-        if (!spriteFrame) {
-            console.error("找不到游戏卡片ICON:", key, this.gameIconMap);
-            return;
-        }
-        return spriteFrame; 
-    }
-
 
     private onClick() {
-        // 游戏卡片点击
-        cc.audioEngine.playEffect(HallRes.instance.hallClickAudio, false);
-        cc.log("onClick", this.gameCardData);
+        if (HallRes.instance.hallClickAudio) {
+            cc.audioEngine.playEffect(HallRes.instance.hallClickAudio, false);
+        }
+
         if (!this.gameCardData) return;
+
+        cc.log("onClick", this.gameCardData);
         cc.systemEvent.emit("GameCard_CLICK", this.gameCardData.id);
     }
-
-
 }
