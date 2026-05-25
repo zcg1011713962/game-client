@@ -146,26 +146,51 @@ export default class PaiJiuTable extends cc.Component {
         this.unscheduleAllCallbacks();
     }
 
-    /** 加载牌预制体 */
-    private loadCardPrefab(): Promise<cc.Prefab> {
+        /** 加载牌预制体 */
+    private async loadCardPrefab(): Promise<cc.Prefab> {
+
+        if (this.cardPrefab) {
+            return this.cardPrefab;
+        }
+
+        const bundle = await GameRes.instance.loadGameBundle();
+
         return new Promise((resolve, reject) => {
-            cc.resources.load("prefabs/Card", cc.Prefab, (err, prefab: cc.Prefab) => {
+
+            bundle.load("prefabs/Card", cc.Prefab, (err, prefab: cc.Prefab) => {
+
                 if (err) {
+                    cc.error("Card预制体加载失败", err);
                     reject(err);
                     return;
                 }
 
                 this.cardPrefab = prefab;
+
+                cc.log("牌预制体加载完成");
+
                 resolve(prefab);
+
             });
+
         });
     }
 
     /** 加载所有牌图片 */
-    private loadCardImg() {
+    private async loadCardImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
+
+        if (Object.keys(this.cardImgMap).length > 0) {
+            return this.cardImgMap;
+        }
+
+        const bundle = await GameRes.instance.loadGameBundle();
+
         return new Promise((resolve, reject) => {
-            cc.resources.loadDir("card", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
+
+            bundle.loadDir("card", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
+
                 if (err) {
+                    cc.error("牌图片加载失败", err);
                     reject(err);
                     return;
                 }
@@ -175,8 +200,11 @@ export default class PaiJiuTable extends cc.Component {
                 });
 
                 cc.log("所有牌加载完成");
+
                 resolve(this.cardImgMap);
+
             });
+
         });
     }
 

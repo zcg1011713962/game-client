@@ -25,6 +25,10 @@ export default class WsClient {
 
     public connectAsync(baseUrl: string, token: string): Promise<void> {
         return new Promise((resolve, reject) => {
+            if (this.ws && this.ws.readyState === WebSocket.OPEN){
+                resolve();
+                return;
+            }
 
             this.url = `${baseUrl}?token=${encodeURIComponent(token)}`;
             this.ws = new WebSocket(this.url);

@@ -4,13 +4,16 @@ import WsClient from "../game/pj/net/WsClient";
 import UserData from "../login/entity/UserData";
 import Config from "../config/Config";
 import { Cmd } from "../game/pj/enum/Cmd";
+import CameCardComponentManager from "./CameCardComponentManager";
+import GameCardComponent from "./GameCardComponent";
+import ShopRes from "../shop/ShopRes";
 
 const {ccclass, property} = cc._decorator;
 
 @ccclass
 export default class HallUIManager extends cc.Component {
-    public hallBmgAudioId: number | null = null;
     private gameCardPos : { x : number, y : number, id:  number, name: string }[] = [];
+    private gameCardContainerNode: cc.Node = null;
     public gameCardNode: cc.Node | null = null;
     public joinRoomPanelNode: cc.Node | null = null;
     public roomSelectPanelNode: cc.Node | null = null;
@@ -22,23 +25,24 @@ export default class HallUIManager extends cc.Component {
     }
 
     async onLoad() {
+        this.canvas = cc.find("Canvas");
+        this.gameCardNode = cc.find("Canvas/GameCard");
+        this.joinRoomPanelNode = cc.find("Canvas/JoinRoomPanel");
+        this.roomSelectPanelNode = cc.find("Canvas/RoomSelectPanel");
+        this.gameCardContainerNode = cc.find("Canvas/GameCard/View");
+        // 监听座位点击
+        cc.systemEvent.on("GameCard_CLICK", this.onGameCardClick, this);
         // 保存单例引用
         HallUIManager._instance = this;
         this.init();
     }
 
     public async init(){
-        this.intGameCardPos();
+        let t = Date.now();
         await HallRes.instance.preload();
-        if(this.hallBmgAudioId === null){
-            this.hallBmgAudioId = cc.audioEngine.playEffect(HallRes.instance.hallBgmAudio, true);
-            cc.audioEngine.setVolume(this.hallBmgAudioId, 0.3);
-        } 
-        this.canvas = cc.find("Canvas");
-        this.gameCardNode = cc.find("Canvas/GameCard");
-        this.joinRoomPanelNode = cc.find("Canvas/JoinRoomPanel");
-        this.roomSelectPanelNode = cc.find("Canvas/RoomSelectPanel");
-        
+        this.intGameCardPos();
+        this.initData();
+        this.initGameCardLayout();
 
         const guest = UserData.get();
         if(!guest){
@@ -47,18 +51,54 @@ export default class HallUIManager extends cc.Component {
         }
         await WsClient.instance.connectAsync(Config.WS_URL, guest.token);
         WsClient.instance.send(Cmd.ROOM_INFO, "")
+        console.log("初始化大厅耗时:", Date.now() - t, "ms");
     }
 
-    public intGameCardPos(){
+
+     public intGameCardPos(){
         this.gameCardPos = [];
         // 设置座位坐标
         this.gameCardPos.push({ x : -278, y : 50, id:  1 , name: "牌九"});
     }
 
+    private initData() {
+        for (let i = 0; i < this.gameCardPos.length; i++) {
+            CameCardComponentManager.getInstance().gameCardComponentDataList.push({
+                id: this.gameCardPos[i].id,
+                x: this.gameCardPos[i].x,
+                y: this.gameCardPos[i].y,
+                name: this.gameCardPos[i].name,
+            });
+        }
+    }
 
+    initGameCardLayout() {
+        if (!HallRes.instance.gameCardPrefab || !this.gameCardContainerNode) {
+            cc.error("GameCardManager未初始化完成");
+            return;
+        }
+        this.gameCardContainerNode.removeAllChildren();
+    
+        CameCardComponentManager.getInstance().gameCardComponentDataList.forEach((data, i) => {
+            const node = cc.instantiate(HallRes.instance.gameCardPrefab);
+            node.parent = this.gameCardContainerNode;
+            node.setPosition(data.x, data.y);
+            const gameCardComponent = node.getComponent(GameCardComponent);
+            gameCardComponent.init(data, HallRes.instance.bg1Map, HallRes.instance.gameIconMap);
+            CameCardComponentManager.getInstance().gameCardComponentList.push(gameCardComponent);
+    
+        });
+        console.log('GameCardLayout OK')
+    }
 
-    public getGameCardPos() : { x : number, y : number, id:  number, name: string }[] {
-        return this.gameCardPos;
+    
+
+    public onGameCardClick(id : number){
+        const roomSelectPanelNode = HallUIManager.instance.roomSelectPanelNode;
+        if(roomSelectPanelNode){
+            const roomSelectPopup = roomSelectPanelNode.getComponent(RoomSelectPopup);
+            roomSelectPopup.show();
+        }
     }
 
     public gameCardShow(){
@@ -118,10 +158,10 @@ export default class HallUIManager extends cc.Component {
     }
 
     public async showShop(){
-        let shopPrefab = HallRes.instance.shopPrefab;
+        let shopPrefab = ShopRes.instance.shopPrefab;
         if(!shopPrefab){
-            await HallRes.instance.loadShopPrefab();
-            shopPrefab = HallRes.instance.shopPrefab;
+            await ShopRes.instance.loadShopPrefab();
+            shopPrefab = ShopRes.instance.shopPrefab;
         }
         if(!this.shopNode){
             this.shopNode = cc.instantiate(shopPrefab);
@@ -131,17 +171,9 @@ export default class HallUIManager extends cc.Component {
         }
     }
 
-    public hideShop(){
-        if(this.shopNode){
-             this.shopNode.active = false;
-        }
-    }
 
      onDestroy() {
-        if(this.hallBmgAudioId !== null){
-            cc.audioEngine.stopEffect(this.hallBmgAudioId);
-            this.hallBmgAudioId = null;
-        }
+      HallRes.instance.close();
     }
 
 }

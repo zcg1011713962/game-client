@@ -212,7 +212,7 @@ export default class ClientRoomManager {
             return;
         }
         this.players.set(data.player.userId, data.player);
-        if(!this.gameReady){
+        if(this.gameReady){
             UIManager.instance.updateTopView(data.roomId, this.players.size, this.baseScore);
             this.refreshAllSeatView();
         }
@@ -424,7 +424,7 @@ export default class ClientRoomManager {
 
     // 离开房间回包
     public leaveRoom(data : any){
-        //WsClient.instance.close();
+        // WsClient.instance.close();
     }
 
     // 离开房间通知
@@ -433,10 +433,11 @@ export default class ClientRoomManager {
             return;
         }
         this.players.delete(data.player.userId);
-        
-        this.refreshAllSeatView();
-        if(UIManager.instance){
-            UIManager.instance.updateTopView(data.roomId, this.players.size, this.baseScore);
+        if(data.player.userId !== this.myUserId && this.myUserId > -1){
+             this.refreshAllSeatView();
+            if(UIManager.instance){
+                UIManager.instance.updateTopView(data.roomId, this.players.size, this.baseScore);
+            }
         }
     }
 
@@ -613,6 +614,7 @@ export default class ClientRoomManager {
         this.mySeatId = -1;
         this.roomState = RoomState.WAIT;
         this.bankerSeat = -1;
+        this.gameReady = false;
     }
 
 

@@ -26,7 +26,6 @@ export default class HallTopBar extends cc.Component {
         
         const user = UserData.get();
         if(user){
-            console.log(nameLabelNode, idLabelNode, coinValNode)
             this.setNickNameView(nameLabelNode, user.nickname);
             this.setIdValView(idLabelNode, `ID: ${user.userId}`);
             this.setGoldView(coinValNode, String(user.gold));

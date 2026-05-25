@@ -48,6 +48,7 @@ export default class Game extends cc.Component {
                 this.gameBgmAudio = null;
             }
             this.destroyed = true;
+           
             console.log("game onDestroy")
             SceneData.clear();
             ClientRoomManager.instance.cleanRoom();
