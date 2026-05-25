@@ -1,4 +1,3 @@
-
 import AgreementCheck from "./AgreementCheck"
 const {ccclass, property} = cc._decorator;
 import Http from "../util/Http";
@@ -8,6 +7,7 @@ import {SceneUtil} from "../util/SceneUtil";
 import UserData from "./entity/UserData";
 import ToastManager from "../common/ToastManager";
 import Config from "../config/Config";
+import LoginRes from "./LoginRes";
 
 export interface LoginData {
     uid: number;
@@ -17,92 +17,130 @@ export interface LoginData {
 
 @ccclass
 export default class Login extends cc.Component {
+
     private agreementNode: cc.Node = null;
-    private guestBtnNode : cc.Node = null;
-    private toastPrefab: cc.Prefab = null;
+    private guestBtnNode: cc.Node = null;
 
+    // 防止重复登录
+    private isLoginning: boolean = false;
 
-    async onLoad () { 
+    // 防止回调回来时节点已经销毁
+    private destroyed: boolean = false;
+
+    async onLoad() {
         this.guestBtnNode = cc.find("Canvas/LoginPanel/Btn_Guest");
         this.agreementNode = cc.find("Canvas/Agreement");
-        // 游客登录点击
         this.guestBtnNode.on(cc.Node.EventType.TOUCH_END, this.onStartBtnClick, this);
-        await this.loadToastPrefab();
-        ToastManager.init(this.toastPrefab);
-        console.log("Login加载完毕");
         this.init();
     }
 
-    public init(){
+    public async init() {
+        await LoginRes.instance.preload();
         const guest = UserData.get();
-        // 有游客缓存
+        // 有游客缓存，自动登录
         if (guest) {
             this.autoLogin(guest);
         }
     }
 
-    private onStartBtnClick(){
+    private onStartBtnClick() {
+        if (this.isLoginning) {
+            return;
+        }
+
         const agreementCheck = this.agreementNode.getComponent(AgreementCheck);
-        if(!agreementCheck.isChecked()){
+        if (!agreementCheck || !agreementCheck.isChecked()) {
             ToastManager.show("请阅读并勾选协议");
             return;
         }
+
         const guest = UserData.get();
         this.autoLogin(guest);
     }
 
-    public autoLogin(guest :{userId : number, token: string} | null){
-        // 游客登录
+    public autoLogin(guest: { userId: number, token: string } | null, retryWithoutToken: boolean = true) {
+        if (this.isLoginning) {
+            return;
+        }
+
+        this.isLoginning = true;
+        this.setGuestBtnEnable(false);
+
+        const t = Date.now();
+
         Http.post<ServerMsg<User>>(
             `${Config.API_URL}/login/guest`,
             {
                 token: guest !== null ? guest.token : "",
             },
             (err, res) => {
+                if (this.destroyed || !cc.isValid(this.node)) {
+                    return;
+                }
+
                 if (err) {
+                    this.isLoginning = false;
+                    this.setGuestBtnEnable(true);
                     ToastManager.show("请检查网络");
                     return;
                 }
 
                 if (!res) {
+                    this.isLoginning = false;
+                    this.setGuestBtnEnable(true);
                     return;
                 }
-                if(res.code === 2001){ 
-                    this.autoLogin({userId: -1, token: ""});
+
+                // token 失效，只允许重试一次，避免死循环
+                if (res.code === 2001) {
+                    this.isLoginning = false;
+
+                    if (retryWithoutToken) {
+                        this.autoLogin({ userId: -1, token: "" }, false);
+                    } else {
+                        this.setGuestBtnEnable(true);
+                        ToastManager.show("登录失效，请重新登录");
+                    }
+
                     return;
                 }
-                // 服务端业务错误
+
                 if (res.code !== 0) {
+                    this.isLoginning = false;
+                    this.setGuestBtnEnable(true);
                     ToastManager.show("服务器异常");
                     cc.error("登录失败:", res.msg);
                     return;
                 }
-                // 用户数据
+
                 const user = res.data;
-                if(user){
-                    console.log("登录成功", user);
+                if (user) {
+                    console.log("登录成功耗时:", Date.now() - t, "ms", user);
+
                     UserData.save(user);
-                    // 切换到大厅场景
+
+                    // 成功后不要再恢复按钮，直接进大厅
                     SceneUtil.loadScene("hall", user);
+                    return;
                 }
+
+                this.isLoginning = false;
+                this.setGuestBtnEnable(true);
             }
         );
     }
 
+    private setGuestBtnEnable(enable: boolean): void {
+        if (!this.guestBtnNode) return;
 
-    
-    private loadToastPrefab(): Promise<cc.Prefab> {
-        return new Promise((resolve, reject) => {
-            cc.resources.load("prefabs/ToastPrefab", cc.Prefab, (err, prefab: cc.Prefab) => {
-                if (err) {
-                    reject(err);
-                    return;
-                }
+        this.guestBtnNode.active = enable;
+    }
 
-                this.toastPrefab = prefab;
-                console.log("公共弹窗预制体加载完毕");
-                resolve(prefab);
-            });
-        });
+      onDestroy() {
+        this.destroyed = true;
+
+        if (this.guestBtnNode) {
+            this.guestBtnNode.off(cc.Node.EventType.TOUCH_END, this.onStartBtnClick, this);
+        }
     }
 }

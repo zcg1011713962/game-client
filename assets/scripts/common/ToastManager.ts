@@ -1,19 +1,11 @@
+import LoginRes from "../login/LoginRes";
 import ToastView from "./ToastView";
 import UIZOrder from "./ui/UIZOrder";
 
 export default class ToastManager {
 
-    private static toastPrefab: cc.Prefab = null;
-
-    public static init(prefab: cc.Prefab) {
-        this.toastPrefab = prefab;
-    }
-
-    public static show(msg: string) {
-        if (!this.toastPrefab) {
-            cc.error("ToastManager 未初始化");
-            return;
-        }
+    public static async show(msg: string) {
+        const toastPrefab = await LoginRes.instance.loadToastPrefab();
 
         const scene = cc.director.getScene();
         const canvas = cc.find("Canvas", scene);
@@ -23,7 +15,7 @@ export default class ToastManager {
             return;
         }
 
-        const node = cc.instantiate(this.toastPrefab);
+        const node = cc.instantiate(toastPrefab);
         canvas.addChild(node);
         node.zIndex = UIZOrder.TOAST;
         node.setPosition(0, 0);

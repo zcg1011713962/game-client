@@ -84,14 +84,12 @@ export default class HallUIManager extends cc.Component {
             node.parent = this.gameCardContainerNode;
             node.setPosition(data.x, data.y);
             const gameCardComponent = node.getComponent(GameCardComponent);
-            gameCardComponent.init(data, HallRes.instance.bg1Map);
+            gameCardComponent.init(data);
             CameCardComponentManager.getInstance().gameCardComponentList.push(gameCardComponent);
     
         });
         console.log('GameCardLayout OK')
     }
-
-    
 
     
 

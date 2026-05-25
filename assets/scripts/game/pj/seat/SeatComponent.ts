@@ -5,6 +5,7 @@ import UIManager from "../ui/UIManager";
 import CurrUserManager from "../user/CurrUserManager";
 import ClientRoomManager from "../room/ClientRoomManager";
 import { RoomState } from "../room/RoomState";
+import HallRes from "../../../hall/HallRes";
 
 @ccclass
 export default class SeatComponent extends cc.Component {
@@ -17,7 +18,7 @@ export default class SeatComponent extends cc.Component {
     // 座位预制体数据
     private seatData: SeatData = null;
 
-    private avatarMap : { [key: string]: cc.SpriteFrame } = {}; // 头像图片资源
+    private avatarLoadToken: number = 0;
 
     onLoad() {
         this.normalNode = this.node.getChildByName("Normal");
@@ -33,8 +34,7 @@ export default class SeatComponent extends cc.Component {
         this.node.on(cc.Node.EventType.TOUCH_END, this.onClick, this);
     }
 
-    public init(seatData: SeatData, avatarMap : { [key: string]: cc.SpriteFrame }){
-        this.avatarMap = avatarMap;
+    public init(seatData: SeatData){
         this.setData(seatData);
     }
 
@@ -154,7 +154,7 @@ export default class SeatComponent extends cc.Component {
     /**
      * 坐下
      */
-    private setSetOut(active: boolean) {
+    private async setSetOut(active: boolean) {
         // 获取玩家数据
         const bankerSeat = ClientRoomManager.instance.getBankerSeat();
         
@@ -163,12 +163,7 @@ export default class SeatComponent extends cc.Component {
             const info = this.setOut.getChildByName("Info");
             const avatarNode = this.setOut.getChildByName("Avatars");
 
-            const avatarSprite = this.getAvatarSprite(userInfo);
-            // 头像
-            if(avatarSprite){
-                const avatarSpriteNode = avatarNode.getComponent(cc.Sprite);
-                avatarSpriteNode.spriteFrame = avatarSprite;
-            }
+            await this.updateAvatarAsync(userInfo);
             
             // 昵称
             const name = this.setOut.getChildByName("Name");
@@ -184,14 +179,35 @@ export default class SeatComponent extends cc.Component {
         this.setOut.active = active;
     }
 
-    private getAvatarSprite(userInfo : UserInfo){
-        const key = `avatar_${userInfo.avatar}`;
-        const spriteFrame = this.avatarMap[key];
-        if (!spriteFrame) {
-            console.error("找不到头像:", key);
-            return;
+    private async updateAvatarAsync(userInfo: UserInfo) {
+        try {
+
+            const key = `avatar_${userInfo.avatar}`;
+
+            const spriteFrame = await HallRes.instance.loadAvatarImg(key);
+
+            // 节点销毁
+            if (!cc.isValid(this.node)) return;
+
+            // 防止座位已换人
+            if (!this.seatData || !this.seatData.userInfo) return;
+
+            if (this.seatData.userInfo.userId !== userInfo.userId) return;
+
+            const avatarNode = this.setOut.getChildByName("Avatars");
+
+            if (!avatarNode) return;
+
+            const avatarSpriteNode = avatarNode.getComponent(cc.Sprite);
+
+            if (avatarSpriteNode) {
+                avatarSpriteNode.spriteFrame = spriteFrame;
+            }
+
+        } catch (e) {
+            cc.error("游戏内头像加载失败:", e);
         }
-        return spriteFrame; 
+
     }
 
 
