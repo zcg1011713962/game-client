@@ -14,7 +14,6 @@ export default class GameRes {
     public gameBgmAudio: cc.AudioClip = null;
     public clickAudio: cc.AudioClip = null;
     public shuffingAudio: cc.AudioClip = null;
-    public dealCardAudio: cc.AudioClip = null;
     public betAudio: cc.AudioClip = null;
     public clockCountdownPrefab: cc.Prefab = null;
 
@@ -32,23 +31,37 @@ export default class GameRes {
 
         await this.loadGameBundle();
 
+        // 只加载进入游戏马上要用的资源
         await Promise.all([
             this.loadChipPrefab(),
             this.loadChipImgs(),
-            this.loadSettlePrefab(),
-            this.loadLockAudio(),
             this.loadClockCountdownPrefab(),
-            this.loadShufflingAudio(),
-            this.loadDealCardAudio(),
-            this.loadGameBgmAudio(),
-            this.loadClickAudio(),
-            this.loadBetAudio()
         ]);
 
-        cc.log("初始化游戏资源耗时:", Date.now() - t, "ms");
-
-        SettleManager.init(this.settlePrefab);
         CountDownManager.init(this.clockCountdownPrefab);
+
+        console.log("游戏首屏资源耗时:", Date.now() - t, "ms");
+        // 延迟加载，不阻塞进游戏
+        this.preloadLazyRes();
+    }
+
+    private async preloadLazyRes(): Promise<void> {
+        const t = Date.now();
+
+        try {
+            await Promise.all([
+                this.loadSettlePrefab(),
+                this.loadGameBgmAudio(),
+                this.loadClickAudio(),
+                this.loadBetAudio(),
+            ]);
+
+            SettleManager.init(this.settlePrefab);
+
+            console.log("游戏延迟资源耗时:", Date.now() - t, "ms");
+        } catch (e) {
+            cc.error("延迟资源加载失败:", e);
+        }
     }
 
     public loadGameBundle(): Promise<cc.AssetManager.Bundle> {
@@ -69,6 +82,28 @@ export default class GameRes {
                 resolve(bundle);
             });
         });
+    }
+
+
+    public async getWarnAudio(): Promise<cc.AudioClip> {
+        if (!this.warnAudio) {
+            this.warnAudio = await this.loadAudio("audio/bgm_warn");
+        }
+        return this.warnAudio;
+    }
+
+    public async getShufflingAudio(): Promise<cc.AudioClip> {
+        if (!this.shuffingAudio) {
+            this.shuffingAudio = await this.loadAudio("audio/bgm_shuffling");
+        }
+        return this.shuffingAudio;
+    }
+
+    public async getDealCardAudio(): Promise<cc.AudioClip> {
+        if (!this.shuffingAudio) {
+            this.shuffingAudio = await this.loadAudio("audio/bgm_shuffling");
+        }
+        return this.shuffingAudio;
     }
 
     public async loadPrefab(path: string): Promise<cc.Prefab> {
@@ -147,32 +182,12 @@ export default class GameRes {
         });
     }
 
-    private async loadLockAudio(): Promise<void> {
-        if (this.warnAudio) return;
-
-        this.warnAudio = await this.loadAudio("audio/bgm_warn");
-        cc.log("倒计时音乐加载完成");
-    }
-
-    private async loadShufflingAudio(): Promise<void> {
-        if (this.shuffingAudio) return;
-
-        this.shuffingAudio = await this.loadAudio("audio/bgm_shuffling");
-        cc.log("洗牌音乐加载完成");
-    }
-
-    private async loadDealCardAudio(): Promise<void> {
-        if (this.dealCardAudio) return;
-
-        // 你原代码这里也是 bgm_shuffling，如果发牌有独立音频，改成 audio/bgm_deal_card
-        this.dealCardAudio = await this.loadAudio("audio/bgm_shuffling");
-        cc.log("发牌音乐加载完成");
-    }
 
     private async loadGameBgmAudio(): Promise<void> {
         if (this.gameBgmAudio) return;
-
         this.gameBgmAudio = await this.loadAudio("audio/bgm_game");
+        const gameBgmAudioId = cc.audioEngine.playEffect(this.gameBgmAudio, true);
+        cc.audioEngine.setVolume(gameBgmAudioId, 0.3);
         cc.log("游戏背景音乐加载完成");
     }
 

@@ -26,11 +26,6 @@ export default class Game extends cc.Component {
 
     async initTable() {
         await GameRes.instance.preload();
-        // 播放大厅BGM
-        if(this.gameBgmAudio === null){
-            this.gameBgmAudio = cc.audioEngine.playEffect(GameRes.instance.gameBgmAudio, true);
-            cc.audioEngine.setVolume(this.gameBgmAudio, 0.3);
-        }
 
         const seatManager =  this.seatContainerNode.getComponent("SeatManager");
         await seatManager.init();

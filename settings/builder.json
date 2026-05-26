@@ -1,7 +1,7 @@
 {
   "title": "game-client",
   "packageName": "org.cocos2d.demo",
-  "startScene": "14a158ce-f2e1-40c0-b376-f40d798ed40b",
+  "startScene": "218c7af9-62ba-48c9-90fb-b117054f77be",
   "excludeScenes": [],
   "orientation": {
     "landscapeRight": true,

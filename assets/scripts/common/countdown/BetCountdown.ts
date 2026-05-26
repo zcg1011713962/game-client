@@ -113,11 +113,12 @@ export default class ClockCountdown extends cc.Component {
         this.stopWarnAnim();
     }
 
-    private playWarn() {
-        if (GameRes.instance.warnAudio && this.audioId === null) {
-            this.audioId = cc.audioEngine.playEffect(GameRes.instance.warnAudio, false);
+    private async playWarn() {
+        const warnAudio = await GameRes.instance.getWarnAudio();
+        if(this.audioId === null){
+            this.audioId = cc.audioEngine.playEffect(warnAudio, false);
         }
-
+        
         if (!this.clock || !this.originPos) return;
 
         this.clock.stopAllActions();

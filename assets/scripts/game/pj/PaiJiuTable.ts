@@ -290,10 +290,10 @@ export default class PaiJiuTable extends cc.Component {
     }
 
     /** 播放洗牌音效 */
-    private playShuffleAudio() {
+    private async playShuffleAudio() {
         if (this.tableState !== PaiJiuTableState.SHUFFLING) return;
-
-        cc.audioEngine.playEffect(GameRes.instance.shuffingAudio, false);
+        const shuffingAudio = await GameRes.instance.getShufflingAudio();
+        cc.audioEngine.playEffect(shuffingAudio, false);
     }
 
     /** 洗牌动画 */
@@ -558,8 +558,9 @@ export default class PaiJiuTable extends cc.Component {
                     scale: 1.0,
                 },
                 { easing: "sineOut" }
-            ).call(() =>{
-                cc.audioEngine.playEffect(GameRes.instance.dealCardAudio, false);
+            ).call(async () =>{
+                const dealCardAudio = await GameRes.instance.getDealCardAudio()
+                cc.audioEngine.playEffect(dealCardAudio, false);
             })
             .start();
     }
