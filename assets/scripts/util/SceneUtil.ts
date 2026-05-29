@@ -18,7 +18,6 @@ export class SceneData {
 export class SceneUtil {
 
     static async loadScene(scene: string, data?: any): Promise<void> {
-
         SceneData.setData(data);
 
         if (scene === "game_1") {
@@ -27,17 +26,32 @@ export class SceneUtil {
         }
 
         if (scene === "hall") {
-            await this.loadBundleScene("bundle_hall", "scene/hall");
+            await this.loadNormalScene("hall");
             return;
         }
-         if (scene === "login") {
-            await this.loadBundleScene("bundle_login", "scene/login");
+
+        if (scene === "login") {
+            await this.loadNormalScene("login");
             return;
         }
 
         cc.error("未知场景:", scene);
     }
 
+    private static loadNormalScene(sceneName: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            cc.director.loadScene(sceneName, (err) => {
+                if (err) {
+                    cc.error("普通场景加载失败:", sceneName, err);
+                    reject(err);
+                    return;
+                }
+
+                resolve();
+            });
+        });
+    }
+    
     private static loadBundleScene(bundleName: string, scenePath: string): Promise<void> {
 
         return new Promise((resolve, reject) => {

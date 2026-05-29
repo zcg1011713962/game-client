@@ -19,6 +19,8 @@ export default class HallUIManager extends cc.Component {
     public roomSelectPanelNode: cc.Node | null = null;
     public canvas: cc.Node | null = null;
     private shopNode: cc.Node |null = null;
+    private destroyed: boolean = false;
+    private isPlayingBgm: boolean = false;
     private static _instance: HallUIManager = null;
     public static get instance(): HallUIManager {
         return this._instance;
@@ -38,10 +40,10 @@ export default class HallUIManager extends cc.Component {
     }
 
     public async init(){
-        await HallRes.instance.preload();
         this.intGameCardPos();
         this.initData();
         this.initGameCardLayout();
+        this.playGameBgm();
 
         const guest = UserData.get();
         if(!guest){
@@ -171,9 +173,48 @@ export default class HallUIManager extends cc.Component {
         }
     }
 
+    private async playGameBgm(): Promise<void> {
+        if (this.isPlayingBgm) {
+            return;
+        }
 
-     onDestroy() {
-      HallRes.instance.close();
+        if (!HallRes.instance.hallBgmAudio) {
+            await HallRes.instance.loadHallBgmAudio();
+        }
+
+        if (this.destroyed || !cc.isValid(this.node)) {
+            return;
+        }
+
+        if (!HallRes.instance.hallBgmAudio) {
+            cc.error("大厅背景音乐不存在");
+            return;
+        }
+
+        cc.audioEngine.stopMusic();
+
+        cc.audioEngine.playMusic(HallRes.instance.hallBgmAudio, true);
+        cc.audioEngine.setMusicVolume(0.3);
+
+        this.isPlayingBgm = true;
+
+        console.log("播放大厅背景音乐");
     }
+
+    protected onDestroy(): void {
+        if (this.destroyed) {
+            return;
+        }
+
+        this.destroyed = true;
+
+        cc.audioEngine.stopMusic();
+
+        this.isPlayingBgm = false;
+         HallRes.instance.close();
+
+        console.log("hall onDestroy");
+    }
+
 
 }

@@ -35,7 +35,6 @@ export default class Login extends cc.Component {
     }
 
     public async init() {
-        await LoginRes.instance.preload();
         const guest = UserData.get();
         // 有游客缓存，自动登录
         if (guest) {

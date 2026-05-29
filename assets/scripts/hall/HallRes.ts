@@ -34,13 +34,8 @@ export default class HallRes {
 
         // 必须资源
         await this.loadGameCardPrefabs();
-        console.log("大厅可显示耗时:", Date.now() - t, "ms");
-
-      
-
         const avatar = user != null ? user.avatar : "0";
         this.loadAvatarImg("avatar_" + avatar);
-
         console.log("初始化大厅资源耗时:", Date.now() - t, "ms");
     }
 
@@ -94,7 +89,7 @@ export default class HallRes {
 
         });
     }
-    private async loadHallBgmAudio(): Promise<void> {
+    public async loadHallBgmAudio(): Promise<void> {
         if (this.hallBgmAudio) return;
 
         const bundle = await this.loadHallBundle();
@@ -108,10 +103,6 @@ export default class HallRes {
                 }
 
                 this.hallBgmAudio = clip;
-
-                cc.audioEngine.playMusic(this.hallBgmAudio, true);
-                cc.audioEngine.setMusicVolume(0.3);
-
                 cc.log("大厅音乐加载完成");
                 resolve();
             });

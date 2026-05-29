@@ -124,7 +124,6 @@ export default class ClientRoomManager {
     
     // 游戏场景初始化完成后调用
     public onGameSceneReady() {
-        cc.log("游戏场景准备完成");
         this.gameReady = true;
         if (this.roomSnapshot) {
             this.renderRoom(this.roomSnapshot);

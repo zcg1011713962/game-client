@@ -1,8 +1,8 @@
 export default class LoginRes {
     private static _instance: LoginRes = null;
 
-    private mouseCursorPrefab: cc.Prefab | null = null;
-    private toastPrefab: cc.Prefab | null = null;
+    private mouseCursorPrefab: cc.Prefab = null;
+    private toastPrefab: cc.Prefab = null;
 
     public static get instance(): LoginRes {
         if (!this._instance) {

@@ -183,11 +183,9 @@ export default class GameRes {
     }
 
 
-    private async loadGameBgmAudio(): Promise<void> {
+    public async loadGameBgmAudio(): Promise<void> {
         if (this.gameBgmAudio) return;
         this.gameBgmAudio = await this.loadAudio("audio/bgm_game");
-        const gameBgmAudioId = cc.audioEngine.playEffect(this.gameBgmAudio, true);
-        cc.audioEngine.setVolume(gameBgmAudioId, 0.3);
         cc.log("游戏背景音乐加载完成");
     }
 
