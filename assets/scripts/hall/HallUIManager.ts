@@ -14,6 +14,9 @@ const {ccclass, property} = cc._decorator;
 export default class HallUIManager extends cc.Component {
     private gameCardPos : { x : number, y : number, id:  number, name: string }[] = [];
     private gameCardContainerNode: cc.Node = null;
+    private roomSelectPanelPrefabNode: cc.Node = null;
+    public joinRoomPanelPrefabNode: cc.Node = null;
+    
     public gameCardNode: cc.Node | null = null;
     public joinRoomPanelNode: cc.Node | null = null;
     public roomSelectPanelNode: cc.Node | null = null;
@@ -27,11 +30,11 @@ export default class HallUIManager extends cc.Component {
     }
 
     async onLoad() {
-        this.canvas = cc.find("Canvas");
-        this.gameCardNode = cc.find("Canvas/GameCard");
-        this.joinRoomPanelNode = cc.find("Canvas/JoinRoomPanel");
-        this.roomSelectPanelNode = cc.find("Canvas/RoomSelectPanel");
-        this.gameCardContainerNode = cc.find("Canvas/GameCard/View");
+        this.canvas = this.node;
+        this.gameCardNode = this.node.getChildByName("GameCard");
+        this.joinRoomPanelNode = this.node.getChildByName("JoinRoomPanel");
+        this.roomSelectPanelNode = this.node.getChildByName("RoomSelectPanel");
+        this.gameCardContainerNode = this.gameCardNode.getChildByName("View");
         // 监听座位点击
         cc.systemEvent.on("GameCard_CLICK", this.onGameCardClick, this);
         // 保存单例引用
@@ -40,20 +43,21 @@ export default class HallUIManager extends cc.Component {
     }
 
     public async init(){
+        let t1 = Date.now();
         this.intGameCardPos();
         this.initData();
         this.initGameCardLayout();
         this.playGameBgm();
-
+        console.log("HallUIManager init:", Date.now() - t1, "ms");
         const guest = UserData.get();
         if(!guest){
             cc.log("用户数据为空，进入游戏失败");
             return;
         }
-        let t = Date.now();
+        let t2 = Date.now();
         await WsClient.instance.connectAsync(Config.WS_URL, guest.token);
         WsClient.instance.send(Cmd.ROOM_INFO, "")
-        console.log("连接socket耗时:", Date.now() - t, "ms");
+        console.log("连接socket耗时:", Date.now() - t2, "ms");
     }
 
 
@@ -82,13 +86,12 @@ export default class HallUIManager extends cc.Component {
         this.gameCardContainerNode.removeAllChildren();
     
         CameCardComponentManager.getInstance().gameCardComponentDataList.forEach((data, i) => {
-            const node = cc.instantiate(HallRes.instance.gameCardPrefab);
+            const node = HallRes.instance.gameCardPrefabNode;
             node.parent = this.gameCardContainerNode;
             node.setPosition(data.x, data.y);
             const gameCardComponent = node.getComponent(GameCardComponent);
             gameCardComponent.init(data);
             CameCardComponentManager.getInstance().gameCardComponentList.push(gameCardComponent);
-    
         });
         console.log('GameCardLayout OK')
     }
@@ -96,10 +99,25 @@ export default class HallUIManager extends cc.Component {
     
 
     public onGameCardClick(id : number){
-        const roomSelectPanelNode = HallUIManager.instance.roomSelectPanelNode;
-        if(roomSelectPanelNode){
-            const roomSelectPopup = roomSelectPanelNode.getComponent(RoomSelectPopup);
-            roomSelectPopup.show();
+        if(!this.roomSelectPanelPrefabNode){
+            this.initSelectPanelPrefabNode();
+        }
+        this.roomSelectPanelShow();
+    }
+
+    
+
+    private initSelectPanelPrefabNode(){
+        this.roomSelectPanelPrefabNode = cc.instantiate(HallRes.instance.roomSelectPanelPrefab);  
+        if(this.roomSelectPanelNode){
+            this.roomSelectPanelPrefabNode.parent = this.roomSelectPanelNode;
+        }
+    }
+
+    public initJoinRoomPanelPrefabNode(){
+        this.joinRoomPanelPrefabNode = cc.instantiate(HallRes.instance.joinRoomPanelPrefab);  
+        if(this.joinRoomPanelNode){
+            this.joinRoomPanelPrefabNode.parent = this.joinRoomPanelNode;
         }
     }
 
@@ -119,13 +137,19 @@ export default class HallUIManager extends cc.Component {
 
 
      public roomSelectPanelShow(){
-        const roomSelectPopupNode = this.roomSelectPanelNode?.getComponent(RoomSelectPopup);
-        roomSelectPopupNode?.show();
+        if(!this.roomSelectPanelPrefabNode){
+            this.initSelectPanelPrefabNode();
+        }
+        const roomSelectPopupNode = this.roomSelectPanelPrefabNode.getComponent(RoomSelectPopup);
+        roomSelectPopupNode.show();
     }
 
     public roomSelectPanelHide(){
-        const roomSelectPopupNode = this.roomSelectPanelNode?.getComponent(RoomSelectPopup);
-        roomSelectPopupNode?.hide();
+        if(!this.roomSelectPanelPrefabNode){
+            this.initSelectPanelPrefabNode();
+        }
+        const roomSelectPopupNode = this.roomSelectPanelPrefabNode.getComponent(RoomSelectPopup);
+        roomSelectPopupNode.hide();
     }
 
 

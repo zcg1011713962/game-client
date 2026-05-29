@@ -8,6 +8,9 @@ export default class HallRes {
     public hallBgmAudio: cc.AudioClip = null;
     public hallClickAudio: cc.AudioClip = null;
     public gameCardPrefab: cc.Prefab = null;
+    public roomSelectPanelPrefab: cc.Prefab = null;
+    public joinRoomPanelPrefab: cc.Prefab = null;
+    public gameCardPrefabNode: cc.Node = null;
 
     public bg1Map: { [key: string]: cc.SpriteFrame } = {};
     public gameIconMap: { [key: string]: cc.SpriteFrame } = {};
@@ -34,6 +37,11 @@ export default class HallRes {
 
         // 必须资源
         await this.loadGameCardPrefabs();
+        await this.loadRoomSelectPanelPrefabs();
+        await this.joinRoomPanelPrefabs();
+        // 实例化卡片预制体
+        this.initGameCardPrefabNode();
+
         const avatar = user != null ? user.avatar : "0";
         this.loadAvatarImg("avatar_" + avatar);
         console.log("初始化大厅资源耗时:", Date.now() - t, "ms");
@@ -151,6 +159,54 @@ export default class HallRes {
         });
     }
 
+
+    public async loadRoomSelectPanelPrefabs(): Promise<cc.Prefab> {
+        if (this.roomSelectPanelPrefab) return this.roomSelectPanelPrefab;
+
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+            bundle.load("prefabs/RoomSelectPanel", cc.Prefab, (err, prefab: cc.Prefab) => {
+                if (err) {
+                    cc.error("房间类型选择prefab加载失败:", err);
+                    reject(err);
+                    return;
+                }
+
+                this.roomSelectPanelPrefab = prefab;
+
+                cc.log("房间类型选择预制体加载完成");
+                resolve(prefab);
+            });
+        });
+    }
+
+
+    public async joinRoomPanelPrefabs(): Promise<cc.Prefab> {
+        if (this.joinRoomPanelPrefab) return this.joinRoomPanelPrefab;
+
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+            bundle.load("prefabs/JoinRoomPanel", cc.Prefab, (err, prefab: cc.Prefab) => {
+                if (err) {
+                    cc.error("加入房间prefab加载失败:", err);
+                    reject(err);
+                    return;
+                }
+
+                this.joinRoomPanelPrefab = prefab;
+
+                cc.log("加入房间预制体加载完成");
+                resolve(prefab);
+            });
+        });
+    }
+
+
+
+    
+
     public async loadBg1Img(name: string): Promise<cc.SpriteFrame> {
         if (this.bg1Map[name]) return this.bg1Map[name];
 
@@ -187,6 +243,12 @@ export default class HallRes {
                 resolve(sp);
             });
         });
+    }
+
+    private initGameCardPrefabNode(){
+        if(!this.gameCardPrefabNode){
+            this.gameCardPrefabNode = cc.instantiate(this.gameCardPrefab);  
+        }
     }
 
     

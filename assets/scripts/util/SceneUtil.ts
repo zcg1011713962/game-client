@@ -19,23 +19,15 @@ export class SceneUtil {
 
     static async loadScene(scene: string, data?: any): Promise<void> {
         SceneData.setData(data);
-
+        const t = Date.now();
         if (scene === "game_1") {
             await this.loadBundleScene("bundle_game", "scene/game_1");
-            return;
-        }
-
-        if (scene === "hall") {
+        }else if(scene === "hall"){
             await this.loadNormalScene("hall");
-            return;
-        }
-
-        if (scene === "login") {
+        }else if (scene === "login") {
             await this.loadNormalScene("login");
-            return;
         }
-
-        cc.error("未知场景:", scene);
+        console.log("加载场景耗时:", scene, Date.now() - t, "ms");
     }
 
     private static loadNormalScene(sceneName: string): Promise<void> {
@@ -46,7 +38,6 @@ export class SceneUtil {
                     reject(err);
                     return;
                 }
-
                 resolve();
             });
         });

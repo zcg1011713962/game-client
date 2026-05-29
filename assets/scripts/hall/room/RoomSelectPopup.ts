@@ -79,8 +79,12 @@ export default class RoomSelectPopup extends cc.Component {
         this.joinCard.on(cc.Node.EventType.TOUCH_END, () => {
             this.hide();
             this.playClickAnim(this.joinCard);
-            const joinRoomPopupNode = HallUIManager.instance.joinRoomPanelNode?.getComponent(JoinRoomPopup);
-            joinRoomPopupNode?.show();
+
+            if(!HallUIManager.instance.joinRoomPanelPrefabNode){
+                HallUIManager.instance.initJoinRoomPanelPrefabNode();
+            }
+            const joinRoomPopupNode = HallUIManager.instance.joinRoomPanelPrefabNode.getComponent(JoinRoomPopup);
+            joinRoomPopupNode.show();
         }, this);
 
         // 自由匹配
@@ -90,6 +94,7 @@ export default class RoomSelectPopup extends cc.Component {
         }, this);
 
     }
+
 
     
 
