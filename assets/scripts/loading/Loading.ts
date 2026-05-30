@@ -20,6 +20,7 @@ export default class Loading extends cc.Component {
     private isJumpingScene: boolean = false;
 
     async onLoad() {
+
         this.initNodeRefs();
 
         this.setTargetProgress(0, "准备加载...");

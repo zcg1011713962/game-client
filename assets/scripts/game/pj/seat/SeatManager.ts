@@ -8,16 +8,11 @@ import ClientRoomManager from "../room/ClientRoomManager";
 import {Cmd} from "../enum/Cmd";
 import WsClient from "../net/WsClient";
 import GameRes from "../GameRes";
-import HallRes from "../../../hall/HallRes";
 
 @ccclass
 export default class SeatManager extends cc.Component {
-
-    private seatPrefab: cc.Prefab = null;
     private seatContainerNode: cc.Node = null;
    
-
-
     onLoad() {
         this.seatContainerNode = cc.find("Canvas/MainLayout/Table/SeatContainer");
         // 监听座位点击
@@ -25,22 +20,11 @@ export default class SeatManager extends cc.Component {
     }
 
     public async init(){
-        // 加载座位预制体
-        await this.loadSeatPrefabs();
+         let t = Date.now();
         // 初始化数据
         this.initData();
-
-        await this.loadSeatPrefabs();
-        console.log("座位数据初始完毕");
+        console.log("座位数据初始完毕:", Date.now() - t, "ms");
     }
-
-    private async loadSeatPrefabs(): Promise<void> {
-        if (this.seatPrefab) return;
-        this.seatPrefab = await  GameRes.instance.loadPrefab("prefabs/Seat");
-        cc.log("座位预制体加载完成");
-    }
-
-
 
  
     private initData() {
@@ -62,7 +46,7 @@ export default class SeatManager extends cc.Component {
      * 初始化座位布局
      */
     initSeatLayout() {
-        if (!this.seatPrefab || !this.seatContainerNode) {
+        if (!GameRes.instance.seatPrefab || !this.seatContainerNode) {
             cc.error("SeatManager未初始化完成");
             return;
         }
@@ -71,12 +55,12 @@ export default class SeatManager extends cc.Component {
         SeatComponentManager.getInstance().seatComponentList = [];
 
         SeatComponentManager.getInstance().seatComponentDataList.forEach((data, i) => {
-            const node = cc.instantiate(this.seatPrefab);
+            const node = cc.instantiate(GameRes.instance.seatPrefab);
             node.parent = this.seatContainerNode;
             node.setPosition(data.x, data.y);
 
             const seatComponent = node.getComponent(SeatComponent);
-            seatComponent.init(data, HallRes.instance.avatarMap);
+            seatComponent.init(data);
             SeatComponentManager.getInstance().seatComponentList.push(seatComponent);
 
         });
@@ -118,8 +102,6 @@ export default class SeatManager extends cc.Component {
                 seat.setData(data);
             }
         }
-        
-       
     }
 
 

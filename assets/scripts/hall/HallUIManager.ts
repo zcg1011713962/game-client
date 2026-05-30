@@ -16,9 +16,15 @@ export default class HallUIManager extends cc.Component {
     private gameCardContainerNode: cc.Node = null;
     private roomSelectPanelPrefabNode: cc.Node = null;
     public joinRoomPanelPrefabNode: cc.Node = null;
+    public bannerSprite: cc.Sprite = null;
+    public btnActivitySprite: cc.Sprite = null;
+    public btnRankSprite: cc.Sprite = null;
+    public btnRecordSprite: cc.Sprite = null;
+    public btnShopSprite: cc.Sprite = null;
     
-    public gameCardNode: cc.Node | null = null;
-    public joinRoomPanelNode: cc.Node | null = null;
+    private topBar!: cc.Node;
+    public gameCardNode!: cc.Node;
+    public joinRoomPanelNode!: cc.Node;
     public roomSelectPanelNode: cc.Node | null = null;
     public canvas: cc.Node | null = null;
     private shopNode: cc.Node |null = null;
@@ -31,10 +37,24 @@ export default class HallUIManager extends cc.Component {
 
     async onLoad() {
         this.canvas = this.node;
+        this.topBar = this.node.getChildByName("TopBar");
         this.gameCardNode = this.node.getChildByName("GameCard");
         this.joinRoomPanelNode = this.node.getChildByName("JoinRoomPanel");
         this.roomSelectPanelNode = this.node.getChildByName("RoomSelectPanel");
         this.gameCardContainerNode = this.gameCardNode.getChildByName("View");
+        this.bannerSprite = this.node.getChildByName("Banner").getChildByName("BannerImg").getComponent(cc.Sprite);
+      
+        const bottomBar = this.node.getChildByName("BottomBar");
+        this.btnActivitySprite = bottomBar.getChildByName("BtnActivity").getComponent(cc.Sprite);
+        this.btnRankSprite = bottomBar.getChildByName("BtnRank").getComponent(cc.Sprite);
+        this.btnRecordSprite = bottomBar.getChildByName("BtnRecord").getComponent(cc.Sprite);
+        this.btnShopSprite = bottomBar.getChildByName("BtnShop").getComponent(cc.Sprite);
+        // 动态加载图片
+        this.bannerSprite.spriteFrame = HallRes.instance.bannerSpriteFrame;
+        this.btnActivitySprite.spriteFrame = HallRes.instance.bottomIconMap["activity"];
+        this.btnRankSprite.spriteFrame = HallRes.instance.bottomIconMap["rank"];
+        this.btnRecordSprite.spriteFrame = HallRes.instance.bottomIconMap["record"];
+        this.btnShopSprite.spriteFrame = HallRes.instance.bottomIconMap["shop"];
         // 监听座位点击
         cc.systemEvent.on("GameCard_CLICK", this.onGameCardClick, this);
         // 保存单例引用
@@ -44,10 +64,10 @@ export default class HallUIManager extends cc.Component {
 
     public async init(){
         let t1 = Date.now();
-        this.intGameCardPos();
-        this.initData();
-        this.initGameCardLayout();
+        this.initTopBar();
+        this.initGameCard();
         this.playGameBgm();
+        
         console.log("HallUIManager init:", Date.now() - t1, "ms");
         const guest = UserData.get();
         if(!guest){
@@ -60,6 +80,19 @@ export default class HallUIManager extends cc.Component {
         console.log("连接socket耗时:", Date.now() - t2, "ms");
     }
 
+    public initTopBar(){
+        this.topBar.removeAllChildren();
+        
+        const node = cc.instantiate(HallRes.instance.topBarPrefab);
+        node.parent = this.topBar;
+    }
+
+    public initGameCard(){
+        this.intGameCardPos();
+        this.initData();
+        this.initGameCardLayout();
+    }
+
 
      public intGameCardPos(){
         this.gameCardPos = [];
@@ -68,6 +101,10 @@ export default class HallUIManager extends cc.Component {
     }
 
     private initData() {
+        const gameCardComponentDataList = CameCardComponentManager.getInstance().gameCardComponentDataList;
+        if(gameCardComponentDataList.length > 0){
+            return;
+        }
         for (let i = 0; i < this.gameCardPos.length; i++) {
             CameCardComponentManager.getInstance().gameCardComponentDataList.push({
                 id: this.gameCardPos[i].id,
@@ -78,23 +115,30 @@ export default class HallUIManager extends cc.Component {
         }
     }
 
-    initGameCardLayout() {
+    private initGameCardLayout() {
         if (!HallRes.instance.gameCardPrefab || !this.gameCardContainerNode) {
             cc.error("GameCardManager未初始化完成");
             return;
         }
+
         this.gameCardContainerNode.removeAllChildren();
-    
-        CameCardComponentManager.getInstance().gameCardComponentDataList.forEach((data, i) => {
-            const node = HallRes.instance.gameCardPrefabNode;
+
+        const manager = CameCardComponentManager.getInstance();
+        manager.gameCardComponentList.length = 0;
+
+        manager.gameCardComponentDataList.forEach(data => {
+            const node = cc.instantiate(HallRes.instance.gameCardPrefab);
             node.parent = this.gameCardContainerNode;
             node.setPosition(data.x, data.y);
-            const gameCardComponent = node.getComponent(GameCardComponent);
-            gameCardComponent.init(data);
-            CameCardComponentManager.getInstance().gameCardComponentList.push(gameCardComponent);
+
+            const comp = node.getComponent(GameCardComponent);
+            comp.init(data);
+
+            manager.gameCardComponentList.push(comp);
         });
-        console.log('GameCardLayout OK')
-    }
+
+        console.log("GameCardLayout OK");
+    }                   
 
     
 
@@ -235,7 +279,6 @@ export default class HallUIManager extends cc.Component {
         cc.audioEngine.stopMusic();
 
         this.isPlayingBgm = false;
-         HallRes.instance.close();
 
         console.log("hall onDestroy");
     }

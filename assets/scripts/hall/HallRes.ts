@@ -5,12 +5,14 @@ export default class HallRes {
 
     private hallBundle: cc.AssetManager.Bundle = null;
     public avatarMap : { [key: string]: cc.SpriteFrame } = {}; // 预加载头像图片资源
+    public bottomIconMap: { [key: string]: cc.SpriteFrame } = {}; // 预加载底部ICON资源
     public hallBgmAudio: cc.AudioClip = null;
     public hallClickAudio: cc.AudioClip = null;
     public gameCardPrefab: cc.Prefab = null;
+    public bannerSpriteFrame: cc.SpriteFrame = null;
     public roomSelectPanelPrefab: cc.Prefab = null;
     public joinRoomPanelPrefab: cc.Prefab = null;
-    public gameCardPrefabNode: cc.Node = null;
+    public topBarPrefab: cc.Prefab = null;
 
     public bg1Map: { [key: string]: cc.SpriteFrame } = {};
     public gameIconMap: { [key: string]: cc.SpriteFrame } = {};
@@ -36,12 +38,13 @@ export default class HallRes {
         this.loadHallClickAudio();
 
         // 必须资源
+        await this.loadTopBarPrefabs();
         await this.loadGameCardPrefabs();
         await this.loadRoomSelectPanelPrefabs();
         await this.joinRoomPanelPrefabs();
-        // 实例化卡片预制体
-        this.initGameCardPrefabNode();
-
+        await this.loadHallBannerImg("banner_paijiu");
+        await this.loadBottomIcons();
+   
         const avatar = user != null ? user.avatar : "0";
         this.loadAvatarImg("avatar_" + avatar);
         console.log("初始化大厅资源耗时:", Date.now() - t, "ms");
@@ -134,6 +137,28 @@ export default class HallRes {
 
                 cc.log("大厅点击音效加载完成");
                 resolve();
+            });
+        });
+    }
+
+
+     public async loadTopBarPrefabs(): Promise<cc.Prefab> {
+        if (this.topBarPrefab) return this.topBarPrefab;
+
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+            bundle.load("prefabs/TopBar", cc.Prefab, (err, prefab: cc.Prefab) => {
+                if (err) {
+                    cc.error("TopBar prefab加载失败:", err);
+                    reject(err);
+                    return;
+                }
+
+                this.topBarPrefab = prefab;
+
+                cc.log("顶部预制体加载完成");
+                resolve(prefab);
             });
         });
     }
@@ -245,12 +270,6 @@ export default class HallRes {
         });
     }
 
-    private initGameCardPrefabNode(){
-        if(!this.gameCardPrefabNode){
-            this.gameCardPrefabNode = cc.instantiate(this.gameCardPrefab);  
-        }
-    }
-
     
 
     public playClickAudio(): void {
@@ -259,7 +278,50 @@ export default class HallRes {
         cc.audioEngine.playEffect(this.hallClickAudio, false);
     }
 
-    public close(): void {
-        cc.audioEngine.stopMusic();
+
+    public async loadHallBannerImg(name: string): Promise<cc.SpriteFrame> {
+        if (this.bannerSpriteFrame) return this.bannerSpriteFrame;
+
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+            bundle.load(`hall/banner/${name}`, cc.SpriteFrame, (err, sp: cc.SpriteFrame) => {
+                if (err) {
+                    cc.error("banner加载失败:", name, err);
+                    reject(err);
+                    return;
+                }
+
+                this.bannerSpriteFrame = sp;
+                resolve(sp);
+            });
+        });
     }
+
+
+   public async loadBottomIcons(): Promise<void> {
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+
+            bundle.loadDir(
+                "hall/bottom",
+                cc.SpriteFrame,
+                (err, assets: cc.SpriteFrame[]) => {
+
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    assets.forEach((sf) => {
+                        this.bottomIconMap[sf.name] = sf;
+                    });
+                    resolve();
+                }
+            );
+
+        });
+    }
+
 }

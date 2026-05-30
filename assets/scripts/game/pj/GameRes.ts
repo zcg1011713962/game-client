@@ -7,6 +7,7 @@ export default class GameRes {
     private gameBundle: cc.AssetManager.Bundle = null;
 
     public chipPrefab: cc.Prefab = null;
+    public seatPrefab: cc.Prefab = null;
     public chipImgMap: { [key: string]: cc.SpriteFrame } = {};
 
     public settlePrefab: cc.Prefab = null;
@@ -33,9 +34,10 @@ export default class GameRes {
 
         // 只加载进入游戏马上要用的资源
         await Promise.all([
+            this.loadSeatPrefabs(),
             this.loadChipPrefab(),
             this.loadChipImgs(),
-            this.loadClockCountdownPrefab(),
+            this.loadClockCountdownPrefab()
         ]);
 
         CountDownManager.init(this.clockCountdownPrefab);
@@ -143,6 +145,12 @@ export default class GameRes {
 
         this.settlePrefab = await this.loadPrefab("prefabs/SettlePopup");
         cc.log("结算预制体加载完成");
+    }
+
+    private async loadSeatPrefabs(): Promise<void> {
+        if (this.seatPrefab) return;
+        this.seatPrefab = await  GameRes.instance.loadPrefab("prefabs/Seat");
+        cc.log("座位预制体加载完成");
     }
 
     private async loadChipPrefab(): Promise<void> {
