@@ -312,7 +312,7 @@ export default class ClientRoomManager {
     }
 
     // 全准备好-游戏开始
-    public applyGameStart(data: {
+    public async applyGameStart(data: {
         roomId: number,
         roomState: number,
         bankerSeat: number,
@@ -329,6 +329,11 @@ export default class ClientRoomManager {
             this.players.set(p.userId, p);
         });
         this.bankerSeat = bankerSeat;
+
+        // 先展示轮次
+        await UIManager.instance.showRoundStartAnim(this.roundId);
+
+        // 房间状态-展示投注
         this.setRoomState(data.roomState);
         this.refreshAllSeatView();
         // 倒计时

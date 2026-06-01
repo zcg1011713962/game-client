@@ -19,6 +19,7 @@ export default class GameRes {
     public shuffingAudio!: cc.AudioClip;
     public betAudio!: cc.AudioClip;
     public clockCountdownPrefab!: cc.Prefab;
+    public roundStartPrefab!: cc.Prefab;
 
     public static get instance(): GameRes {
         if (!this._instance) {
@@ -41,7 +42,8 @@ export default class GameRes {
             this.loadChipPrefab(),
             this.loadChipImgs(),
             this.loadClockCountdownPrefab(),
-            this.loadChipSelectPanelPrefab()
+            this.loadChipSelectPanelPrefab(),
+            this.loadRoundStartPrefab()
         ]);
 
         CountDownManager.init(this.clockCountdownPrefab);
@@ -185,6 +187,15 @@ export default class GameRes {
         this.clockCountdownPrefab = await this.loadPrefab("prefabs/BetCountdown");
         cc.log("时钟预制体加载完成");
     }
+
+    private async loadRoundStartPrefab(): Promise<void> {
+        if (this.roundStartPrefab) return;
+
+        this.roundStartPrefab = await this.loadPrefab("prefabs/RoundStartPrefab");
+        cc.log("轮次预制体加载完成");
+    }
+
+    
 
     private async loadChipImgs(): Promise<void> {
         if (Object.keys(this.chipImgMap).length > 0) return;

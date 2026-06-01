@@ -8,6 +8,7 @@ import SeatComponentManager from "../seat/SeatComponentManager";
 import {RoomBarData, RooomTopBar} from "../../top/RoomTopBar";
 import PaiJiuTable from "../PaiJiuTable";
 import GameRes from "../GameRes";
+import RoundStartPopup from "../../../common/RoundStartPopup";
 @ccclass
 export default class UIManager extends cc.Component {
     private readyBtnNode: cc.Node = null;
@@ -247,6 +248,17 @@ export default class UIManager extends cc.Component {
             label.string = name;
         }
         label.node.color = color; 
+    }
+
+
+    public async showRoundStartAnim(roundId: number): Promise<void> {
+        const node = cc.instantiate(GameRes.instance.roundStartPrefab);
+        node.parent = cc.find("Canvas");
+        node.setPosition(0, 0);
+
+        const comp = node.getComponent(RoundStartPopup);
+        await comp.play(roundId);
+        node.destroy();
     }
 
     
