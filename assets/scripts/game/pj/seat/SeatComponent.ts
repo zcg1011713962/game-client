@@ -73,7 +73,7 @@ export default class SeatComponent extends cc.Component {
         this.setResultStatusView(-1);
 
         
-        if (!this.seatData.userInfo){ // 更换座位
+        if (!this.seatData.userInfo){ // 更换座位或离开座位
             if(roomState === RoomState.WAIT || roomState === RoomState.READY){
                 this.setNormal(true);
             }else{

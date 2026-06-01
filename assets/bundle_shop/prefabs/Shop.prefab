@@ -1035,9 +1035,7 @@
     "_fontSize": 80,
     "_lineHeight": 80,
     "_enableWrapText": true,
-    "_N$file": {
-      "__uuid__": "55912994-5793-4d20-ac4e-77501dc927f0"
-    },
+    "_N$file": null,
     "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_batchAsBitmap": false,
@@ -2361,7 +2359,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 13.9,
+      "width": 0,
       "height": 31.5
     },
     "_anchorPoint": {
@@ -2986,7 +2984,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 13.9,
+      "width": 0,
       "height": 31.5
     },
     "_anchorPoint": {
@@ -3611,7 +3609,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 13.9,
+      "width": 0,
       "height": 31.5
     },
     "_anchorPoint": {

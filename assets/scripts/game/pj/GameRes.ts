@@ -4,19 +4,21 @@ import SettleManager from "../../common/SettleManager";
 export default class GameRes {
     private static _instance: GameRes = null;
 
-    private gameBundle: cc.AssetManager.Bundle = null;
+    private gameBundle!: cc.AssetManager.Bundle;
 
-    public chipPrefab: cc.Prefab = null;
-    public seatPrefab: cc.Prefab = null;
+    public chipPrefab!: cc.Prefab;
+    public seatPrefab!: cc.Prefab;
     public chipImgMap: { [key: string]: cc.SpriteFrame } = {};
 
-    public settlePrefab: cc.Prefab = null;
-    public warnAudio: cc.AudioClip = null;
-    public gameBgmAudio: cc.AudioClip = null;
-    public clickAudio: cc.AudioClip = null;
-    public shuffingAudio: cc.AudioClip = null;
-    public betAudio: cc.AudioClip = null;
-    public clockCountdownPrefab: cc.Prefab = null;
+    public chipSelectPanelPrefab!: cc.Prefab;
+    public roomTopBarPrefab!: cc.Prefab;
+    public settlePrefab!: cc.Prefab;
+    public warnAudio!: cc.AudioClip;
+    public gameBgmAudio!: cc.AudioClip;
+    public clickAudio!: cc.AudioClip;
+    public shuffingAudio!: cc.AudioClip;
+    public betAudio!: cc.AudioClip;
+    public clockCountdownPrefab!: cc.Prefab;
 
     public static get instance(): GameRes {
         if (!this._instance) {
@@ -34,10 +36,12 @@ export default class GameRes {
 
         // 只加载进入游戏马上要用的资源
         await Promise.all([
+            this.loadRoomTopBarPrefab(),
             this.loadSeatPrefabs(),
             this.loadChipPrefab(),
             this.loadChipImgs(),
-            this.loadClockCountdownPrefab()
+            this.loadClockCountdownPrefab(),
+            this.loadChipSelectPanelPrefab()
         ]);
 
         CountDownManager.init(this.clockCountdownPrefab);
@@ -139,6 +143,21 @@ export default class GameRes {
             });
         });
     }
+
+    private async loadRoomTopBarPrefab(): Promise<void> {
+        if (this.roomTopBarPrefab) return;
+
+        this.roomTopBarPrefab = await this.loadPrefab("prefabs/RoomTopBar");
+        cc.log("游戏顶部预制体加载完成");
+    }
+
+    private async loadChipSelectPanelPrefab(): Promise<void> {
+        if (this.chipSelectPanelPrefab) return;
+
+        this.chipSelectPanelPrefab = await this.loadPrefab("prefabs/ChipSelectPanel");
+        cc.log("选择筹码预制体加载完成");
+    }
+
 
     private async loadSettlePrefab(): Promise<void> {
         if (this.settlePrefab) return;

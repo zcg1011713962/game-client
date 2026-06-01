@@ -25,8 +25,8 @@ export default class PosDebug extends cc.Component {
     }
 
     updatePosText() {
-        if(this.label){
-            this.label.string = `x:${Math.round(this.node.x)}\ny:${Math.round(this.node.y)}`;
-        }
+        // if(this.label){
+        //     this.label.string = `x:${Math.round(this.node.x)}\ny:${Math.round(this.node.y)}`;
+        // }
     }
 }

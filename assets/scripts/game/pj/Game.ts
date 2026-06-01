@@ -26,6 +26,7 @@ export default class Game extends cc.Component {
         console.log("初始化游戏桌子耗时:", Date.now() - t, "ms");
     }
 
+
     private async initTable(): Promise<void> {
         if (!this.seatContainerNode) {
             return;

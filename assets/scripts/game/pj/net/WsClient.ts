@@ -169,6 +169,9 @@ export default class WsClient {
                 cc.log("自己准备成功");
                 ClientRoomManager.instance.selfReadyOk(msg.data);
                 break;
+            case Cmd.PLAYER_LEAVE_SEAT:
+                ClientRoomManager.instance.leaveSeat(msg.data);
+                break;    
             case Cmd.PLAYER_READY:
                 ClientRoomManager.instance.applyPlayerReady(msg.data);
                 break;

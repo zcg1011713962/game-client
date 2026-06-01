@@ -20,7 +20,7 @@ export default class SeatManager extends cc.Component {
     }
 
     public async init(){
-         let t = Date.now();
+        let t = Date.now();
         // 初始化数据
         this.initData();
         console.log("座位数据初始完毕:", Date.now() - t, "ms");

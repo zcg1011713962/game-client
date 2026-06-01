@@ -201,7 +201,7 @@
     "_is3DNode": false,
     "_groupIndex": 0,
     "groupIndex": 0,
-    "_id": "ecLgjapztLGIPnxT2SJWnA"
+    "_id": "0dzY94UkNIBI4SBBSJBy/d"
   },
   {
     "__type__": "cc.Camera",
@@ -237,7 +237,7 @@
     },
     "_renderStages": 1,
     "_alignWithScreen": true,
-    "_id": "aaLwcgWFNKyatDI2i0rhFj"
+    "_id": "7c1CXt2IVJOqEmDJBdpqp2"
   },
   {
     "__type__": "cc.Node",

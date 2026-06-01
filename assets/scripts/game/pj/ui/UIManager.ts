@@ -18,6 +18,7 @@ export default class UIManager extends cc.Component {
     private rooomTopBarNode: cc.Node = null;
     private clockContainerNode: cc.Node = null;
     private seats : { x : number, y : number, id:  number }[] = [];
+    private rooomTopBarComponent! : RooomTopBar;
     
 
     private static _instance: UIManager = null;
@@ -26,6 +27,7 @@ export default class UIManager extends cc.Component {
     }
 
     onLoad() {
+        const t = Date.now();
         // 保存单例引用
         UIManager._instance = this;
         this.tableNode = cc.find("Canvas/MainLayout/Table");
@@ -41,10 +43,28 @@ export default class UIManager extends cc.Component {
         this.setStartBtnStatus(false);
         this.setCancelReadyBtnStatus(false);
         this.init();
+        console.log("游戏初始化预制体耗时:", Date.now() - t, "ms");
     }
 
     private init(){
          this.intSeatPos();
+         this.initRoomTopBar();
+         this.initChipSelectPanel();
+    }
+
+    public initRoomTopBar(){
+        this.rooomTopBarNode.removeAllChildren();
+            
+        const node = cc.instantiate(GameRes.instance.roomTopBarPrefab);
+        node.parent = this.rooomTopBarNode;
+        this.rooomTopBarComponent = node.getComponent(RooomTopBar);
+    }
+
+    public initChipSelectPanel(){
+        this.chipSelectPanel.removeAllChildren();
+            
+        const node = cc.instantiate(GameRes.instance.chipSelectPanelPrefab);
+        node.parent = this.chipSelectPanel;
     }
 
     public getTableNode(){
@@ -179,7 +199,7 @@ export default class UIManager extends cc.Component {
          if(tableNode){
             const paiJiuTableNode = tableNode.getComponent(PaiJiuTable);
             paiJiuTableNode.clearCardContainer();
-            cc.log("清理牌区")
+            console.log("清理牌区")
          }
     }
 
@@ -189,27 +209,26 @@ export default class UIManager extends cc.Component {
              const betArea = this.betContainer.getComponent(BetArea);
              if(betArea){
                 betArea.clearChips(this.seats);
-                cc.log("清理筹码区")
+                console.log("清理筹码区")
              }
          }
     }
 
     public clearClockContainer(){
         this.clockContainerNode.removeAllChildren();
-        cc.log("清理倒计时钟")
+        console.log("清理倒计时钟")
     }
 
 
     public updateTopView(roomId: number, curPlayer: number, baseScore: number){
-        const rooomTopBar : RooomTopBar = this.rooomTopBarNode.getComponent(RooomTopBar);
-        if(rooomTopBar){
+        if(this.rooomTopBarComponent){
             const roomBarData: RoomBarData = {
             roomId: roomId,
             curPlayer: curPlayer,
             baseScore: baseScore,
             };
             console.log("update RoomTopBar", roomBarData);
-            rooomTopBar.setRoomInfo(roomBarData);
+            this.rooomTopBarComponent.setRoomInfo(roomBarData);
         }
     }
 

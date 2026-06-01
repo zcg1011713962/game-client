@@ -118,9 +118,9 @@ export default class ClientRoomManager {
     private betMap: Record<number, number> = {};
     private cardMap: Record<number, CardInfo[]> = {};
 
+    private sentRoundIds: Set<number> = new Set();
+
     private constructor() {}
-
-
     
     // 游戏场景初始化完成后调用
     public onGameSceneReady() {
@@ -238,6 +238,26 @@ export default class ClientRoomManager {
         this.updatePlayerStatusByUser(data.state, data.userId);
         this.refreshAllSeatView();
         UIManager.instance.setCancelReadyBtnStatus(false);
+    }
+
+    // 离开座位
+    public leaveSeat(data: {
+        roomId: number,
+        userId: number,
+        seatId: number,
+        reason: number
+    }){
+        let player = this.players.get(data.userId);
+        const seatId = data.seatId;
+        if(player){
+            player.seatId = seatId;
+        }
+        if(this.myUserId === data.userId){
+             this.updateMySeatId(seatId);
+             //UIManager.instance.clearTable();
+        }
+        UIManager.instance.setStartBtnStatus(false);
+        this.refreshAllSeatView();
     }
 
     // 准备通知
@@ -397,14 +417,19 @@ export default class ClientRoomManager {
                 }
             }
          });
-        
-
-        const taskId = DelayTaskUtil.getInstance().schedule(() => {
-            // 结算动画结束-进入下一轮
-            this.refreshAllSeatView();
-            WsClient.instance.send(Cmd.NEXT_ROUND, {roomId: settleInfo.roomId, roundId: this.roundId});
-        }, 5000);
     }
+
+    public doNextRound(){   
+        if (this.sentRoundIds.has(this.roundId)) {
+            // 这个 roundId 已经发送过了，直接返回
+            return;
+        }
+        this.sentRoundIds.add(this.roundId);
+        this.refreshAllSeatView();
+        WsClient.instance.send(Cmd.NEXT_ROUND, {roomId: this.roomId, roundId: this.roundId});
+    }
+
+
     // 下一局
     public nextRound(data: NextRoundPush){
         console.log("下一局通知", data);
@@ -416,8 +441,8 @@ export default class ClientRoomManager {
         this.updatePlayers(players);
      
         this.updatePlayerStatus(UserState.Sit);
-        UIManager.instance.setStartBtnStatus(true);
         this.refreshAllSeatView();
+        UIManager.instance.setStartBtnStatus(true);
     }
 
 
@@ -541,8 +566,6 @@ export default class ClientRoomManager {
             if(s && s["seatData"] && !seats.includes(s["seatData"].id)){
                 if(s["seatData"].id !== undefined && s["seatData"].id !== null){
                     SeatManager.refreshSeat(s["seatData"].id, null);
-                }else{
-                    console.error("sssssss null", s["seatData"], SeatComponentManager.getInstance().seatComponentList);
                 }
             }
         })
