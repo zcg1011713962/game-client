@@ -251,13 +251,14 @@ export default class ClientRoomManager {
         const seatId = data.seatId;
         if(player){
             player.seatId = seatId;
+            player.state = UserState.Idle;
         }
         if(this.myUserId === data.userId){
              this.updateMySeatId(seatId);
-             //UIManager.instance.clearTable();
         }
+        UIManager.instance.clearTable();
         UIManager.instance.setStartBtnStatus(false);
-        this.refreshAllSeatView();
+        this.refreshAllSeatView(); 
     }
 
     // 准备通知
@@ -330,14 +331,18 @@ export default class ClientRoomManager {
         });
         this.bankerSeat = bankerSeat;
 
+        UIManager.instance.setCancelReadyBtnStatus(false);
+        UIManager.instance.setStartBtnStatus(false);
         // 先展示轮次
         await UIManager.instance.showRoundStartAnim(this.roundId);
-
-        // 房间状态-展示投注
-        this.setRoomState(data.roomState);
-        this.refreshAllSeatView();
-        // 倒计时
-        CountDownManager.show(data.betSeconds);
+        DelayTaskUtil.getInstance().schedule(() => {
+            // 房间状态-展示投注
+            this.setRoomState(data.roomState);
+            this.refreshAllSeatView();
+            // 倒计时
+            CountDownManager.show(data.betSeconds);
+        }, 2);
+     
     }
     // 下注回包
     public selfBetOk(data: {

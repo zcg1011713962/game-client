@@ -6,6 +6,10 @@ export default class RoundStartPopup extends cc.Component {
     private panel: cc.Node = null;
     private roundLabel: cc.Label = null;
 
+    private flyTime: number = 0.35;
+    private stayTime: number = 3.0;
+    private fadeTime: number = 0.25;
+
     onLoad() {
         this.panel = this.node.getChildByName("Panel");
 
@@ -37,52 +41,35 @@ export default class RoundStartPopup extends cc.Component {
 
             this.node.active = true;
 
-            // 只动态展示中间数字
             this.roundLabel.string = `${roundId}`;
 
             cc.Tween.stopAllByTarget(this.panel);
-            cc.Tween.stopAllByTarget(this.roundLabel.node);
 
-            // 背景初始状态
+            // 初始位置：屏幕左侧
             this.panel.opacity = 0;
-            this.panel.scale = 0.8;
-            this.panel.x = 0;
+            this.panel.scale = 1;
+            this.panel.x = -500;
             this.panel.y = 0;
 
-            // 数字飞入初始状态
-            const labelNode = this.roundLabel.node;
-            labelNode.opacity = 0;
-            labelNode.scale = 2.2;
-            labelNode.x = 0;
-            labelNode.y = 180;
-
-            // 背景弹出
             cc.tween(this.panel)
-                .to(0.22, { opacity: 255, scale: 1.08 }, { easing: "backOut" })
-                .to(0.08, { scale: 1 })
-                .delay(1.0)
-                .to(0.2, { opacity: 0, scale: 0.9 })
-                .call(() => {
-                    this.node.active = false;
-                    resolve();
-                })
-                .start();
-
-            // 数字飞入
-            cc.tween(labelNode)
-                .delay(0.08)
-                .to(0.28, {
-                    opacity: 255,
-                    y: 0,
-                    scale: 1
+                // 从左到中间
+                .to(this.flyTime, {
+                    x: 0,
+                    opacity: 255
                 }, {
-                    easing: "backOut"
+                    easing: "quadOut"
                 })
-                .delay(0.65)
-                .to(0.15, {
-                    opacity: 0,
-                    y: -80,
-                    scale: 0.8
+                // 停留
+                .delay(this.stayTime)
+                // 淡出
+                .to(this.fadeTime, {
+                    opacity: 0
+                })
+                .call(() => {
+                    if (cc.isValid(this.node)) {
+                        this.node.active = false;
+                    }
+                    resolve();
                 })
                 .start();
         });

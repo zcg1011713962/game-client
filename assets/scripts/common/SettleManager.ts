@@ -4,6 +4,7 @@ import UIZOrder from "./ui/UIZOrder";
 export default class SettleManager {
 
     private static settlePrefab: cc.Prefab = null;
+    private static settlePrefabNode: cc.Node = null;
 
     /**
      * 初始化
@@ -33,10 +34,17 @@ export default class SettleManager {
             return;
         }
 
-        const node = cc.instantiate(this.settlePrefab);
-        canvas.addChild(node);
-        node.zIndex = UIZOrder.POPUP;
-        const comp = node.getComponent(SettlePopup);
+        this.settlePrefabNode= cc.instantiate(this.settlePrefab);
+        canvas.addChild(this.settlePrefabNode);
+        this.settlePrefabNode.zIndex = UIZOrder.POPUP;
+        const comp = this.settlePrefabNode.getComponent(SettlePopup);
         comp.show(win, gold, afterGold, cardTypeName , detail);
+    }
+
+    public static close(){
+        if(this.settlePrefabNode && cc.isValid(this.settlePrefabNode)){
+            const comp = this.settlePrefabNode.getComponent(SettlePopup);
+            comp.close();
+        }
     }
 }

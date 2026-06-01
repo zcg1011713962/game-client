@@ -9,6 +9,7 @@ import {RoomBarData, RooomTopBar} from "../../top/RoomTopBar";
 import PaiJiuTable from "../PaiJiuTable";
 import GameRes from "../GameRes";
 import RoundStartPopup from "../../../common/RoundStartPopup";
+import SettleManager from "../../../common/SettleManager";
 @ccclass
 export default class UIManager extends cc.Component {
     private readyBtnNode: cc.Node = null;
@@ -187,11 +188,13 @@ export default class UIManager extends cc.Component {
         
     }
     
-    // 清理桌子
+    // 全部清理
     public clearTable(){
+        console.log("执行全部清理, 房间状态:", ClientRoomManager.instance.getRoomState())
         this.clearCardContainer();
         this.clearBetContainer();
         this.clearClockContainer();
+        SettleManager.close();
     }
 
     // 清理发牌区

@@ -230,7 +230,7 @@ export default class SettlePopup extends cc.Component {
             .start();
     }
 
-    private close(): void {
+    public close(): void {
         if (this.isClosing) {
             return;
         }
