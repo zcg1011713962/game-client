@@ -10,15 +10,16 @@ import PaiJiuTable from "../PaiJiuTable";
 import GameRes from "../GameRes";
 import RoundStartPopup from "../../../common/RoundStartPopup";
 import SettleManager from "../../../common/SettleManager";
+import ReadyButton, { ReadyBtnState } from "../../btn/ReadyButton";
+
 @ccclass
 export default class UIManager extends cc.Component {
-    private readyBtnNode: cc.Node = null;
-    private cancelReadyBtn: cc.Node = null;
-    private tableNode: cc.Node = null;
-    private chipSelectPanel: cc.Node = null;
-    private betContainer: cc.Node = null;
-    private rooomTopBarNode: cc.Node = null;
-    private clockContainerNode: cc.Node = null;
+    private uiNode!: cc.Node;
+    private tableNode!: cc.Node;
+    private chipSelectPanel!: cc.Node;
+    private betContainer!: cc.Node;
+    private rooomTopBarNode!: cc.Node;
+    private clockContainerNode!: cc.Node;
     private seats : { x : number, y : number, id:  number }[] = [];
     private rooomTopBarComponent! : RooomTopBar;
     
@@ -32,18 +33,12 @@ export default class UIManager extends cc.Component {
         const t = Date.now();
         // 保存单例引用
         UIManager._instance = this;
+        this.uiNode = this.node.getChildByName("UI");
         this.tableNode = cc.find("Canvas/MainLayout/Table");
-        this.readyBtnNode = cc.find("Canvas/UI/ReadyBtn");
-        this.cancelReadyBtn = cc.find("Canvas/UI/CancelReadyBtn");
-         // 准备按钮点击
-        this.readyBtnNode.on(cc.Node.EventType.TOUCH_END, this.onReadyBtnClick, this);
-        this.cancelReadyBtn.on(cc.Node.EventType.TOUCH_END, this.onCancelReadyBtnClick, this);
         this.chipSelectPanel = cc.find("Canvas/MainLayout/Table/ChipSelectPanel");
         this.betContainer = cc.find("Canvas/MainLayout/Table/BetContainer");
         this.rooomTopBarNode = cc.find("Canvas/MainLayout/RoomTopBar");
         this.clockContainerNode = cc.find("Canvas/MainLayout/Table/ClockContainer");
-        this.setStartBtnStatus(false);
-        this.setCancelReadyBtnStatus(false);
         this.init();
         console.log("游戏初始化预制体耗时:", Date.now() - t, "ms");
     }
@@ -73,20 +68,6 @@ export default class UIManager extends cc.Component {
         return this.tableNode;
     }
 
-    public setStartBtnStatus(active: boolean) {
-        console.log("准备按钮状态", active);
-        this.readyBtnNode.active = active;
-        const labelNode = this.readyBtnNode.getChildByName("Label");
-        this.setLabelView(labelNode);
-    }
-
-    public setCancelReadyBtnStatus(active: boolean) {
-        console.log("取消准备按钮状态", active);
-        this.cancelReadyBtn.active = active;
-        const labelNode = this.cancelReadyBtn.getChildByName("Label");
-        this.setLabelView(labelNode);
-    }
-
 
     public onReadyBtnClick(){
          UIManager.instance.clearTable();
@@ -106,19 +87,6 @@ export default class UIManager extends cc.Component {
     }
 
 
-    public setLabelView(labelNode: cc.Node) {
-        if(labelNode){
-            const label = labelNode.getComponent(cc.Label);
-            let outline = labelNode.getComponent(cc.LabelOutline);
-            if (!outline) {
-                outline = labelNode.addComponent(cc.LabelOutline);
-                outline.color = new cc.Color(255, 240, 180);
-                // 宽度
-                outline.width = 2;
-            }
-            label.node.color = new cc.Color(90, 40, 0);
-        }
-    }
 
     public setCoinView(coinValNode : cc.Node, coin: number){
         const label = coinValNode.getComponent(cc.Label);
@@ -264,7 +232,21 @@ export default class UIManager extends cc.Component {
         node.destroy();
     }
 
-    
 
 
+    public setCancelReadyBtnStatus(active: boolean) {
+        console.log("取消准备按钮状态", active);
+        this.cancelReadyBtn.active = active;
+        const labelNode = this.cancelReadyBtn.getChildByName("Label");
+    }
+
+    public showReady(status: ReadyBtnState) {
+        const node = cc.instantiate(GameRes.instance.readyButtonPrefab);
+        node.parent = this.uiNode;
+        node.setPosition(0, 0);
+
+        const comp = node.getComponent(ReadyButton);
+        comp.setState(status);
+        node.destroy();
+    }
 }
