@@ -20,6 +20,7 @@ export default class GameRes {
     public betAudio!: cc.AudioClip;
     public clockCountdownPrefab!: cc.Prefab;
     public roundStartPrefab!: cc.Prefab;
+    public readyButtonPrefab!: cc.Prefab;
 
     public static get instance(): GameRes {
         if (!this._instance) {
@@ -43,7 +44,8 @@ export default class GameRes {
             this.loadChipImgs(),
             this.loadClockCountdownPrefab(),
             this.loadChipSelectPanelPrefab(),
-            this.loadRoundStartPrefab()
+            this.loadRoundStartPrefab(),
+            this.loadReadyBtnPrefab()
         ]);
 
         CountDownManager.init(this.clockCountdownPrefab);
@@ -144,6 +146,15 @@ export default class GameRes {
                 resolve(clip);
             });
         });
+    }
+
+    
+
+    private async loadReadyBtnPrefab(): Promise<void> {
+        if (this.readyButtonPrefab) return;
+
+        this.readyButtonPrefab = await this.loadPrefab("prefabs/ReadyButtonPrefab");
+        cc.log("准备按钮预制体加载完成");
     }
 
     private async loadRoomTopBarPrefab(): Promise<void> {

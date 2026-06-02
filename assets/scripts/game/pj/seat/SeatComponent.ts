@@ -6,6 +6,7 @@ import CurrUserManager from "../user/CurrUserManager";
 import ClientRoomManager from "../room/ClientRoomManager";
 import { RoomState } from "../room/RoomState";
 import HallRes from "../../../hall/HallRes";
+import { ReadyBtnState } from "../../btn/ReadyButton";
 
 @ccclass
 export default class SeatComponent extends cc.Component {
@@ -86,8 +87,7 @@ export default class SeatComponent extends cc.Component {
         const userId =  this.seatData.userInfo.userId;
     
         if(userId === ClientRoomManager.instance.getMyUserId()){
-            UIManager.instance.setStartBtnStatus(false);
-            UIManager.instance.setCancelReadyBtnStatus(false);
+            UIManager.instance.showReady(ReadyBtnState.HIDE);
         }
 
         switch (state) {
@@ -99,12 +99,12 @@ export default class SeatComponent extends cc.Component {
                 this.setStautsReady(0);
                 // 自己入座状态
                 if (userId === ClientRoomManager.instance.getMyUserId()) {
-                    UIManager.instance.setStartBtnStatus(true);
+                    UIManager.instance.showReady(ReadyBtnState.READY);
                 }
                 break;
             case UserState.Ready:
                 if (userId === ClientRoomManager.instance.getMyUserId()) {
-                    UIManager.instance.setCancelReadyBtnStatus(true);
+                    UIManager.instance.showReady(ReadyBtnState.CANCEL_READY);
                 }
                 this.setSetOut(true);
                 this.setStautsReady(1);

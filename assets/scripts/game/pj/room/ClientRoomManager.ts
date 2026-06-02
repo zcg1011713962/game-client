@@ -11,6 +11,7 @@ import SettleManager from "../../../common/SettleManager";
 import UserData from "../../../login/entity/UserData";
 import CountDownManager from "../../../common/CountDownManager";
 import { SceneUtil } from "../../../util/SceneUtil";
+import { ReadyBtnState } from "../../btn/ReadyButton";
 
 export interface PlayerDTO {
     userId: number;
@@ -237,7 +238,7 @@ export default class ClientRoomManager {
     }){
         this.updatePlayerStatusByUser(data.state, data.userId);
         this.refreshAllSeatView();
-        UIManager.instance.setCancelReadyBtnStatus(false);
+        UIManager.instance.showReady(ReadyBtnState.CANCEL_READY);
     }
 
     // 离开座位
@@ -257,7 +258,7 @@ export default class ClientRoomManager {
              this.updateMySeatId(seatId);
         }
         UIManager.instance.clearTable();
-        UIManager.instance.setStartBtnStatus(false);
+        UIManager.instance.showReady(ReadyBtnState.HIDE);
         this.refreshAllSeatView(); 
     }
 
@@ -331,8 +332,7 @@ export default class ClientRoomManager {
         });
         this.bankerSeat = bankerSeat;
 
-        UIManager.instance.setCancelReadyBtnStatus(false);
-        UIManager.instance.setStartBtnStatus(false);
+        UIManager.instance.showReady(ReadyBtnState.HIDE);
         // 先展示轮次
         await UIManager.instance.showRoundStartAnim(this.roundId);
         DelayTaskUtil.getInstance().schedule(() => {
@@ -452,7 +452,7 @@ export default class ClientRoomManager {
      
         this.updatePlayerStatus(UserState.Sit);
         this.refreshAllSeatView();
-        UIManager.instance.setStartBtnStatus(true);
+        UIManager.instance.showReady(ReadyBtnState.READY);
     }
 
 
