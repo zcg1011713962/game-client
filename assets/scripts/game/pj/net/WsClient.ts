@@ -32,10 +32,10 @@ export default class WsClient {
 
             this.url = `${baseUrl}?token=${encodeURIComponent(token)}`;
             this.ws = new WebSocket(this.url);
+            this.token = token;
 
             this.ws.onopen = () => {
-                cc.log("WebSocket连接成功");
-
+                console.log("WebSocket连接成功");
                 this.startHeartbeat();
                 resolve(); // 👉 通知外部可以发消息了
             };
@@ -58,16 +58,17 @@ export default class WsClient {
 
 
     private reconnect() {
-        if (!this.token || !this.url) return;
+        console.log("reconnect", this.url)
+        if (!this.url) return;
 
-        cc.log("WebSocket重连中...");
+        console.log("WebSocket重连中...");
         this.ws = null;
 
         // this.url 已经带 token
         this.ws = new WebSocket(this.url);
 
         this.ws.onopen = () => {
-            cc.log("WebSocket重连成功");
+            console.log("WebSocket重连成功");
             this.startHeartbeat();
         };
 
@@ -76,7 +77,7 @@ export default class WsClient {
         };
 
         this.ws.onerror = (event) => {
-            cc.error("WebSocket重连错误:", event);
+            console.log("WebSocket重连错误:", event);
         };
 
         this.ws.onclose = () => {
@@ -142,10 +143,6 @@ export default class WsClient {
         if (msg.code !== 0) {
             console.error("服务端错误:", msg.cmd, msg.code, msg.msg);
             ToastManager.show(msg.msg)
-            if(msg.code === 2002){
-                SceneUtil.loadScene("login")
-                return;
-            }
             return;
         }
 

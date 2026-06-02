@@ -86,9 +86,9 @@ export default class SeatComponent extends cc.Component {
         const state = this.seatData.userInfo.state;
         const userId =  this.seatData.userInfo.userId;
     
-        if(userId === ClientRoomManager.instance.getMyUserId()){
-            UIManager.instance.showReady(ReadyBtnState.HIDE);
-        }
+        // if(userId === ClientRoomManager.instance.getMyUserId()){
+        //     UIManager.instance.showReady(ReadyBtnState.HIDE);
+        // }
 
         switch (state) {
             case UserState.Idle:

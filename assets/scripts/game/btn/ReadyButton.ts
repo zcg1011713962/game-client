@@ -1,3 +1,9 @@
+import { Cmd } from "../pj/enum/Cmd";
+import GameRes from "../pj/GameRes";
+import WsClient from "../pj/net/WsClient";
+import ClientRoomManager from "../pj/room/ClientRoomManager";
+import UIManager from "../pj/ui/UIManager";
+
 const { ccclass, property } = cc._decorator;
 
 export enum ReadyBtnState {
@@ -11,16 +17,30 @@ export default class ReadyButton extends cc.Component {
     private readyNode!: cc.Node;
     private cancelReadyNode!: cc.Node;
 
-    private state: ReadyBtnState = ReadyBtnState.HIDE;
+    private state!: ReadyBtnState;
 
     onLoad() {
         this.readyNode = this.node.getChildByName("ReadyNode");
         this.cancelReadyNode = this.node.getChildByName("CancelReadyNode");
         this.setState(ReadyBtnState.HIDE);
+
+        this.readyNode.on(
+            cc.Node.EventType.TOUCH_END,
+            this.readyBtnClick,
+            this
+        );
+
+        this.cancelReadyNode.on(
+            cc.Node.EventType.TOUCH_END,
+            this.cancelBtnClick,
+            this
+        );
+
     }
 
     public setState(state: ReadyBtnState) {
         this.state = state;
+         console.log("准备按钮状态", this.state);
 
         this.node.active = state !== ReadyBtnState.HIDE;
 
@@ -36,4 +56,14 @@ export default class ReadyButton extends cc.Component {
     public getState(): ReadyBtnState {
         return this.state;
     }
+
+    public readyBtnClick(){
+        UIManager.instance.readyBtnClick();
+    }
+
+    public cancelBtnClick(){
+        UIManager.instance.cancelBtnClick();
+    }
+
+    
 }

@@ -22,6 +22,7 @@ export default class UIManager extends cc.Component {
     private clockContainerNode!: cc.Node;
     private seats : { x : number, y : number, id:  number }[] = [];
     private rooomTopBarComponent! : RooomTopBar;
+    private readyButtonNode!: cc.Node;
     
 
     private static _instance: UIManager = null;
@@ -69,25 +70,6 @@ export default class UIManager extends cc.Component {
     }
 
 
-    public onReadyBtnClick(){
-         UIManager.instance.clearTable();
-         cc.audioEngine.playEffect(GameRes.instance.clickAudio, false);
-         const roomId = ClientRoomManager.instance.getRoomId();
-         WsClient.instance.send(Cmd.READY, {
-            roomId: roomId
-         });
-    }
-
-    private onCancelReadyBtnClick(){
-         cc.audioEngine.playEffect(GameRes.instance.clickAudio, false);
-         const roomId = ClientRoomManager.instance.getRoomId();
-         WsClient.instance.send(Cmd.CANCEL_READY, {
-            roomId: roomId
-         });
-    }
-
-
-
     public setCoinView(coinValNode : cc.Node, coin: number){
         const label = coinValNode.getComponent(cc.Label);
         let outline = coinValNode.getComponent(cc.LabelOutline);
@@ -117,14 +99,14 @@ export default class UIManager extends cc.Component {
     public intSeatPos(){
         this.seats = [];
         // 设置座位坐标
-        this.seats.push({ x : 0, y : -600, id:  0 });
-        this.seats.push({ x : 400, y : -380, id:  1 });
-        this.seats.push({ x : 480, y : 20, id:  2 });
-        this.seats.push({ x : 400, y : 420, id:  3});
-        this.seats.push({ x : 0, y : 700, id:  4});
-        this.seats.push({ x : -400, y : 420, id:  5 });
-        this.seats.push({ x : -480, y : 20, id:  6});
-        this.seats.push({ x : -400, y : -380, id:  7});
+        this.seats.push({ x : 10, y : -800, id:  0 });
+        this.seats.push({ x : 420, y : -420, id:  1 });
+        this.seats.push({ x : 460, y : 20, id:  2 });
+        this.seats.push({ x : 420, y : 420, id:  3});
+        this.seats.push({ x : 10, y : 700, id:  4});
+        this.seats.push({ x : -420, y : 420, id:  5 });
+        this.seats.push({ x : -460, y : 20, id:  6});
+        this.seats.push({ x : -420, y : -420, id:  7});
     }
 
 
@@ -233,20 +215,33 @@ export default class UIManager extends cc.Component {
     }
 
 
-
-    public setCancelReadyBtnStatus(active: boolean) {
-        console.log("取消准备按钮状态", active);
-        this.cancelReadyBtn.active = active;
-        const labelNode = this.cancelReadyBtn.getChildByName("Label");
-    }
-
     public showReady(status: ReadyBtnState) {
-        const node = cc.instantiate(GameRes.instance.readyButtonPrefab);
-        node.parent = this.uiNode;
-        node.setPosition(0, 0);
-
-        const comp = node.getComponent(ReadyButton);
+        if(!this.readyButtonNode || !cc.isValid(this.readyButtonNode)){
+             this.readyButtonNode = cc.instantiate(GameRes.instance.readyButtonPrefab);
+            this.readyButtonNode.parent = this.uiNode;
+        }
+        const comp = this.readyButtonNode.getComponent(ReadyButton);
         comp.setState(status);
-        node.destroy();
     }
+
+    public readyBtnClick(){
+         UIManager.instance.clearTable();
+         cc.audioEngine.playEffect(GameRes.instance.clickAudio, false);
+         const roomId = ClientRoomManager.instance.getRoomId();
+         WsClient.instance.send(Cmd.READY, {
+            roomId: roomId
+         });
+    }
+
+    public cancelBtnClick(){
+         cc.audioEngine.playEffect(GameRes.instance.clickAudio, false);
+         const roomId = ClientRoomManager.instance.getRoomId();
+         WsClient.instance.send(Cmd.CANCEL_READY, {
+            roomId: roomId
+         });
+    }
+
+
+    
+    
 }

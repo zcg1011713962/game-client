@@ -1,5 +1,6 @@
 import ClientRoomManager from "../game/pj/room/ClientRoomManager";
 import UIManager from "../game/pj/ui/UIManager";
+import SettleManager from "./SettleManager";
 
 const { ccclass } = cc._decorator;
 
@@ -255,13 +256,10 @@ export default class SettlePopup extends cc.Component {
         if (this.isClosing) {
             return;
         }
-
-        this.close();
-
-        if (UIManager.instance) {
-            ClientRoomManager.instance.doNextRound();
-            UIManager.instance.onReadyBtnClick();
-        }
+        ClientRoomManager.instance.doNextRound();
+        SettleManager.close();
+        UIManager.instance.readyBtnClick();
+        
     }
 
     private getLabel(parent: cc.Node, name: string): cc.Label {

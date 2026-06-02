@@ -35,10 +35,6 @@ export default class PaiJiuTable extends cc.Component {
     private dealContainer: cc.Node = null;
     private cardPrefab: cc.Prefab = null;
     private playerPosRoot: cc.Node = null;
-    private audioId: number | null= null;
-
-    /** 牌图片缓存，key 例如 pai_1 */
-    private cardImgMap: { [key: string]: cc.SpriteFrame } = {};
 
     private totalCardCount: number = 32;
     private cardsPerPlayer: number = 2;
@@ -91,8 +87,6 @@ export default class PaiJiuTable extends cc.Component {
         cc.game.on(cc.game.EVENT_HIDE, this.onGameHide, this);
         cc.game.on(cc.game.EVENT_SHOW, this.onGameShow, this);
 
-        await this.loadCardImg();
-        await this.loadCardPrefab();
     }
 
     onDestroy() {
@@ -176,42 +170,10 @@ export default class PaiJiuTable extends cc.Component {
         });
     }
 
-    /** 加载所有牌图片 */
-    private async loadCardImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
-
-        if (Object.keys(this.cardImgMap).length > 0) {
-            return this.cardImgMap;
-        }
-
-        const bundle = await GameRes.instance.loadGameBundle();
-
-        return new Promise((resolve, reject) => {
-
-            bundle.loadDir("card", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
-
-                if (err) {
-                    cc.error("牌图片加载失败", err);
-                    reject(err);
-                    return;
-                }
-
-                assets.forEach(sp => {
-                    this.cardImgMap[sp.name] = sp;
-                });
-
-                cc.log("所有牌加载完成");
-
-                resolve(this.cardImgMap);
-
-            });
-
-        });
-    }
-
     /**
      * 开始发牌动画入口
      */
-    public async playStartAnim(serverResult?: IServerDealResult) {
+    public async playStartAnim(serverResult: IServerDealResult) {
         if (this.isPlaying) return;
 
         this.isPlaying = true;
@@ -631,7 +593,7 @@ export default class PaiJiuTable extends cc.Component {
 
         if (cardData && cardData.id !== undefined) {
             const key = `pai_${cardData.id}`;
-            const spriteFrame = this.cardImgMap[key];
+            const spriteFrame = GameRes.instance.cardImgMap[key];
 
             if (!spriteFrame) {
                 console.error("找不到牌:", key);

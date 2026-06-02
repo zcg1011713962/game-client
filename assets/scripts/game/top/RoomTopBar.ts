@@ -99,7 +99,6 @@ export class RooomTopBar extends cc.Component {
             }
             // 返回
             WsClient.instance.send(Cmd.LEAVE_ROOM, {roomId: roomId});
-            cc.director.loadScene("hall");
         }
     }
 

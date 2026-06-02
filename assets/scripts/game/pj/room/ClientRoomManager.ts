@@ -442,6 +442,7 @@ export default class ClientRoomManager {
 
     // 下一局
     public nextRound(data: NextRoundPush){
+
         console.log("下一局通知", data);
         // UIManager.instance.clearTable();
         ClientRoomManager.instance.setRoomState(data.roomState);
@@ -458,7 +459,7 @@ export default class ClientRoomManager {
 
     // 离开房间回包
     public leaveRoom(data : any){
-        // WsClient.instance.close();
+        cc.director.loadScene("hall");
     }
 
     // 离开房间通知

@@ -22,6 +22,9 @@ export default class GameRes {
     public roundStartPrefab!: cc.Prefab;
     public readyButtonPrefab!: cc.Prefab;
 
+       /** 牌图片缓存，key 例如 pai_1 */
+    public cardImgMap: { [key: string]: cc.SpriteFrame } = {};
+
     public static get instance(): GameRes {
         if (!this._instance) {
             this._instance = new GameRes();
@@ -45,7 +48,8 @@ export default class GameRes {
             this.loadClockCountdownPrefab(),
             this.loadChipSelectPanelPrefab(),
             this.loadRoundStartPrefab(),
-            this.loadReadyBtnPrefab()
+            this.loadReadyBtnPrefab(),
+            this.loadCardImg()
         ]);
 
         CountDownManager.init(this.clockCountdownPrefab);
@@ -228,6 +232,38 @@ export default class GameRes {
                 cc.log("筹码图片加载完成");
                 resolve();
             });
+        });
+    }
+
+      /** 加载所有牌图片 */
+    private async loadCardImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
+
+        if (Object.keys(this.cardImgMap).length > 0) {
+            return this.cardImgMap;
+        }
+
+        const bundle = await GameRes.instance.loadGameBundle();
+
+        return new Promise((resolve, reject) => {
+
+            bundle.loadDir("card", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
+
+                if (err) {
+                    cc.error("牌图片加载失败", err);
+                    reject(err);
+                    return;
+                }
+
+                assets.forEach(sp => {
+                    this.cardImgMap[sp.name] = sp;
+                });
+
+                cc.log("所有牌加载完成");
+
+                resolve(this.cardImgMap);
+
+            });
+
         });
     }
 

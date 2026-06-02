@@ -127,13 +127,7 @@ export default class Loading extends cc.Component {
             this.setTargetProgress(1, "加载完成");
 
             await this.waitProgressComplete();
-
-            if (user) {
-                await this.jumpScene("hall", user);
-            } else {
-                await this.jumpScene("login");
-            }
-
+            await this.jumpScene("login");
         } catch (e) {
             cc.error("Loading 加载失败:", e);
             this.setTip("加载失败，请检查网络后重试");
