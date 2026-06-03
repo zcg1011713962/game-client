@@ -1,7 +1,3 @@
-import { Cmd } from "../pj/enum/Cmd";
-import GameRes from "../pj/GameRes";
-import WsClient from "../pj/net/WsClient";
-import ClientRoomManager from "../pj/room/ClientRoomManager";
 import UIManager from "../pj/ui/UIManager";
 
 const { ccclass, property } = cc._decorator;

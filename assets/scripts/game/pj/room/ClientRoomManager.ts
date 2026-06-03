@@ -132,6 +132,8 @@ export default class ClientRoomManager {
     }
 
     private renderRoom(data: RoomSnapshot){
+        console.log("renderRoom", data);
+
         const bankerSeat = data.bankerSeat;
         const players = data.players;
 
@@ -155,7 +157,7 @@ export default class ClientRoomManager {
         if(data.cardMap && Object.keys(data.cardMap).length > 0){
             console.log("断线重连恢复牌局");
             const dealCardPush = ClientRoomManager.instance.buildDealCardPush(data);
-            ClientRoomManager.instance.dealCard(dealCardPush);
+            // ClientRoomManager.instance.dealCard(dealCardPush);
             if(data.settlePush){
                 this.settle(data.settlePush);
             }

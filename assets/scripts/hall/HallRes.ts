@@ -92,7 +92,7 @@ export default class HallRes {
                 // 缓存
                 this.avatarMap[name] = sp;
 
-                cc.log(`头像加载完成: ${name}`);
+                //cc.log(`头像加载完成: ${name}`);
 
                 resolve(sp);
 
@@ -114,7 +114,7 @@ export default class HallRes {
                 }
 
                 this.hallBgmAudio = clip;
-                cc.log("大厅音乐加载完成");
+                //cc.log("大厅音乐加载完成");
                 resolve();
             });
         });
@@ -135,7 +135,7 @@ export default class HallRes {
 
                 this.hallClickAudio = clip;
 
-                cc.log("大厅点击音效加载完成");
+                //cc.log("大厅点击音效加载完成");
                 resolve();
             });
         });
@@ -157,7 +157,7 @@ export default class HallRes {
 
                 this.topBarPrefab = prefab;
 
-                cc.log("顶部预制体加载完成");
+                //cc.log("顶部预制体加载完成");
                 resolve(prefab);
             });
         });
@@ -178,7 +178,7 @@ export default class HallRes {
 
                 this.gameCardPrefab = prefab;
 
-                cc.log("游戏卡片预制体加载完成");
+                //cc.log("游戏卡片预制体加载完成");
                 resolve(prefab);
             });
         });
@@ -200,7 +200,7 @@ export default class HallRes {
 
                 this.roomSelectPanelPrefab = prefab;
 
-                cc.log("房间类型选择预制体加载完成");
+                //cc.log("房间类型选择预制体加载完成");
                 resolve(prefab);
             });
         });
@@ -222,7 +222,7 @@ export default class HallRes {
 
                 this.joinRoomPanelPrefab = prefab;
 
-                cc.log("加入房间预制体加载完成");
+                //cc.log("加入房间预制体加载完成");
                 resolve(prefab);
             });
         });
@@ -310,6 +310,7 @@ export default class HallRes {
                 (err, assets: cc.SpriteFrame[]) => {
 
                     if (err) {
+                        cc.error("loadBottomIcons");
                         reject(err);
                         return;
                     }

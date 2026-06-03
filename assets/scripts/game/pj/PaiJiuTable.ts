@@ -690,27 +690,25 @@ export default class PaiJiuTable extends cc.Component {
         const cards = this.playerCardMap[seat] || [];
         if (!cards.length) return;
 
-        const targetPosNode = this.playerPosRoot.getChildByName(`Player${seat}Pos`);
-
-        if (!targetPosNode) {
-            console.error(`找不到座位节点 Player${seat}Pos`);
-            return;
-        }
-
-        const worldPos = targetPosNode.parent.convertToWorldSpaceAR(targetPosNode.position);
-        const localPos = this.dealContainer.convertToNodeSpaceAR(worldPos);
-
-        const totalWidth = (cards.length - 1) * this.dealGapX;
-        const startX = localPos.x - totalWidth / 2;
-
         for (let i = 0; i < cards.length; i++) {
             const card = cards[i];
+
+            const targetPos = this.getCardTargetPos(seat, i);
+
             card.zIndex = 200 + i;
+
+            cc.Tween.stopAllByTarget(card);
+
+            card.scaleX = Math.abs(card.scaleX || 1);
+            card.scaleY = Math.abs(card.scaleY || 1);
 
             cc.tween(card)
                 .to(0.12, {
-                    x: startX + i * this.dealGapX,
-                    y: localPos.y,
+                    x: targetPos.x,
+                    y: targetPos.y,
+                    scaleX: 1,
+                    scaleY: 1,
+                    angle: 0,
                 })
                 .start();
         }

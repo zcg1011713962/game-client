@@ -99,11 +99,11 @@ export default class UIManager extends cc.Component {
     public intSeatPos(){
         this.seats = [];
         // 设置座位坐标
-        this.seats.push({ x : 10, y : -800, id:  0 });
+        this.seats.push({ x : 0, y : -800, id:  0 });
         this.seats.push({ x : 420, y : -420, id:  1 });
         this.seats.push({ x : 460, y : 20, id:  2 });
         this.seats.push({ x : 420, y : 420, id:  3});
-        this.seats.push({ x : 10, y : 700, id:  4});
+        this.seats.push({ x : 0, y : 750, id:  4});
         this.seats.push({ x : -420, y : 420, id:  5 });
         this.seats.push({ x : -460, y : 20, id:  6});
         this.seats.push({ x : -420, y : -420, id:  7});

@@ -41,7 +41,7 @@ export default class LoginRes {
                     }
 
                     this.mouseCursorPrefab = prefab;
-                    console.log("鼠标预制体加载完毕");
+                    //console.log("鼠标预制体加载完毕");
                     resolve(prefab);
                 }
             );
@@ -65,7 +65,7 @@ export default class LoginRes {
                     }
 
                     this.toastPrefab = prefab;
-                    console.log("提示弹窗预制体加载完毕");
+                    //console.log("提示弹窗预制体加载完毕");
                     resolve(prefab);
                 }
             );

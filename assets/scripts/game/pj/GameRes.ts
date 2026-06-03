@@ -158,21 +158,21 @@ export default class GameRes {
         if (this.readyButtonPrefab) return;
 
         this.readyButtonPrefab = await this.loadPrefab("prefabs/ReadyButtonPrefab");
-        cc.log("准备按钮预制体加载完成");
+        //cc.log("准备按钮预制体加载完成");
     }
 
     private async loadRoomTopBarPrefab(): Promise<void> {
         if (this.roomTopBarPrefab) return;
 
         this.roomTopBarPrefab = await this.loadPrefab("prefabs/RoomTopBar");
-        cc.log("游戏顶部预制体加载完成");
+        //cc.log("游戏顶部预制体加载完成");
     }
 
     private async loadChipSelectPanelPrefab(): Promise<void> {
         if (this.chipSelectPanelPrefab) return;
 
         this.chipSelectPanelPrefab = await this.loadPrefab("prefabs/ChipSelectPanel");
-        cc.log("选择筹码预制体加载完成");
+        //cc.log("选择筹码预制体加载完成");
     }
 
 
@@ -180,34 +180,34 @@ export default class GameRes {
         if (this.settlePrefab) return;
 
         this.settlePrefab = await this.loadPrefab("prefabs/SettlePopup");
-        cc.log("结算预制体加载完成");
+        //cc.log("结算预制体加载完成");
     }
 
     private async loadSeatPrefabs(): Promise<void> {
         if (this.seatPrefab) return;
         this.seatPrefab = await  GameRes.instance.loadPrefab("prefabs/Seat");
-        cc.log("座位预制体加载完成");
+        //cc.log("座位预制体加载完成");
     }
 
     private async loadChipPrefab(): Promise<void> {
         if (this.chipPrefab) return;
 
         this.chipPrefab = await this.loadPrefab("prefabs/Chip");
-        cc.log("筹码预制体加载完成");
+        //cc.log("筹码预制体加载完成");
     }
 
     private async loadClockCountdownPrefab(): Promise<void> {
         if (this.clockCountdownPrefab) return;
 
         this.clockCountdownPrefab = await this.loadPrefab("prefabs/BetCountdown");
-        cc.log("时钟预制体加载完成");
+        //cc.log("时钟预制体加载完成");
     }
 
     private async loadRoundStartPrefab(): Promise<void> {
         if (this.roundStartPrefab) return;
 
         this.roundStartPrefab = await this.loadPrefab("prefabs/RoundStartPrefab");
-        cc.log("轮次预制体加载完成");
+        //cc.log("轮次预制体加载完成");
     }
 
     
@@ -229,7 +229,7 @@ export default class GameRes {
                     this.chipImgMap[sp.name] = sp;
                 });
 
-                cc.log("筹码图片加载完成");
+                //cc.log("筹码图片加载完成");
                 resolve();
             });
         });
@@ -258,7 +258,7 @@ export default class GameRes {
                     this.cardImgMap[sp.name] = sp;
                 });
 
-                cc.log("所有牌加载完成");
+                //console.log("所有牌加载完成", this.cardImgMap);
 
                 resolve(this.cardImgMap);
 
@@ -271,20 +271,20 @@ export default class GameRes {
     public async loadGameBgmAudio(): Promise<void> {
         if (this.gameBgmAudio) return;
         this.gameBgmAudio = await this.loadAudio("audio/bgm_game");
-        cc.log("游戏背景音乐加载完成");
+        //cc.log("游戏背景音乐加载完成");
     }
 
     private async loadClickAudio(): Promise<void> {
         if (this.clickAudio) return;
 
         this.clickAudio = await this.loadAudio("audio/bgm_click");
-        cc.log("点击音效加载完成");
+        //cc.log("点击音效加载完成");
     }
 
     private async loadBetAudio(): Promise<void> {
         if (this.betAudio) return;
 
         this.betAudio = await this.loadAudio("audio/bgm_bet");
-        cc.log("投注音效加载完成");
+        //cc.log("投注音效加载完成");
     }
 }

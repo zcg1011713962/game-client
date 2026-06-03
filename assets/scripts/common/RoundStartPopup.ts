@@ -6,6 +6,7 @@ export default class RoundStartPopup extends cc.Component {
     private panel: cc.Node = null;
     private roundLabel: cc.Label = null;
 
+    private endTime: number = 0;
     private flyTime: number = 0.35;
     private stayTime: number = 3.0;
     private fadeTime: number = 0.25;
@@ -40,38 +41,47 @@ export default class RoundStartPopup extends cc.Component {
             }
 
             this.node.active = true;
-
             this.roundLabel.string = `${roundId}`;
+
+            // 记录动画应该结束的时间
+            this.endTime = Date.now()
+                + this.flyTime * 1000
+                + this.stayTime * 1000
+                + this.fadeTime * 1000;
 
             cc.Tween.stopAllByTarget(this.panel);
 
-            // 初始位置：屏幕左侧
             this.panel.opacity = 0;
             this.panel.scale = 1;
             this.panel.x = -500;
             this.panel.y = 0;
 
             cc.tween(this.panel)
-                // 从左到中间
                 .to(this.flyTime, {
                     x: 0,
                     opacity: 255
                 }, {
                     easing: "quadOut"
                 })
-                // 停留
                 .delay(this.stayTime)
-                // 淡出
                 .to(this.fadeTime, {
                     opacity: 0
                 })
                 .call(() => {
-                    if (cc.isValid(this.node)) {
-                        this.node.active = false;
-                    }
+                    this.hideImmediately();
                     resolve();
                 })
                 .start();
         });
+    }
+
+    private hideImmediately() {
+        cc.Tween.stopAllByTarget(this.panel);
+
+        this.panel.opacity = 0;
+
+        if (cc.isValid(this.node)) {
+            this.node.active = false;
+        }
     }
 }

@@ -11,9 +11,7 @@ export interface IPaiJiuCardData {
 export default class PaiJiuCard extends cc.Component {
 
     private backNode: cc.Node = null;
-
     private frontNode: cc.Node = null;
-
     private shadowNode: cc.Node = null;
 
     private _data: IPaiJiuCardData | null = null;
@@ -22,11 +20,22 @@ export default class PaiJiuCard extends cc.Component {
         this.backNode = this.node.getChildByName("Back");
         this.frontNode = this.node.getChildByName("Front");
         this.shadowNode = this.node.getChildByName("Shadow");
+
+        this.node.anchorX = 0.5;
+        this.node.anchorY = 0.5;
+
         this.showBack();
     }
 
     public init(cardData?: IPaiJiuCardData) {
         this._data = cardData || null;
+
+        cc.Tween.stopAllByTarget(this.node);
+
+        this.node.scaleX = 1;
+        this.node.scaleY = 1;
+        this.node.angle = 0;
+
         this.showBack();
     }
 
@@ -37,20 +46,29 @@ export default class PaiJiuCard extends cc.Component {
     public showBack() {
         if (this.backNode) this.backNode.active = true;
         if (this.frontNode) this.frontNode.active = false;
+
+        this.node.scaleX = Math.abs(this.node.scaleX || 1);
     }
 
     public showFront() {
         if (this.backNode) this.backNode.active = false;
         if (this.frontNode) this.frontNode.active = true;
+
+        this.node.scaleX = Math.abs(this.node.scaleX || 1);
     }
 
     public flipToFront(cb?: Function) {
+        cc.Tween.stopAllByTarget(this.node);
+
+        this.node.scaleX = 1;
+        this.node.scaleY = 1;
+
         cc.tween(this.node)
             .to(0.12, { scaleX: 0.05 })
             .call(() => {
                 this.showFront();
             })
-            .to(0.12, { scaleX: 1.0 })
+            .to(0.12, { scaleX: 1 })
             .call(() => {
                 cb && cb();
             })
@@ -58,12 +76,17 @@ export default class PaiJiuCard extends cc.Component {
     }
 
     public flipToBack(cb?: Function) {
+        cc.Tween.stopAllByTarget(this.node);
+
+        this.node.scaleX = 1;
+        this.node.scaleY = 1;
+
         cc.tween(this.node)
             .to(0.12, { scaleX: 0.05 })
             .call(() => {
                 this.showBack();
             })
-            .to(0.12, { scaleX: 1.0 })
+            .to(0.12, { scaleX: 1 })
             .call(() => {
                 cb && cb();
             })

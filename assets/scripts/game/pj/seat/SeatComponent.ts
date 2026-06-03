@@ -86,13 +86,14 @@ export default class SeatComponent extends cc.Component {
         const state = this.seatData.userInfo.state;
         const userId =  this.seatData.userInfo.userId;
     
-        // if(userId === ClientRoomManager.instance.getMyUserId()){
-        //     UIManager.instance.showReady(ReadyBtnState.HIDE);
-        // }
+       
 
         switch (state) {
             case UserState.Idle:
                 this.setNormal(true);
+                if(userId === ClientRoomManager.instance.getMyUserId()){
+                    UIManager.instance.showReady(ReadyBtnState.HIDE);
+                }
                 break;
             case UserState.Sit:
                 this.setSetOut(true);
@@ -112,6 +113,9 @@ export default class SeatComponent extends cc.Component {
             case UserState.Playing:
                 this.setSetOut(true);
                 this.setBankerView(true);
+                if(userId === ClientRoomManager.instance.getMyUserId()){
+                    UIManager.instance.showReady(ReadyBtnState.HIDE);
+                }
                 break;
         }
 
