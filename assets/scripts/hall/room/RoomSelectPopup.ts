@@ -4,6 +4,7 @@ import WsClient from "../../game/pj/net/WsClient";
 import UserData from "../../login/entity/UserData";
 import { SceneUtil } from "../../util/SceneUtil";
 import HallUIManager from "../HallUIManager";
+import CreateRoomPopup from "./CreateRoomPopup";
 import JoinRoomPopup from "./JoinRoomPopup";
 
 const { ccclass, property } = cc._decorator;
@@ -72,7 +73,12 @@ export default class RoomSelectPopup extends cc.Component {
         // 创建房间
         this.createCard.on(cc.Node.EventType.TOUCH_END, () => {
             this.playClickAnim(this.createCard);
-            this.onClickCard(RoomCardType.CREATE);
+             if(!HallUIManager.instance.createRoomPopupPrefabNode){
+                HallUIManager.instance.initCreateRoomPopupPrefabNode();
+            }
+            const createRoomPopupNode = HallUIManager.instance.createRoomPopupPrefabNode.getComponent(CreateRoomPopup);
+            createRoomPopupNode.show();    
+
         }, this);
 
         // 加入房间
@@ -89,8 +95,8 @@ export default class RoomSelectPopup extends cc.Component {
 
         // 自由匹配
         this.matchCard.on(cc.Node.EventType.TOUCH_END, () => {
-            this.playClickAnim(this.matchCard);
-           this.onClickCard(RoomCardType.MATCH);
+           this.playClickAnim(this.matchCard);
+           HallUIManager.instance.onClickCard(RoomCardType.MATCH);
         }, this);
 
     }
@@ -202,15 +208,5 @@ export default class RoomSelectPopup extends cc.Component {
 
     }
 
-
-    private async onClickCard(roomCardType: RoomCardType) {
-        if(roomCardType === RoomCardType.MATCH){
-            // 匹配
-            WsClient.instance.send(Cmd.FREE_MATCH, "");
-        }else if(roomCardType === RoomCardType.CREATE){
-            // 创房
-            WsClient.instance.send(Cmd.CREATE_ROOM, "");
-        }
-    }
 
 }

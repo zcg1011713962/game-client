@@ -1,5 +1,5 @@
 import HallRes from "./HallRes";
-import RoomSelectPopup from "../hall/room/RoomSelectPopup";
+import RoomSelectPopup, { RoomCardType } from "../hall/room/RoomSelectPopup";
 import WsClient from "../game/pj/net/WsClient";
 import UserData from "../login/entity/UserData";
 import Config from "../config/Config";
@@ -13,18 +13,20 @@ const {ccclass, property} = cc._decorator;
 @ccclass
 export default class HallUIManager extends cc.Component {
     private gameCardPos : { x : number, y : number, id:  number, name: string }[] = [];
-    private gameCardContainerNode: cc.Node = null;
-    private roomSelectPanelPrefabNode: cc.Node = null;
-    public joinRoomPanelPrefabNode: cc.Node = null;
-    public bannerSprite: cc.Sprite = null;
-    public btnActivitySprite: cc.Sprite = null;
-    public btnRankSprite: cc.Sprite = null;
-    public btnRecordSprite: cc.Sprite = null;
-    public btnShopSprite: cc.Sprite = null;
+    private gameCardContainerNode!: cc.Node;
+    private roomSelectPanelPrefabNode!: cc.Node;
+    public joinRoomPanelPrefabNode!: cc.Node;
+    public createRoomPopupPrefabNode!: cc.Node;
+    public bannerSprite!: cc.Sprite;
+    public btnActivitySprite!: cc.Sprite;
+    public btnRankSprite!: cc.Sprite;
+    public btnRecordSprite!: cc.Sprite;
+    public btnShopSprite!: cc.Sprite;
     
     private topBar!: cc.Node;
     public gameCardNode!: cc.Node;
     public joinRoomPanelNode!: cc.Node;
+    public createRoomPopupNode!:cc.Node;
     public roomSelectPanelNode: cc.Node | null = null;
     public canvas: cc.Node | null = null;
     private shopNode: cc.Node |null = null;
@@ -40,6 +42,7 @@ export default class HallUIManager extends cc.Component {
         this.topBar = this.node.getChildByName("TopBar");
         this.gameCardNode = this.node.getChildByName("GameCard");
         this.joinRoomPanelNode = this.node.getChildByName("JoinRoomPanel");
+        this.createRoomPopupNode = this.node.getChildByName("CreateRoomPopupPanel");
         this.roomSelectPanelNode = this.node.getChildByName("RoomSelectPanel");
         this.gameCardContainerNode = this.gameCardNode.getChildByName("View");
         this.bannerSprite = this.node.getChildByName("Banner").getChildByName("BannerImg").getComponent(cc.Sprite);
@@ -165,6 +168,15 @@ export default class HallUIManager extends cc.Component {
         }
     }
 
+
+     public initCreateRoomPopupPrefabNode(){
+        this.createRoomPopupPrefabNode = cc.instantiate(HallRes.instance.createRoomPopupPrefab);  
+        if(this.createRoomPopupNode){
+            this.createRoomPopupPrefabNode.parent = this.createRoomPopupNode;
+        }
+    }
+
+
     public gameCardShow(){
         const gameCardNode = this.gameCardNode;
         if(gameCardNode){
@@ -267,6 +279,16 @@ export default class HallUIManager extends cc.Component {
         this.isPlayingBgm = true;
 
         console.log("播放大厅背景音乐");
+    }
+
+    public onClickCard(roomCardType: RoomCardType) {
+        if(roomCardType === RoomCardType.MATCH){
+            // 匹配
+            WsClient.instance.send(Cmd.FREE_MATCH, "");
+        }else if(roomCardType === RoomCardType.CREATE){
+            // 创房
+            WsClient.instance.send(Cmd.CREATE_ROOM, "");
+        }
     }
 
     protected onDestroy(): void {

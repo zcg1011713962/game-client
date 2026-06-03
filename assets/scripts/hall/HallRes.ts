@@ -13,6 +13,7 @@ export default class HallRes {
     public roomSelectPanelPrefab: cc.Prefab = null;
     public joinRoomPanelPrefab: cc.Prefab = null;
     public topBarPrefab: cc.Prefab = null;
+    public createRoomPopupPrefab: cc.Prefab = null;
 
     public bg1Map: { [key: string]: cc.SpriteFrame } = {};
     public gameIconMap: { [key: string]: cc.SpriteFrame } = {};
@@ -44,6 +45,7 @@ export default class HallRes {
         await this.joinRoomPanelPrefabs();
         await this.loadHallBannerImg("banner_paijiu");
         await this.loadBottomIcons();
+        await this.createRoomPopupPrefabs();
    
         const avatar = user != null ? user.avatar : "0";
         this.loadAvatarImg("avatar_" + avatar);
@@ -223,6 +225,26 @@ export default class HallRes {
                 this.joinRoomPanelPrefab = prefab;
 
                 //cc.log("加入房间预制体加载完成");
+                resolve(prefab);
+            });
+        });
+    }
+
+
+     public async createRoomPopupPrefabs(): Promise<cc.Prefab> {
+        if (this.createRoomPopupPrefab) return this.createRoomPopupPrefab;
+
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+            bundle.load("prefabs/CreateRoomPopup", cc.Prefab, (err, prefab: cc.Prefab) => {
+                if (err) {
+                    cc.error("CreateRoomPopupPrefab加载失败:", err);
+                    reject(err);
+                    return;
+                }
+
+                this.createRoomPopupPrefab = prefab;
                 resolve(prefab);
             });
         });
