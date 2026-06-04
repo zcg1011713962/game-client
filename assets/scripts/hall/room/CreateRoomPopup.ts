@@ -64,38 +64,92 @@ export default class CreateRoomPopup extends cc.Component {
 
         labels.forEach(label => {
 
-            if (label.node.name !== "Label_Title") {
-                return;
-            }
+            if (label.node.name === "Label_Title") {
+                    // 字号
+                label.fontSize = 40;
+            
 
-            // 字号
-            label.fontSize = 40;
-        
-
-            // 深棕色
-            label.node.color = new cc.Color(
-                90,
-                51,
-                22
-            );
-
-            // 描边
-            let outline =
-                label.getComponent(cc.LabelOutline);
-
-            if (!outline) {
-                outline =
-                    label.addComponent(cc.LabelOutline);
-            }
-
-            outline.color =
-                new cc.Color(
-                    245,
-                    214,
-                    161
+                // 深棕色
+                label.node.color = new cc.Color(
+                    90,
+                    51,
+                    22
                 );
 
-            outline.width = 1;
+                // 描边
+                let outline =
+                    label.getComponent(cc.LabelOutline);
+
+                if (!outline) {
+                    outline =
+                        label.addComponent(cc.LabelOutline);
+                }
+
+                outline.color =
+                    new cc.Color(
+                        245,
+                        214,
+                        161
+                    );
+
+                outline.width = 1;
+            }else if(label.node.name === "label1"){
+                    // 字号
+                label.fontSize = 35;
+            
+
+                // 深棕色
+                label.node.color = new cc.Color(
+                    90,
+                    51,
+                    22
+                );
+
+                // 描边
+                let outline =
+                    label.getComponent(cc.LabelOutline);
+
+                if (!outline) {
+                    outline =
+                        label.addComponent(cc.LabelOutline);
+                }
+
+                outline.color =
+                    new cc.Color(
+                        245,
+                        214,
+                        161
+                    );
+            }else if(label.node.name === "label2"){
+                    // 字号
+                label.fontSize = 22;
+            
+
+                // 深棕色
+                label.node.color = new cc.Color(
+                    90,
+                    51,
+                    22
+                );
+
+                // 描边
+                let outline =
+                    label.getComponent(cc.LabelOutline);
+
+                if (!outline) {
+                    outline =
+                        label.addComponent(cc.LabelOutline);
+                }
+
+                outline.color =
+                    new cc.Color(
+                        245,
+                        214,
+                        161
+                    );
+            }
+
+            
         });
     }
 

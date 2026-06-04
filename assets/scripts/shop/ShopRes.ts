@@ -3,6 +3,7 @@ export default class ShopRes {
 
     private shopBundle: cc.AssetManager.Bundle = null;
     public shopPrefab: cc.Prefab = null;
+    public buyConfirmPrefab: cc.Prefab = null;
 
     public static get instance(): ShopRes {
         if (!this._instance) {
@@ -49,7 +50,27 @@ export default class ShopRes {
 
                 this.shopPrefab = prefab;
 
-                cc.log("商城预制体加载完成");
+                //console.log("商城预制体加载完成");
+                resolve(prefab);
+            });
+        });
+    }
+
+    public async loadBuyConfirmPrefab(): Promise<cc.Prefab> {
+        if (this.buyConfirmPrefab) return this.buyConfirmPrefab;
+
+        const bundle = await this.loadShopBundle();
+
+        return new Promise((resolve, reject) => {
+            bundle.load("prefabs/BuyConfirmPopup", cc.Prefab, (err, prefab: cc.Prefab) => {
+                if (err) {
+                    cc.error("商城弹窗预制体加载失败:", err);
+                    reject(err);
+                    return;
+                }
+
+                this.buyConfirmPrefab = prefab;
+                console.log("商城弹窗预制体加载完成");
                 resolve(prefab);
             });
         });
