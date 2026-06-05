@@ -1,3 +1,5 @@
+import HallUIManager from "../hall/HallUIManager";
+
 const { ccclass } = cc._decorator;
 
 @ccclass
@@ -76,11 +78,9 @@ export default class BuyConfirmPopup extends cc.Component {
     }
 
     private onConfirmBuy() {
-        cc.log("确认购买商品:", this.productId);
+        console.log("确认购买商品:", this.productId);
 
-        // TODO: 这里发起支付/购买请求
-        // ShopManager.instance.buyProduct(this.productId);
-
+        HallUIManager.instance.buyProduct(this.productId);
         this.hide();
     }
 

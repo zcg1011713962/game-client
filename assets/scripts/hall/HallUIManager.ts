@@ -7,6 +7,11 @@ import { Cmd } from "../game/pj/enum/Cmd";
 import CameCardComponentManager from "./CameCardComponentManager";
 import GameCardComponent from "./GameCardComponent";
 import ShopRes from "../shop/ShopRes";
+import Http from "../util/Http";
+import { ServerMsg } from "../login/entity/ServerMsg";
+import ToastManager from "../common/ToastManager";
+import HallTopBar from "./top/HallTopBar";
+import Shop from "../shop/Shop";
 
 const {ccclass, property} = cc._decorator;
 
@@ -28,7 +33,7 @@ export default class HallUIManager extends cc.Component {
     public joinRoomPanelNode!: cc.Node;
     public createRoomPopupNode!:cc.Node;
     public roomSelectPanelNode: cc.Node | null = null;
-    public canvas: cc.Node | null = null;
+    public canvas!: cc.Node;
     private shopNode: cc.Node |null = null;
     private destroyed: boolean = false;
     private isPlayingBgm: boolean = false;
@@ -251,6 +256,7 @@ export default class HallUIManager extends cc.Component {
         }else{
             this.shopNode.active = true;
         }
+        this.refreshShopTopBar();
     }
 
     private async playGameBgm(): Promise<void> {
@@ -290,6 +296,62 @@ export default class HallUIManager extends cc.Component {
             WsClient.instance.send(Cmd.CREATE_ROOM, "");
         }
     }
+
+
+    public buyProduct(productId: number) {
+
+    const token = UserData.get()?.token || "";
+
+    Http.post<ServerMsg<any>>(
+        `${Config.API_URL}/shop/buy`,
+        { productId: productId },
+        (err, res) => {
+            if (err) {
+                console.error(err);
+                ToastManager.show("请检查网络");
+                return;
+            }
+
+            if (!res) {
+                ToastManager.show("服务器异常");
+                return;
+            }
+
+            if (res.code !== 0) {
+                ToastManager.show(res.msg || "购买失败");
+                return;
+            }
+
+            const data = res.data;
+            UserData.updateGold(data.gold);
+            UserData.updateRoomCard(data.roomCard);
+            ToastManager.show("购买成功");
+
+            try{
+                this.refreshHallTopBar();
+                this.refreshShopTopBar();
+            }catch(e){
+                console.error(e);
+            }
+        },
+        { token }  
+    );
+    }
+
+    public refreshHallTopBar(){
+        const hallTopBar = this.topBar.getChildByName("TopBar").getComponent(HallTopBar);
+        if (hallTopBar) {
+            hallTopBar.refresh();
+        }
+    }
+
+    public refreshShopTopBar(){
+        const shopTopBar = this.canvas.getChildByName("Shop").getComponent(Shop);
+        if(shopTopBar){
+            shopTopBar.refresh();
+        }
+    }
+
 
     protected onDestroy(): void {
         if (this.destroyed) {

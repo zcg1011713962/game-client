@@ -1319,7 +1319,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "val",
+    "_name": "RoomCardVal",
     "_objFlags": 0,
     "_parent": {
       "__id__": 26

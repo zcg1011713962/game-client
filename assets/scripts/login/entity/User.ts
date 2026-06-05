@@ -24,9 +24,9 @@ export interface User {
      */
     gold: number;
     /**
-     * 钻石
+     * 房卡
      */
-    diamond: number;
+    roomCard: number;
     /**
      * token
      */
