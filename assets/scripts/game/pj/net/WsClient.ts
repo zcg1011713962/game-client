@@ -204,8 +204,11 @@ export default class WsClient {
                 ClientRoomManager.instance.leaveRoom(msg.data);
                 break;
             case Cmd.PLAYER_LEAVE:
-                  ClientRoomManager.instance.playerLeaveRoom(msg.data);
-                break;            
+                ClientRoomManager.instance.playerLeaveRoom(msg.data);
+                break;     
+            case Cmd.USER_ASSET_UPDATE:
+                ClientRoomManager.instance.userAssetUpdate(msg.data);
+                break;           
             case Cmd.PONG:
                 break;
             default:

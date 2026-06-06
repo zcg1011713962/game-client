@@ -36,7 +36,7 @@ export default class UserData {
     /**
      * 清除用户信息
      */
-    static clear() {
+    static clearUserData() {
         cc.sys.localStorage.removeItem(this.KEY);
     }
 

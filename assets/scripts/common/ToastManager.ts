@@ -4,7 +4,7 @@ import UIZOrder from "./ui/UIZOrder";
 
 export default class ToastManager {
 
-    public static async show(msg: string) {
+    public static async show(msg: string, success: boolean = false) {
         const toastPrefab = await LoginRes.instance.loadToastPrefab();
 
         const scene = cc.director.getScene();
@@ -20,7 +20,7 @@ export default class ToastManager {
         node.zIndex = UIZOrder.TOAST;
         node.setPosition(0, 0);
 
-        node.getComponent(ToastView).show(msg);
+        node.getComponent(ToastView).show(msg, success);
     }
 
     

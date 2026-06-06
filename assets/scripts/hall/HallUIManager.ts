@@ -287,13 +287,15 @@ export default class HallUIManager extends cc.Component {
         console.log("播放大厅背景音乐");
     }
 
-    public onClickCard(roomCardType: RoomCardType) {
+    public onClickCard(roomCardType: RoomCardType, req?: any) {
+        const data = JSON.stringify(req || {});
+        console.log("进房", roomCardType, data)
         if(roomCardType === RoomCardType.MATCH){
             // 匹配
-            WsClient.instance.send(Cmd.FREE_MATCH, "");
+            WsClient.instance.send(Cmd.FREE_MATCH, data);
         }else if(roomCardType === RoomCardType.CREATE){
             // 创房
-            WsClient.instance.send(Cmd.CREATE_ROOM, "");
+            WsClient.instance.send(Cmd.CREATE_ROOM, data);
         }
     }
 
@@ -325,7 +327,7 @@ export default class HallUIManager extends cc.Component {
             const data = res.data;
             UserData.updateGold(data.gold);
             UserData.updateRoomCard(data.roomCard);
-            ToastManager.show("购买成功");
+            ToastManager.show("购买成功", true);
 
             try{
                 this.refreshHallTopBar();
@@ -339,9 +341,11 @@ export default class HallUIManager extends cc.Component {
     }
 
     public refreshHallTopBar(){
-        const hallTopBar = this.topBar.getChildByName("TopBar").getComponent(HallTopBar);
-        if (hallTopBar) {
-            hallTopBar.refresh();
+        if(this.topBar && this.topBar.getChildByName("TopBar")){
+            const hallTopBar = this.topBar.getChildByName("TopBar").getComponent(HallTopBar);
+            if (hallTopBar) {
+                hallTopBar.refresh();
+            }
         }
     }
 

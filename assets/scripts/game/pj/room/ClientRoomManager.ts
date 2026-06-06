@@ -12,6 +12,7 @@ import UserData from "../../../login/entity/UserData";
 import CountDownManager from "../../../common/CountDownManager";
 import { SceneUtil } from "../../../util/SceneUtil";
 import { ReadyBtnState } from "../../btn/ReadyButton";
+import HallUIManager from "../../../hall/HallUIManager";
 
 export interface PlayerDTO {
     userId: number;
@@ -19,7 +20,6 @@ export interface PlayerDTO {
     state: number;
     online: boolean;
     avatar: string;
-    gold: number;
     nickname: string;
 }
 
@@ -429,6 +429,8 @@ export default class ClientRoomManager {
                 }
             }
          });
+          // 更新座位信息
+        this.refreshAllSeatView();
     }
 
     public doNextRound(){   
@@ -476,6 +478,22 @@ export default class ClientRoomManager {
                 UIManager.instance.updateTopView(data.roomId, this.players.size, this.baseScore);
             }
         }
+    }
+
+    public userAssetUpdate(data : any){
+        console.log("资产变更通知", data);
+        switch (data.field) {
+            case "roomCard":
+                UserData.updateRoomCard(data.value);
+                break;
+
+            case "gold":
+                UserData.updateGold(data.value);
+                break;
+            default:
+                break;    
+        }
+        HallUIManager.instance.refreshHallTopBar();
     }
 
 
@@ -569,7 +587,6 @@ export default class ClientRoomManager {
             userInfo.seatId = player.seatId;
             userInfo.state = player.state;
             userInfo.avatar = player.avatar;
-            userInfo.gold = player.gold;
             userInfo.nickname = player.nickname;
             seats.push(player.seatId);
             SeatManager.refreshSeat(player.seatId, userInfo);

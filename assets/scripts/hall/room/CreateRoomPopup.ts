@@ -1,3 +1,4 @@
+import CreateRoomReq from "../entity/CreateRoomReq";
 import HallUIManager from "../HallUIManager";
 import { RoomCardType } from "./RoomSelectPopup";
 
@@ -204,7 +205,17 @@ export default class CreateRoomPopup extends cc.Component {
      * 创建房间
      */
     private onCreateRoom() {
-        HallUIManager.instance.onClickCard(RoomCardType.CREATE);
+        const req = new CreateRoomReq();
+        req.gameId = 1;
+        req.roundCount = 16;
+        req.playerCount = 4;
+        req.bankerMode = 1;
+        req.zhiZun = true;
+        req.doubleTian = true;
+        req.doubleDi = true;
+        req.doubleRen = true;
+        req.doubleE = true;
+        HallUIManager.instance.onClickCard(RoomCardType.CREATE, req);
         this.hide();
     }
 

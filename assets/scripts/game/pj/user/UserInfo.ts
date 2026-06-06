@@ -9,8 +9,6 @@ export class UserInfo {
     userId: number = 0;
     nickname: string = "";
     avatar: string = "";
-    gold: number = 0;
-
     seatId: number = -1;
     state: UserState = UserState.Idle;
 

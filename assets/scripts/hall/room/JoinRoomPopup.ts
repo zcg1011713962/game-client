@@ -1,9 +1,6 @@
 import { Cmd } from "../../game/pj/enum/Cmd";
 import WsClient from "../../game/pj/net/WsClient";
-import UserData from "../../login/entity/UserData";
-import { SceneUtil } from "../../util/SceneUtil";
 import HallUIManager from "../HallUIManager";
-import { RoomCardType } from "./RoomSelectPopup";
 
 const { ccclass, property } = cc._decorator;
 

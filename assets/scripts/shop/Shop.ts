@@ -1,5 +1,7 @@
 import ToastManager from "../common/ToastManager";
 import UserData from "../login/entity/UserData";
+import UIColorUtil from "../util/UIColorUtil";
+import UIUtil from "../util/UIUtil";
 import BuyConfirmPopup from "./BuyConfirmPopup";
 import ShopRes from "./ShopRes";
 
@@ -46,9 +48,10 @@ export default class Shop extends cc.Component {
 
         const coinValNode = this.coinBoxNode?.getChildByName("CoinVal");
         const roomCardValNode = this.roomCardBoxNode?.getChildByName("RoomCardVal");
+        
    
-        this.setLabel(coinValNode, String(user.gold), new cc.Color(255, 215, 0), new cc.Color(80, 40, 0), 1);
-        this.setLabel(roomCardValNode, String(user.roomCard), new cc.Color(255, 215, 0), new cc.Color(80, 40, 0), 1);
+        UIUtil.setLabel(coinValNode, String(user.gold), UIColorUtil.GOLD, UIColorUtil.TITLE, 1);
+        UIUtil.setLabel(roomCardValNode, String(user.roomCard), UIColorUtil.GOLD, UIColorUtil.TITLE, 1);
     }
 
 
@@ -75,32 +78,7 @@ export default class Shop extends cc.Component {
         });
     }
 
-    /**
-     * 通用设置 Label 文本和描边
-     */
-    private setLabel(
-        labelNode: cc.Node,
-        text: string,
-        color: cc.Color,
-        outlineColor: cc.Color,
-        outlineWidth: number
-    ) {
-        if (!labelNode) return;
-
-        const label = labelNode.getComponent(cc.Label);
-        if (!label) return;
-
-        let outline = labelNode.getComponent(cc.LabelOutline);
-        if (!outline) {
-            outline = labelNode.addComponent(cc.LabelOutline);
-        }
-
-        outline.color = outlineColor;
-        outline.width = outlineWidth;
-
-        label.string = text;
-        label.node.color = color;
-    }
+  
 
     private onClickItem(index: number, item: cc.Node) {
         const id = index +1;

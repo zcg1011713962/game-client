@@ -7,6 +7,9 @@ import ClientRoomManager from "../room/ClientRoomManager";
 import { RoomState } from "../room/RoomState";
 import HallRes from "../../../hall/HallRes";
 import { ReadyBtnState } from "../../btn/ReadyButton";
+import UIUtil from "../../../util/UIUtil";
+import UserData from "../../../login/entity/UserData";
+import UIColorUtil from "../../../util/UIColorUtil";
 
 @ccclass
 export default class SeatComponent extends cc.Component {
@@ -22,6 +25,7 @@ export default class SeatComponent extends cc.Component {
     private avatarLoadToken: number = 0;
 
     onLoad() {
+       
         this.normalNode = this.node.getChildByName("Normal");
         this.hoverNode = this.node.getChildByName("Hover");
         this.setOut = this.node.getChildByName("SetOut");
@@ -176,8 +180,9 @@ export default class SeatComponent extends cc.Component {
 
             // 金币展示
             const coinValNode = info.getChildByName("CoinVal");
-            UIManager.instance.setCoinView(coinValNode, userInfo.gold);
-
+            const user = UserData.get();
+            const gold =  user != null ? String(user.gold) : "--";
+            UIUtil.setLabel(coinValNode, gold , UIColorUtil.GOLD, UIColorUtil.TITLE, 1)
         }
         // 预制体显示
         this.setOut.active = active;

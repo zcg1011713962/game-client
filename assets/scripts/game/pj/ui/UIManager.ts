@@ -70,19 +70,6 @@ export default class UIManager extends cc.Component {
     }
 
 
-    public setCoinView(coinValNode : cc.Node, coin: number){
-        const label = coinValNode.getComponent(cc.Label);
-        let outline = coinValNode.getComponent(cc.LabelOutline);
-        if (!outline) {
-                outline = coinValNode.addComponent(cc.LabelOutline);
-                // 黑色描边
-                outline.color = cc.Color.BLACK;
-                // 宽度
-                outline.width = 10;
-        }
-        label.string = String(coin);
-        label.node.color = new cc.Color(255, 215, 0); // 金黄色
-    }
 
     public setNickNameView(labelNode: cc.Node, isBanker: boolean, isSelf: boolean, name : string) {
         const label = labelNode.getComponent(cc.Label);
