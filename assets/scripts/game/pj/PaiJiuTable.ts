@@ -15,6 +15,12 @@ interface IPlayerDealData {
 interface IServerDealResult {
     bankerSeat?: number;
     players: IPlayerDealData[];
+
+    serverTime: number;
+    dealStartTime: number;
+    showCardTime: number;
+    settleTime: number;
+    nextRoundTime: number;
 }
 
 interface IDealOrderItem {
@@ -31,47 +37,46 @@ enum PaiJiuTableState {
 
 @ccclass
 export default class PaiJiuTable extends cc.Component {
-    private deckContainer: cc.Node = null;
-    private dealContainer: cc.Node = null;
-    private cardPrefab: cc.Prefab = null;
-    private playerPosRoot: cc.Node = null;
+
+    private deckContainer!: cc.Node;
+    private dealContainer!: cc.Node;
+    private cardPrefab!: cc.Prefab;
+    private playerPosRoot!: cc.Node;
 
     private totalCardCount: number = 32;
     private cardsPerPlayer: number = 2;
 
-    /** 牌堆堆叠偏移 */
     private deckOffsetX: number = 0.5;
     private deckOffsetY: number = 1;
 
-    /** 玩家手牌间距 */
     private dealGapX: number = 75;
     private dealGapY: number = 0;
 
-    /** 发牌动画时间和间隔 */
     private dealDuration: number = 0.28;
     private dealInterval: number = 0.18;
 
-    /** 牌堆中的牌 */
     private cardList: cc.Node[] = [];
-
-    /** seatId -> 玩家手牌节点 */
     private playerCardMap: { [seat: number]: cc.Node[] } = {};
 
     private isPlaying: boolean = false;
     private isBackground: boolean = false;
     private tableState: PaiJiuTableState = PaiJiuTableState.IDLE;
 
-    /** 当前服务器发牌数据，用于后台恢复或补发牌 */
-    private currentServerResult: IServerDealResult = null;
-
-    /** 当前发牌顺序 */
+    private currentServerResult!: IServerDealResult;
     private currentDealOrder: IDealOrderItem[] = [];
 
-    /** 发牌完成回调 */
     private dealFinishCb: Function = null;
-
-    /** 防止发牌完成回调重复执行 */
     private dealFinishCalled: boolean = false;
+
+    /** 服务器时间偏移 */
+    private serverOffset: number = 0;
+
+    /** 翻牌时间 */
+    private currentShowCardTime: number = 0;
+
+
+    private currentSettleTime: number = 0;
+    private currentNextRoundTime: number = 0;
 
     async onLoad() {
         this.cardList = [];
@@ -83,10 +88,8 @@ export default class PaiJiuTable extends cc.Component {
         this.dealContainer = this.node.getChildByName("DealContainer");
         this.playerPosRoot = this.node.getChildByName("PlayerPosRoot");
 
-        /** 监听网页切后台/回前台 */
         cc.game.on(cc.game.EVENT_HIDE, this.onGameHide, this);
         cc.game.on(cc.game.EVENT_SHOW, this.onGameShow, this);
-
     }
 
     onDestroy() {
@@ -94,55 +97,68 @@ export default class PaiJiuTable extends cc.Component {
         cc.game.off(cc.game.EVENT_SHOW, this.onGameShow, this);
     }
 
-    /** 切后台 */
+    private getServerNow(): number {
+        return Date.now() + this.serverOffset;
+    }
+
     private onGameHide() {
-        cc.log("切后台");
+        //cc.log("切后台");
         this.isBackground = true;
     }
 
-    /** 回前台 */
     private onGameShow() {
         this.isBackground = false;
-         cc.log("回前台，RoomState", ClientRoomManager.instance.getRoomState(), "tableState" ,this.tableState);
 
-          if(ClientRoomManager.instance.getRoomState() === RoomState.WAIT || ClientRoomManager.instance.getRoomState() === RoomState.READY || ClientRoomManager.instance.getRoomState() === RoomState.BET){
+        //console.log( "回前台","RoomState:", ClientRoomManager.instance.getRoomState(), "tableState:", this.tableState);
+
+        const roomState = ClientRoomManager.instance.getRoomState();
+
+        if (
+            roomState === RoomState.WAIT ||
+            roomState === RoomState.READY ||
+            roomState === RoomState.BET
+        ) {
             UIManager.instance.clearCardContainer();
             UIManager.instance.clearBetContainer();
-          }else if(ClientRoomManager.instance.getRoomState() === RoomState.DEAL){
-                /**
-             * 回前台时，浏览器后台可能导致 tween / scheduleOnce 延迟。
-             * 所以这里不继续等动画，而是直接补到当前流程的最终状态。
-             */
-            if (this.tableState === PaiJiuTableState.SHUFFLING) {
-                this.stopAllAnimAndSchedule();
-                this.startDealAfterShuffle();
-                return;
-            }
+            return;
+        }
 
-            if (this.tableState === PaiJiuTableState.DEALING) {
-                this.fastCompleteDeal(true);
-                return;
-            }
+        if (roomState !== RoomState.DEAL) {
+            return;
+        }
 
-            if (this.tableState === PaiJiuTableState.SHOW_CARD) {
-                this.fastShowAllCards();
-                return;
-            }
-         }
+        const nowServer = this.getServerNow();
 
-         
-       
+        if (this.currentShowCardTime > 0 && nowServer >= this.currentShowCardTime) {
+            this.stopAllAnimAndSchedule();
+            this.currentDealOrder = this.buildDealOrder(this.currentServerResult);
+            this.fastCompleteDeal(false);
+            this.fastShowAllCards();
+            return;
+        }
+
+        if (this.tableState === PaiJiuTableState.SHUFFLING) {
+            this.stopAllAnimAndSchedule();
+            this.startDealAfterShuffleByServerTime();
+            return;
+        }
+
+        if (this.tableState === PaiJiuTableState.DEALING) {
+            this.fastCompleteDeal(true);
+            return;
+        }
+
+        if (this.tableState === PaiJiuTableState.SHOW_CARD) {
+            this.fastShowAllCards();
+        }
     }
 
-    /** 停止所有动画和当前组件上的定时器 */
     private stopAllAnimAndSchedule() {
         cc.Tween.stopAll();
         this.unscheduleAllCallbacks();
     }
 
-        /** 加载牌预制体 */
     private async loadCardPrefab(): Promise<cc.Prefab> {
-
         if (this.cardPrefab) {
             return this.cardPrefab;
         }
@@ -150,9 +166,7 @@ export default class PaiJiuTable extends cc.Component {
         const bundle = await GameRes.instance.loadGameBundle();
 
         return new Promise((resolve, reject) => {
-
             bundle.load("prefabs/Card", cc.Prefab, (err, prefab: cc.Prefab) => {
-
                 if (err) {
                     cc.error("Card预制体加载失败", err);
                     reject(err);
@@ -160,50 +174,125 @@ export default class PaiJiuTable extends cc.Component {
                 }
 
                 this.cardPrefab = prefab;
-
                 cc.log("牌预制体加载完成");
-
                 resolve(prefab);
-
             });
-
         });
     }
 
     /**
-     * 开始发牌动画入口
+     * 发牌入口：使用服务器时间控制
      */
     public async playStartAnim(serverResult: IServerDealResult) {
-        if (this.isPlaying) return;
+        if (this.isPlaying) {
+            return;
+        }
+        
 
         this.isPlaying = true;
         this.currentServerResult = serverResult;
+        this.currentDealOrder = this.buildDealOrder(serverResult);
         this.dealFinishCalled = false;
 
+        if (serverResult.serverTime) {
+            this.serverOffset = serverResult.serverTime - Date.now();
+        }
+
+        const nowServer = this.getServerNow();
+
+        const dealStartTime = serverResult.dealStartTime || nowServer;
+        const showCardTime = serverResult.showCardTime || nowServer + 5000;
+
+        // 结算时间
+        const settleTime = serverResult.settleTime || nowServer + 9000;
+        this.currentNextRoundTime = serverResult.nextRoundTime;
+        this.currentShowCardTime = showCardTime;
+        this.currentSettleTime = settleTime;
+
         await this.createDeck();
+
+        /**
+         * 已经到翻牌时间，直接显示最终状态
+         */
+        if (nowServer >= showCardTime) {
+            this.fastCompleteDeal(false);
+            this.fastShowAllCards();
+            return;
+        }
+
+        /**
+         * 已经过了发牌开始时间，直接补完发牌，然后等翻牌时间
+         */
+        if (nowServer > dealStartTime) {
+            this.fastCompleteDeal(false);
+            this.waitShowCardByServerTime();
+            return;
+        }
+
+        /**
+         * 还没到发牌时间，等待发牌开始
+         */
+        const waitDealSeconds = Math.max(
+            0,
+            (dealStartTime - nowServer) / 1000
+        );
+
+        this.scheduleOnce(() => {
+            this.startShuffleByServerTime();
+        }, waitDealSeconds);
+    }
+
+    private startShuffleByServerTime() {
+        if (!this.currentServerResult) {
+            return;
+        }
+
+        if (this.getServerNow() >= this.currentShowCardTime) {
+            this.fastCompleteDeal(false);
+            this.fastShowAllCards();
+            return;
+        }
 
         this.tableState = PaiJiuTableState.SHUFFLING;
 
         this.shuffleAnim(() => {
-            if (this.tableState !== PaiJiuTableState.SHUFFLING) return;
-            this.startDealAfterShuffle();
+            if (this.tableState !== PaiJiuTableState.SHUFFLING) {
+                return;
+            }
+
+            this.startDealAfterShuffleByServerTime();
         });
     }
 
-    /** 洗牌完成后开始发牌 */
-    private startDealAfterShuffle() {
+    private startDealAfterShuffleByServerTime() {
+        if (this.getServerNow() >= this.currentShowCardTime) {
+            this.fastCompleteDeal(false);
+            this.fastShowAllCards();
+            return;
+        }
+
         this.dealCards(this.currentServerResult, () => {
             this.isPlaying = false;
             this.tableState = PaiJiuTableState.IDLE;
-            cc.log("发牌完成");
+
+            //cc.log("发牌完成");
             this.clearDeck();
 
-            // 翻牌
-            this.showCard();
+            this.waitShowCardByServerTime();
         });
     }
 
-    /** 创建牌堆 */
+    private waitShowCardByServerTime() {
+        const waitShowSeconds = Math.max(
+            0,
+            (this.currentShowCardTime - this.getServerNow()) / 1000
+        );
+
+        this.scheduleOnce(() => {
+            this.showCard();
+        }, waitShowSeconds);
+    }
+
     private async createDeck() {
         if (!this.cardPrefab) {
             await this.loadCardPrefab();
@@ -217,7 +306,7 @@ export default class PaiJiuTable extends cc.Component {
 
             const script = card.getComponent(PaiJiuCard);
             if (script) {
-                script.init({ id: i });
+                script.init({ id: i } as any);
             }
 
             const dirX = -1;
@@ -232,7 +321,6 @@ export default class PaiJiuTable extends cc.Component {
         }
     }
 
-    /** 清理牌堆和牌区 */
     public clearCardContainer() {
         this.clearDeck();
 
@@ -244,21 +332,21 @@ export default class PaiJiuTable extends cc.Component {
         this.playerCardMap = {};
     }
 
-    /** 清理牌堆 */
     private clearDeck() {
         if (this.deckContainer) {
             this.deckContainer.removeAllChildren();
         }
     }
 
-    /** 播放洗牌音效 */
     private async playShuffleAudio() {
-        if (this.tableState !== PaiJiuTableState.SHUFFLING) return;
+        if (this.tableState !== PaiJiuTableState.SHUFFLING) {
+            return;
+        }
+
         const shuffingAudio = await GameRes.instance.getShufflingAudio();
         cc.audioEngine.playEffect(shuffingAudio, false);
     }
 
-    /** 洗牌动画 */
     private shuffleAnim(cb?: Function) {
         if (!this.cardList.length) {
             cb && cb();
@@ -269,7 +357,6 @@ export default class PaiJiuTable extends cc.Component {
         const leftGroup = this.cardList.slice(0, mid);
         const rightGroup = this.cardList.slice(mid);
 
-        // 开始乱牌音效
         this.playShuffleAudio();
 
         for (let i = 0; i < this.cardList.length; i++) {
@@ -288,7 +375,6 @@ export default class PaiJiuTable extends cc.Component {
                 .start();
         }
 
-        // 分成两堆
         this.scheduleOnce(() => {
             if (this.tableState !== PaiJiuTableState.SHUFFLING) return;
 
@@ -315,7 +401,6 @@ export default class PaiJiuTable extends cc.Component {
             });
         }, 0.15);
 
-        // 合牌
         this.scheduleOnce(() => {
             if (this.tableState !== PaiJiuTableState.SHUFFLING) return;
 
@@ -337,20 +422,15 @@ export default class PaiJiuTable extends cc.Component {
 
                 cc.tween(card)
                     .delay(i * 0.01)
-                    .to(
-                        0.18,
-                        {
-                            x: i * this.deckOffsetX,
-                            y: -i * this.deckOffsetY,
-                            angle: 0,
-                        },
-                        { easing: "sineOut" }
-                    )
+                    .to(0.18, {
+                        x: i * this.deckOffsetX,
+                        y: -i * this.deckOffsetY,
+                        angle: 0,
+                    }, { easing: "sineOut" })
                     .start();
             });
         }, 0.38);
 
-        // 压牌 / 整理牌堆
         this.scheduleOnce(() => {
             if (this.tableState !== PaiJiuTableState.SHUFFLING) return;
 
@@ -370,7 +450,6 @@ export default class PaiJiuTable extends cc.Component {
         }, 0.82);
     }
 
-    /** 发所有牌 */
     private dealCards(serverResult?: IServerDealResult, cb?: Function) {
         const dealOrder = this.buildDealOrder(serverResult);
         const total = dealOrder.length;
@@ -386,30 +465,26 @@ export default class PaiJiuTable extends cc.Component {
             return;
         }
 
-        /**
-         * 正常情况下逐张发牌。
-         * 注意：这里只负责播放动画，不再依赖最后一张牌 tween.call 推进流程。
-         */
         for (let i = 0; i < total; i++) {
             this.scheduleOnce(() => {
                 if (this.tableState !== PaiJiuTableState.DEALING) return;
                 if (this.isBackground) return;
 
+                if (this.getServerNow() >= this.currentShowCardTime) {
+                    this.fastCompleteDeal(true);
+                    return;
+                }
+
                 this.dealOneCard(dealOrder[i], i);
             }, i * this.dealInterval);
         }
 
-        /**
-         * 发牌流程完成时间。
-         * 到时间后直接补齐所有牌，避免后台导致部分 schedule/tween 没执行。
-         */
         this.scheduleOnce(() => {
             if (this.tableState !== PaiJiuTableState.DEALING) return;
             this.fastCompleteDeal(true);
         }, total * this.dealInterval + this.dealDuration + 0.05);
     }
 
-    /** 发牌完成回调，只允许执行一次 */
     private callDealFinish() {
         if (this.dealFinishCalled) return;
 
@@ -421,7 +496,6 @@ export default class PaiJiuTable extends cc.Component {
         cb && cb();
     }
 
-    /** 根据服务器数据构建发牌顺序 */
     private buildDealOrder(serverResult?: IServerDealResult): IDealOrderItem[] {
         const result: IDealOrderItem[] = [];
 
@@ -453,7 +527,6 @@ export default class PaiJiuTable extends cc.Component {
         return result;
     }
 
-    /** 从庄家座位开始排序 */
     private sortPlayersFromBanker(
         players: IPlayerDealData[],
         bankerSeat: number,
@@ -473,7 +546,6 @@ export default class PaiJiuTable extends cc.Component {
         return result;
     }
 
-    /** 发一张牌 */
     private dealOneCard(dealInfo: IDealOrderItem, dealIndex: number) {
         if (!this.cardList.length) return;
 
@@ -512,27 +584,18 @@ export default class PaiJiuTable extends cc.Component {
         card.setPosition(startLocalPos);
 
         cc.tween(card)
-            .to(
-                this.dealDuration,
-                {
-                    x: targetPos.x,
-                    y: targetPos.y,
-                    scale: 1.0,
-                },
-                { easing: "sineOut" }
-            ).call(async () =>{
-                const dealCardAudio = await GameRes.instance.getDealCardAudio()
+            .to(this.dealDuration, {
+                x: targetPos.x,
+                y: targetPos.y,
+                scale: 1.0,
+            }, { easing: "sineOut" })
+            .call(async () => {
+                const dealCardAudio = await GameRes.instance.getDealCardAudio();
                 cc.audioEngine.playEffect(dealCardAudio, false);
             })
             .start();
     }
 
-    /**
-     * 快速补完发牌。
-     * 用于：
-     * 1. 后台回来时补状态
-     * 2. showCard 被提前调用时，先把牌补齐
-     */
     private fastCompleteDeal(needCallback: boolean = false) {
         if (!this.currentDealOrder || !this.currentDealOrder.length) {
             if (needCallback) this.callDealFinish();
@@ -584,7 +647,6 @@ export default class PaiJiuTable extends cc.Component {
         }
     }
 
-    /** 初始化牌数据和正面图片 */
     private initCardData(card: cc.Node, cardData?: IPaiJiuCardData | null) {
         const cardComp = card.getComponent(PaiJiuCard);
         if (cardComp) {
@@ -610,7 +672,6 @@ export default class PaiJiuTable extends cc.Component {
         }
     }
 
-    /** 获取某个座位第几张牌的目标位置 */
     private getCardTargetPos(seat: number, cardIndexInHand: number): cc.Vec2 {
         const targetPosNode = this.playerPosRoot.getChildByName(`Player${seat}Pos`);
 
@@ -628,10 +689,6 @@ export default class PaiJiuTable extends cc.Component {
         );
     }
 
-    /**
-     * 判断当前牌是否已经发完整。
-     * 防止发牌中直接翻牌。
-     */
     private hasAllDealedCards(): boolean {
         if (!this.currentDealOrder || this.currentDealOrder.length <= 0) {
             return false;
@@ -646,7 +703,6 @@ export default class PaiJiuTable extends cc.Component {
         return count >= this.currentDealOrder.length;
     }
 
-    /** 翻某个座位的牌 */
     public flipSeatCards(seat: number, cb?: Function) {
         const cards = this.playerCardMap[seat] || [];
 
@@ -685,14 +741,12 @@ export default class PaiJiuTable extends cc.Component {
         }
     }
 
-    /** 整理某个座位的牌 */
     public sortSeatCards(seat: number) {
         const cards = this.playerCardMap[seat] || [];
         if (!cards.length) return;
 
         for (let i = 0; i < cards.length; i++) {
             const card = cards[i];
-
             const targetPos = this.getCardTargetPos(seat, i);
 
             card.zIndex = 200 + i;
@@ -718,22 +772,20 @@ export default class PaiJiuTable extends cc.Component {
         return this.playerCardMap[seat] || [];
     }
 
-    /**
-     * 展示牌。
-     * 关键修复：
-     * 如果发牌还没完成，不能直接改成 SHOW_CARD。
-     * 必须先 fastCompleteDeal() 补齐牌，再翻牌。
-     */
     public async showCard() {
-        cc.log("准备翻牌 isBackground:", this.isBackground, "tableState:", this.tableState);
+        if (this.currentSettleTime > 0 && this.getServerNow() >= this.currentSettleTime) {
+            this.fastCompleteDeal(false);
+            this.fastShowAllCards();
+            return;
+        }
 
-        
         if (
             this.tableState === PaiJiuTableState.SHUFFLING ||
             this.tableState === PaiJiuTableState.DEALING
         ) {
             this.fastCompleteDeal(false);
         }
+        
 
         if (!this.hasAllDealedCards()) {
             console.warn("牌还没发完整，禁止翻牌");
@@ -741,8 +793,6 @@ export default class PaiJiuTable extends cc.Component {
         }
 
         this.tableState = PaiJiuTableState.SHOW_CARD;
-
-       
 
         if (this.isBackground || this.tableState !== PaiJiuTableState.SHOW_CARD) {
             return;
@@ -756,17 +806,15 @@ export default class PaiJiuTable extends cc.Component {
             });
         });
 
-        await PaiJiuUtil.wait(this, 0.5);
+        // 等待翻牌
+        const waitSeconds = this.currentSettleTime > 0 ? Math.max(0, (this.currentSettleTime - this.getServerNow()) / 1000): 0.5;
+        await PaiJiuUtil.wait(this, Math.min(waitSeconds, 0.8));
 
         if (this.tableState === PaiJiuTableState.SHOW_CARD) {
             this.fastShowAllCards();
         }
     }
 
-    /**
-     * 快速展示所有牌。
-     * 用于后台回来，或者翻牌等待超时后直接补到最终状态。
-     */
     private fastShowAllCards() {
         this.stopAllAnimAndSchedule();
 
@@ -783,9 +831,9 @@ export default class PaiJiuTable extends cc.Component {
         });
 
         this.tableState = PaiJiuTableState.IDLE;
+        this.isPlaying = false;
     }
 
-    /** 强制显示牌正面，不走翻牌动画 */
     private forceCardFront(card: cc.Node) {
         const cardComp: any = card.getComponent(PaiJiuCard);
 

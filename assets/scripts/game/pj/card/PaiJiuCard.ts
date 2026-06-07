@@ -1,4 +1,4 @@
-const { ccclass, property } = cc._decorator;
+const { ccclass } = cc._decorator;
 
 export interface IPaiJiuCardData {
     id?: number;
@@ -17,17 +17,30 @@ export default class PaiJiuCard extends cc.Component {
     private _data: IPaiJiuCardData | null = null;
 
     onLoad() {
-        this.backNode = this.node.getChildByName("Back");
-        this.frontNode = this.node.getChildByName("Front");
-        this.shadowNode = this.node.getChildByName("Shadow");
-
-        this.node.anchorX = 0.5;
-        this.node.anchorY = 0.5;
-
+        this.initNode();
         this.showBack();
     }
 
+    private initNode() {
+        if (!this.backNode) {
+            this.backNode = this.node.getChildByName("Back");
+        }
+
+        if (!this.frontNode) {
+            this.frontNode = this.node.getChildByName("Front");
+        }
+
+        if (!this.shadowNode) {
+            this.shadowNode = this.node.getChildByName("Shadow");
+        }
+
+        this.node.anchorX = 0.5;
+        this.node.anchorY = 0.5;
+    }
+
     public init(cardData?: IPaiJiuCardData) {
+        this.initNode();
+
         this._data = cardData || null;
 
         cc.Tween.stopAllByTarget(this.node);
@@ -44,24 +57,48 @@ export default class PaiJiuCard extends cc.Component {
     }
 
     public showBack() {
-        if (this.backNode) this.backNode.active = true;
-        if (this.frontNode) this.frontNode.active = false;
+        this.initNode();
+
+        if (this.backNode) {
+            this.backNode.active = true;
+        }
+
+        if (this.frontNode) {
+            this.frontNode.active = false;
+        }
 
         this.node.scaleX = Math.abs(this.node.scaleX || 1);
     }
 
     public showFront() {
-        if (this.backNode) this.backNode.active = false;
-        if (this.frontNode) this.frontNode.active = true;
+        this.initNode();
+
+        if (this.backNode) {
+            this.backNode.active = false;
+        }
+
+        if (this.frontNode) {
+            this.frontNode.active = true;
+        }
 
         this.node.scaleX = Math.abs(this.node.scaleX || 1);
     }
 
+    public setShadowVisible(visible: boolean) {
+        this.initNode();
+
+        if (this.shadowNode) {
+            this.shadowNode.active = visible;
+        }
+    }
+
     public flipToFront(cb?: Function) {
+        this.initNode();
+
         cc.Tween.stopAllByTarget(this.node);
 
-        this.node.scaleX = 1;
-        this.node.scaleY = 1;
+        this.node.scaleX = Math.abs(this.node.scaleX || 1);
+        this.node.scaleY = Math.abs(this.node.scaleY || 1);
 
         cc.tween(this.node)
             .to(0.12, { scaleX: 0.05 })
@@ -76,10 +113,12 @@ export default class PaiJiuCard extends cc.Component {
     }
 
     public flipToBack(cb?: Function) {
+        this.initNode();
+
         cc.Tween.stopAllByTarget(this.node);
 
-        this.node.scaleX = 1;
-        this.node.scaleY = 1;
+        this.node.scaleX = Math.abs(this.node.scaleX || 1);
+        this.node.scaleY = Math.abs(this.node.scaleY || 1);
 
         cc.tween(this.node)
             .to(0.12, { scaleX: 0.05 })

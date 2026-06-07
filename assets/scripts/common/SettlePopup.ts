@@ -257,9 +257,6 @@ export default class SettlePopup extends cc.Component {
             return;
         }
         ClientRoomManager.instance.doNextRound();
-        SettleManager.close();
-        UIManager.instance.readyBtnClick();
-        
     }
 
     private getLabel(parent: cc.Node, name: string): cc.Label {

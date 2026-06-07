@@ -163,7 +163,6 @@ export default class WsClient {
                 ClientRoomManager.instance.applySitDown(msg.data);
                 break;    
             case Cmd.READY_RESULT:
-                cc.log("自己准备成功");
                 ClientRoomManager.instance.selfReadyOk(msg.data);
                 break;
             case Cmd.PLAYER_LEAVE_SEAT:
@@ -173,18 +172,15 @@ export default class WsClient {
                 ClientRoomManager.instance.applyPlayerReady(msg.data);
                 break;
              case Cmd.CANCEL_READY_RESULT:
-                cc.log("自己取消准备成功");
                 ClientRoomManager.instance.selfCancelReadyOk(msg.data);
                 break;
             case Cmd.CANCEL_PLAYER_READY:
                 ClientRoomManager.instance.applyCancelPlayerReady(msg.data);
                 break;
             case Cmd.GAME_START:
-                console.log("game start", msg.data)
                 ClientRoomManager.instance.applyGameStart(msg.data);
                 break;
             case Cmd.BET_RESULT:
-                cc.log("自己下注成功:", msg.data);
                 ClientRoomManager.instance.selfBetOk(msg.data);
                 break;
             case Cmd.PLAYER_BET:
@@ -196,7 +192,7 @@ export default class WsClient {
             case Cmd.SETTLE: 
                 ClientRoomManager.instance.settle(msg.data);
                 break;       
-            case Cmd.NEXT_ROUND_RESULT:
+            case Cmd.NEXT_ROUND:
                 // 下一局
                 ClientRoomManager.instance.nextRound(msg.data);
                 break;

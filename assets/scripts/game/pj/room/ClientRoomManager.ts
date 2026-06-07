@@ -13,6 +13,7 @@ import CountDownManager from "../../../common/CountDownManager";
 import { SceneUtil } from "../../../util/SceneUtil";
 import { ReadyBtnState } from "../../btn/ReadyButton";
 import HallUIManager from "../../../hall/HallUIManager";
+import PaiJiuUtil from "../util/PaiJiuUtil";
 
 export interface PlayerDTO {
     userId: number;
@@ -21,6 +22,7 @@ export interface PlayerDTO {
     online: boolean;
     avatar: string;
     nickname: string;
+    gold: number;
 }
 
 export interface RoomSnapshot {
@@ -31,16 +33,17 @@ export interface RoomSnapshot {
     baseScore: number;
 
     players: PlayerDTO[];
-
     bankerSeat: number;
 
-    /** userId -> bet */
     betMap: Record<number, number>;
-
-    /** userId -> cards */
     cardMap: Record<number, CardInfo[]>;
-    // 结算
-    settlePush : SettlePush;
+
+    serverTime?: number;
+    dealStartTime?: number;
+    showCardTime?: number;
+    settleTime?: number;
+
+    settlePush: SettlePush;
 }
 
 export interface PlayerCardDTO {
@@ -54,6 +57,13 @@ export interface DealCardPush {
     roomState: number;
     bankerSeat: number;
     playerCards: PlayerCardDTO[];
+
+    serverTime: number;
+    dealStartTime: number;
+    showCardTime: number;
+
+    settleTime: number; 
+    nextRoundTime: number;
 }
 
 export interface SettlePlayerDTO {
@@ -73,7 +83,12 @@ export interface SettlePush {
     roomId: number;
     roomState: number;
     bankerSeat: number;
-    players: SettlePlayerDTO[];
+    settlePlayers: SettlePlayerDTO[];
+    players: PlayerDTO[];
+
+    serverTime: number;
+    settleTime: number;
+    nextRoundTime: number;
 }
 
 export interface NextRoundPush {
@@ -81,6 +96,8 @@ export interface NextRoundPush {
     roundId: number;
     roomState: number;
     players: PlayerDTO[];
+    nextRoundTime: number;
+    serverTime: number;
 }
 
 export default class ClientRoomManager {
@@ -318,33 +335,81 @@ export default class ClientRoomManager {
     // 全准备好-游戏开始
     public async applyGameStart(data: {
         roomId: number,
+        roundId: number,
         roomState: number,
         bankerSeat: number,
         players: PlayerDTO[],
-        betSeconds: number
+        betSeconds: number,
+
+        serverTime: number,
+        roundAnimStartTime: number,
+        roundAnimExpireTime: number,
+        betStartTime: number,
+        betEndTime: number
     }) {
-        cc.log("游戏开始，进入下注阶段 roomState", this.roomState, "庄家位:", this.bankerSeat);
+        console.log("游戏开始", "roundId:", data.roundId, "roomState:", data.roomState);
+
+        this.roundId = data.roundId;
+
         this.players.clear();
         UIManager.instance.clearTable();
-        const bankerSeat = data.bankerSeat;
-        const players = data.players;
-        
-        players.forEach(p => {
+
+        data.players.forEach(p => {
             this.players.set(p.userId, p);
         });
-        this.bankerSeat = bankerSeat;
+
+        this.bankerSeat = data.bankerSeat;
 
         UIManager.instance.showReady(ReadyBtnState.HIDE);
-        // 先展示轮次
-        await UIManager.instance.showRoundStartAnim(this.roundId);
+
+        const serverOffset = data.serverTime - Date.now();
+
+        const getServerNow = () => Date.now() + serverOffset;
+
+        const nowServer = getServerNow();
+
+        // 第X局动画：过期不播
+        if (nowServer < data.roundAnimExpireTime) {
+            const waitAnimSeconds = Math.max(
+                0,
+                (data.roundAnimStartTime - nowServer) / 1000
+            );
+            if (waitAnimSeconds > 0) {
+                await PaiJiuUtil.wait(this as any, waitAnimSeconds);
+            }
+            if (getServerNow() < data.roundAnimExpireTime) {
+                await UIManager.instance.showRoundStartAnim(
+                    this.roundId,
+                    data.serverTime,
+                    data.roundAnimExpireTime
+                );
+            }
+        } else {
+            console.log("局数动画已过期，跳过");
+        }
+
+        // 等到下注开始时间
+        const waitBetSeconds = Math.max(
+            0,
+            (data.betStartTime - getServerNow()) / 1000
+        );
+
         DelayTaskUtil.getInstance().schedule(() => {
-            // 房间状态-展示投注
+
             this.setRoomState(data.roomState);
+
             this.refreshAllSeatView();
-            // 倒计时
-            CountDownManager.show(data.betSeconds);
-        }, 2);
-     
+
+            const leftSeconds = Math.max(
+                0,
+                Math.ceil((data.betEndTime - getServerNow()) / 1000)
+            );
+
+            cc.log("下注倒计时 剩余:", leftSeconds);
+
+            CountDownManager.show(leftSeconds);
+
+        }, waitBetSeconds);
     }
     // 下注回包
     public selfBetOk(data: {
@@ -373,10 +438,24 @@ export default class ClientRoomManager {
         totalBet: number,
         players: PlayerDTO[]
     }) {
-        cc.log("玩家下注通知:", data);
+        //cc.log("玩家下注通知:", data);
         const players = data.players;
         const seatId = data.seatId;
-        this.updatePlayer(data.userId, players);
+
+        this.updatePlayers(players);
+
+        const playerMap = new Map(players.map(player => [player.seatId, player]));
+        // 更新玩家金币
+        SeatComponentManager.getInstance().seatComponentList.forEach(comp =>{
+            const seatId = comp["seatData"].id;
+            const player = playerMap.get(seatId)
+            if(player){
+                // 更新玩家金币
+                comp.updateSetGold(player.gold);
+            }
+        });
+
+
         if(seatId === this.mySeatId){
             UIManager.instance.setBetPanelVisible(false);
         }
@@ -386,78 +465,123 @@ export default class ClientRoomManager {
         this.refreshAllSeatView();
     }
     // 发牌
-    public async dealCard(deal : DealCardPush){
-        const data = deal as DealCardPush;
-        console.log("发牌通知", data);
-        const bankerSeat = data.bankerSeat;
-        const playerCards = data.playerCards;
-        // 移除倒计时
+    public async dealCard(deal: DealCardPush) {
         CountDownManager.close();
-        // 切换发牌状态
-        ClientRoomManager.instance.setRoomState(data.roomState);
-        const paiJiuTable = UIManager.instance.getTableNode().getComponent("PaiJiuTable");
+
+        this.setRoomState(deal.roomState);
+        this.bankerSeat = deal.bankerSeat;
+
+        const tableNode = UIManager.instance.getTableNode();
+        if (!tableNode || !cc.isValid(tableNode)) {
+            cc.error("dealCard 找不到 TableNode");
+            return;
+        }
+
+        const paiJiuTable = tableNode.getComponent("PaiJiuTable") as any;
+        if (!paiJiuTable) {
+            cc.error("dealCard 找不到 PaiJiuTable");
+            return;
+        }
+
         const serverResult = {
-               bankerSeat: bankerSeat,
-               players: playerCards
+            bankerSeat: deal.bankerSeat,
+            players: deal.playerCards,
+            serverTime: deal.serverTime,
+            dealStartTime: deal.dealStartTime,
+            showCardTime: deal.showCardTime,
+            settleTime: deal.settleTime,
+            nextRoundTime: deal.nextRoundTime
         };
-        this.bankerSeat = bankerSeat;
-        // 发牌
-        paiJiuTable.playStartAnim(serverResult);     
+
+        this.bankerSeat = deal.bankerSeat;
+
+        await paiJiuTable.playStartAnim(serverResult);
     }
 
     // 结算
-    public settle(settleInfo : SettlePush){
-        console.log("结算", settleInfo);
-        const data = settleInfo as SettlePush;
-        ClientRoomManager.instance.setRoomState(data.roomState);
-        const bankerSeat = settleInfo.bankerSeat;
-        const settlePlayer = settleInfo.players;
+    public settle(settleInfo: SettlePush) {
 
-        settlePlayer.forEach(p => {
-            const seatId = p.seatId;
-            const seatComponen = SeatComponentManager.getInstance().seatComponentList.find(s => s["seatData"].id === seatId);
-            if(seatComponen){
-                if(seatId !== bankerSeat){
-                    seatComponen.setResultStatusView(p.win);
+        const serverOffset =
+            settleInfo.serverTime - Date.now();
+
+        const nowServer =
+            Date.now() + serverOffset;
+
+        const delay = Math.max(
+            0,
+            (settleInfo.settleTime - nowServer) / 1000
+        );
+
+        DelayTaskUtil.getInstance().schedule(() => {
+            this.doSettle(settleInfo);
+        }, delay);
+    }
+
+    private doSettle(data: SettlePush) {
+        const bankerSeat = data.bankerSeat;
+        const settlePlayers = data.settlePlayers;
+        const players = data.players;
+
+        this.updatePlayers(players);
+        this.setRoomState(data.roomState);
+
+        const playerMap = new Map(players.map(player => [player.seatId, player]));
+        const settlePlayerMap = new Map(settlePlayers.map(p => [p.seatId, p]));
+
+        SeatComponentManager.getInstance().seatComponentList.forEach(comp => {
+            const seatId = comp["seatData"].id;
+            const player = playerMap.get(seatId);
+            const settlePlayer = settlePlayerMap.get(seatId);
+
+            if (player) {
+                comp.updateSetGold(player.gold);
+
+                if (player.seatId !== bankerSeat && settlePlayer) {
+                    comp.setResultStatusView(settlePlayer.win);
                 }
             }
-            const user = UserData.get();
-            if(user){
-                console.log("结算:", p.userId, "输赢:", p.winAmount);
-                if(p.userId === user.userId){
-                    SettleManager.show(p.win, p.winAmount, p.afterGold, p.cardTypeName, p.settleDesc);
-                }
+        });
+
+        const map = new Map(settlePlayers.map(p => [p.userId, p]));
+        const user = UserData.get();
+
+        if (user) {
+            const settlePlayer = map.get(user.userId);
+
+            if (settlePlayer) {
+                SettleManager.show(
+                    settlePlayer.win,
+                    settlePlayer.winAmount,
+                    settlePlayer.afterGold,
+                    settlePlayer.cardTypeName,
+                    settlePlayer.settleDesc
+                );
             }
-         });
-          // 更新座位信息
-        this.refreshAllSeatView();
+        }
     }
 
     public doNextRound(){   
-        if (this.sentRoundIds.has(this.roundId)) {
-            // 这个 roundId 已经发送过了，直接返回
-            return;
-        }
-        this.sentRoundIds.add(this.roundId);
-        this.refreshAllSeatView();
-        WsClient.instance.send(Cmd.NEXT_ROUND, {roomId: this.roomId, roundId: this.roundId});
+        SettleManager.close();
     }
 
 
     // 下一局
-    public nextRound(data: NextRoundPush){
+    public nextRound(data: NextRoundPush) {
+        console.log("下一局:", data.roundId)
+        // 强制关闭结算界面
+        SettleManager.close();
 
-        console.log("下一局通知", data);
-        // UIManager.instance.clearTable();
-        ClientRoomManager.instance.setRoomState(data.roomState);
         this.roundId = data.roundId;
-        const players = data.players;
-        
-        this.updatePlayers(players);
-     
-        this.updatePlayerStatus(UserState.Sit);
+        this.setRoomState(data.roomState);
+        this.updatePlayers(data.players);
+
+         // 清桌
+        UIManager.instance.clearTable();
         this.refreshAllSeatView();
-        UIManager.instance.showReady(ReadyBtnState.READY);
+
+        UIManager.instance.showReady(
+            ReadyBtnState.READY
+        );
     }
 
 
@@ -537,7 +661,7 @@ export default class ClientRoomManager {
 
     private refreshBetUI() {
         const canBet = this.canBet();
-        cc.log("是否可以下注:", canBet, "roomState:", this.roomState, "mySeatId:", this.mySeatId, "bankerSeat:", this.bankerSeat);
+        //cc.log("是否可以下注:", canBet, "roomState:", this.roomState, "mySeatId:", this.mySeatId, "bankerSeat:", this.bankerSeat);
         UIManager.instance.setBetPanelVisible(canBet);
     }
 
@@ -588,6 +712,7 @@ export default class ClientRoomManager {
             userInfo.state = player.state;
             userInfo.avatar = player.avatar;
             userInfo.nickname = player.nickname;
+            userInfo.gold = player.gold;
             seats.push(player.seatId);
             SeatManager.refreshSeat(player.seatId, userInfo);
         });

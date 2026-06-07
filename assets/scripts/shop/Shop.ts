@@ -35,6 +35,7 @@ export default class Shop extends cc.Component {
             return;
         }
         this.bindItemEvents();
+        this.initTitleStyle();
    }
 
 
@@ -63,6 +64,27 @@ export default class Shop extends cc.Component {
         { id: 5, name: "300张房卡", price: 198 },
         { id: 6, name: "648张房卡", price: 398 }
     ];
+
+
+    private initTitleStyle() {
+
+        const items = cc.find(
+            "Panel/Content/ItemList",
+            this.node
+        );
+
+        if (!items) return;
+
+        const labels = items.getComponentsInChildren(cc.Label);
+        labels.forEach(label => {
+            if (label.node.name === "label1") {
+                 UIUtil.setLabel(label.node, null, UIColorUtil.SHOP_TEXT, UIColorUtil.SHOP_TEXT_OUTLINE, 2);
+            }else if (label.node.name === "label3") {
+                 UIUtil.setLabel(label.node, null, UIColorUtil.SHOP_TEXT, UIColorUtil.SHOP_TEXT_OUTLINE, 2);
+            }
+        })
+    }
+
 
    private bindItemEvents() {
         this.itemList.children.forEach((item, index) => {

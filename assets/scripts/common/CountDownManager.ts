@@ -1,9 +1,7 @@
-import UIZOrder from "./ui/UIZOrder";
 import BetCountdown from "../common/countdown/BetCountdown";
-import GameRes from "../game/pj/GameRes";
 export default class CountDownManager {
 
-    private static clockPrefab: cc.Prefab = null;
+    private static clockPrefab: cc.Prefab | null = null;
     private static clockNode: cc.Node | null = null;
 
     /**
@@ -31,7 +29,6 @@ export default class CountDownManager {
         const comp = CountDownManager.clockNode.getComponent(BetCountdown);
 
         comp.startCountdown(time, () => {
-            cc.log("投注倒计时结束");
             this.close();
         });
     }

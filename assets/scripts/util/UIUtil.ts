@@ -5,7 +5,7 @@ export default class UIUtil {
      */
     public static setLabel(
         labelNode: cc.Node,
-        text: string,
+        text: string | null,
         color: cc.Color = cc.Color.WHITE,
         outlineColor?: cc.Color,
         outlineWidth: number = 0
@@ -20,8 +20,9 @@ export default class UIUtil {
         if (!label) {
             return;
         }
-
-        label.string = text;
+        if(text !== null){
+            label.string = text;
+        }
         label.node.color = color;
 
         if (outlineWidth > 0 && outlineColor) {

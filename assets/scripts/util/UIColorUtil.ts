@@ -86,4 +86,19 @@ export default class UIColorUtil {
     public static readonly USER_ID_OUTLINE =
         new cc.Color(60, 60, 60);    
 
+
+    // 深棕色
+    public static readonly SHOP_TEXT = new cc.Color().fromHEX("#FFD75A");
+
+     // 深棕色
+    public static readonly SHOP_TEXT_OUTLINE = new cc.Color().fromHEX("#6B3500");
+
+
+     // 深棕色
+    public static readonly SHOP_PRICE_TEXT = cc.Color.WHITE;
+
+     // 深棕色
+    public static readonly SHOP_PRICE_OUTLINE = new cc.Color().fromHEX("#008C3A");
+
+
 }

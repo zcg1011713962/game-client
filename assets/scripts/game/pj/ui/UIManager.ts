@@ -127,7 +127,7 @@ export default class UIManager extends cc.Component {
     
     // 全部清理
     public clearTable(){
-        console.log("执行全部清理, 房间状态:", ClientRoomManager.instance.getRoomState())
+        //console.log("执行全部清理, 房间状态:", ClientRoomManager.instance.getRoomState())
         this.clearCardContainer();
         this.clearBetContainer();
         this.clearClockContainer();
@@ -140,7 +140,7 @@ export default class UIManager extends cc.Component {
          if(tableNode){
             const paiJiuTableNode = tableNode.getComponent(PaiJiuTable);
             paiJiuTableNode.clearCardContainer();
-            console.log("清理牌区")
+            //console.log("清理牌区")
          }
     }
 
@@ -150,14 +150,14 @@ export default class UIManager extends cc.Component {
              const betArea = this.betContainer.getComponent(BetArea);
              if(betArea){
                 betArea.clearChips(this.seats);
-                console.log("清理筹码区")
+                //console.log("清理筹码区")
              }
          }
     }
 
     public clearClockContainer(){
         this.clockContainerNode.removeAllChildren();
-        console.log("清理倒计时钟")
+        //console.log("清理倒计时钟")
     }
 
 
@@ -191,13 +191,26 @@ export default class UIManager extends cc.Component {
     }
 
 
-    public async showRoundStartAnim(roundId: number): Promise<void> {
-        const node = cc.instantiate(GameRes.instance.roundStartPrefab);
+    public async showRoundStartAnim(
+        roundId: number,
+        serverTime: number,
+        roundAnimExpireTime: number
+    ): Promise<void> {
+
+        const node = cc.instantiate(
+            GameRes.instance.roundStartPrefab
+        );
+
         node.parent = cc.find("Canvas");
-        node.setPosition(0, 0);
 
         const comp = node.getComponent(RoundStartPopup);
-        await comp.play(roundId);
+
+        await comp.play(
+            roundId,
+            serverTime,
+            roundAnimExpireTime
+        );
+
         node.destroy();
     }
 

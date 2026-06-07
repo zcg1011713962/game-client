@@ -36,7 +36,7 @@ export default class ReadyButton extends cc.Component {
 
     public setState(state: ReadyBtnState) {
         this.state = state;
-         console.log("准备按钮状态", this.state);
+        // console.log("准备按钮状态", this.state);
 
         this.node.active = state !== ReadyBtnState.HIDE;
 

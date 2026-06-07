@@ -8,7 +8,6 @@ import { RoomState } from "../room/RoomState";
 import HallRes from "../../../hall/HallRes";
 import { ReadyBtnState } from "../../btn/ReadyButton";
 import UIUtil from "../../../util/UIUtil";
-import UserData from "../../../login/entity/UserData";
 import UIColorUtil from "../../../util/UIColorUtil";
 
 @ccclass
@@ -168,7 +167,7 @@ export default class SeatComponent extends cc.Component {
         
         if(active && this.seatData && this.seatData.userInfo){
             const userInfo = this.seatData.userInfo;
-            const info = this.setOut.getChildByName("Info");
+           
             const avatarNode = this.setOut.getChildByName("Avatars");
 
             await this.updateAvatarAsync(userInfo);
@@ -178,15 +177,24 @@ export default class SeatComponent extends cc.Component {
             const nicknameNode = name.getChildByName("nickname");
             UIManager.instance.setNickNameView(nicknameNode, bankerSeat === userInfo.seatId, CurrUserManager.getCurrentUserId() === userInfo.userId , userInfo.nickname);
 
-            // 金币展示
-            const coinValNode = info.getChildByName("CoinVal");
-            const user = UserData.get();
-            const gold =  user != null ? String(user.gold) : "--";
-            UIUtil.setLabel(coinValNode, gold , UIColorUtil.GOLD, UIColorUtil.TITLE, 1)
+
+            this.updateSetGold(userInfo.gold);
         }
         // 预制体显示
         this.setOut.active = active;
     }
+
+    public updateSetGold(gold: number){
+        if(this.setOut){
+             const info = this.setOut.getChildByName("Info");
+            // 金币展示
+            const coinValNode = info.getChildByName("CoinVal");
+            
+            UIUtil.setLabel(coinValNode, String(gold) , UIColorUtil.GOLD, UIColorUtil.TITLE, 1)
+        }
+    }
+
+    
 
     private async updateAvatarAsync(userInfo: UserInfo) {
         try {
@@ -305,7 +313,6 @@ export default class SeatComponent extends cc.Component {
                label.node.color = cc.Color.WHITE; 
             }
              bankerLabelNode.active = true;
-             console.log("展示输赢")
         }else{
              bankerLabelNode.active = false;
         }

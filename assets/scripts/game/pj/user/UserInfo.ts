@@ -11,6 +11,7 @@ export class UserInfo {
     avatar: string = "";
     seatId: number = -1;
     state: UserState = UserState.Idle;
+    gold: number = 0;
 
     constructor(data?: Partial<UserInfo>) {
         if (data) {
