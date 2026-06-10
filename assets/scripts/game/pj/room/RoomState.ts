@@ -1,7 +1,8 @@
 export enum RoomState {
     WAIT = 0,
     READY = 1,
-    BET = 2,
-    DEAL = 3,
-    SETTLE = 4
+    GRAB_BANKER = 2,
+    BET = 3,
+    DEAL = 4,
+    SETTLE = 5
 }

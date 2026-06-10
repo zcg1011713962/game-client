@@ -11,6 +11,7 @@ export default class GameRes {
     public chipImgMap: { [key: string]: cc.SpriteFrame } = {};
 
     public chipSelectPanelPrefab!: cc.Prefab;
+    public grabBankerPanelPrefab!: cc.Prefab;
     public roomTopBarPrefab!: cc.Prefab;
     public settlePrefab!: cc.Prefab;
     public warnAudio!: cc.AudioClip;
@@ -47,6 +48,7 @@ export default class GameRes {
             this.loadChipImgs(),
             this.loadClockCountdownPrefab(),
             this.loadChipSelectPanelPrefab(),
+            this.loadGrabBankerPopupPrefab(),
             this.loadRoundStartPrefab(),
             this.loadReadyBtnPrefab(),
             this.loadCardImg()
@@ -166,6 +168,13 @@ export default class GameRes {
 
         this.roomTopBarPrefab = await this.loadPrefab("prefabs/RoomTopBar");
         //cc.log("游戏顶部预制体加载完成");
+    }
+
+    
+    private async loadGrabBankerPopupPrefab(): Promise<void> {
+        if (this.grabBankerPanelPrefab) return;
+
+        this.grabBankerPanelPrefab = await this.loadPrefab("prefabs/GrabBankerPanel");
     }
 
     private async loadChipSelectPanelPrefab(): Promise<void> {

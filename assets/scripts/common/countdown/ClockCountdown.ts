@@ -11,7 +11,6 @@ export default class ClockCountdown extends cc.Component {
     private warnSecond: number = 5;
     private audioId: number | null = null;
 
-    private totalTime = 0;
     private running = false;
     private lastSecond = -1;
     private finishCb: Function = null;

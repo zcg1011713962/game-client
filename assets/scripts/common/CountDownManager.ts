@@ -1,4 +1,4 @@
-import BetCountdown from "../common/countdown/BetCountdown";
+import ClockCountdown from "../common/countdown/ClockCountdown";
 export default class CountDownManager {
 
     private static clockPrefab: cc.Prefab | null = null;
@@ -26,7 +26,7 @@ export default class CountDownManager {
         
         CountDownManager.clockNode = cc.instantiate(this.clockPrefab);
         canvas.addChild(CountDownManager.clockNode);
-        const comp = CountDownManager.clockNode.getComponent(BetCountdown);
+        const comp = CountDownManager.clockNode.getComponent(ClockCountdown);
 
         comp.startCountdown(time, () => {
             this.close();
@@ -37,7 +37,7 @@ export default class CountDownManager {
         if(!CountDownManager.clockNode || !cc.isValid(CountDownManager.clockNode)){
             return;
         }
-        const comp = CountDownManager.clockNode.getComponent(BetCountdown);
+        const comp = CountDownManager.clockNode.getComponent(ClockCountdown);
         comp.close();
         CountDownManager.clockNode = null;
     }

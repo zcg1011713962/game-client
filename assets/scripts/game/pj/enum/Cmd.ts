@@ -44,6 +44,9 @@ export enum Cmd {
 
     GAME_START = "GAME_START",
 
+    GRAB_BANKER_START = "GRAB_BANKER_START",
+    GRAB_BANKER_RESULT = "GRAB_BANKER_RESULT",
+
     // 下注
     BET = "BET",
     BET_RESULT = "BET_RESULT",

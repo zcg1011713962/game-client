@@ -180,6 +180,12 @@ export default class WsClient {
             case Cmd.GAME_START:
                 ClientRoomManager.instance.applyGameStart(msg.data);
                 break;
+            case Cmd.GRAB_BANKER_START:
+                ClientRoomManager.instance.grabBankerStart(msg.data);
+                break;    
+            case Cmd.GRAB_BANKER_RESULT:
+                ClientRoomManager.instance.grabBankerEnd(msg.data);
+                break;        
             case Cmd.BET_RESULT:
                 ClientRoomManager.instance.selfBetOk(msg.data);
                 break;

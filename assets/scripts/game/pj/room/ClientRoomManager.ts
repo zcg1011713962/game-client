@@ -45,6 +45,29 @@ export interface RoomSnapshot {
 
     settlePush: SettlePush;
 }
+export interface GrabBankerStartPush {
+    roomId: number;
+    roundId: number;
+    roomState: number;
+    serverTime: number;
+    grabBankerSeconds: number;
+    grabStartTime: number;
+    grabEndTime: number;
+}
+
+export interface GrabBankerResultPush {
+    roomId: number;
+    roundId: number;
+    roomState: number;
+    bankerUserId: number;
+    bankerSeat: number;
+    serverTime: number;
+    bankerAnimStartTime: number;
+    bankerAnimExpireTime: number;
+    betStartTime: number;
+    betEndTime: number;
+    players: PlayerDTO[];
+}
 
 export interface PlayerCardDTO {
     userId: number;
@@ -332,44 +355,31 @@ export default class ClientRoomManager {
         this.refreshAllSeatView();
     }
 
-    // 全准备好-游戏开始
+
+    // 游戏开始
     public async applyGameStart(data: {
         roomId: number,
         roundId: number,
-        roomState: number,
-        bankerSeat: number,
         players: PlayerDTO[],
-        betSeconds: number,
-
         serverTime: number,
         roundAnimStartTime: number,
-        roundAnimExpireTime: number,
-        betStartTime: number,
-        betEndTime: number
+        roundAnimEndTime: number,
     }) {
-        console.log("游戏开始", "roundId:", data.roundId, "roomState:", data.roomState);
+        console.log("游戏开始", "roundId:", data.roundId);
 
         this.roundId = data.roundId;
 
         this.players.clear();
-        UIManager.instance.clearTable();
-
         data.players.forEach(p => {
             this.players.set(p.userId, p);
         });
 
-        this.bankerSeat = data.bankerSeat;
-
-        UIManager.instance.showReady(ReadyBtnState.HIDE);
-
         const serverOffset = data.serverTime - Date.now();
-
         const getServerNow = () => Date.now() + serverOffset;
-
         const nowServer = getServerNow();
 
         // 第X局动画：过期不播
-        if (nowServer < data.roundAnimExpireTime) {
+        if (nowServer < data.roundAnimEndTime) {
             const waitAnimSeconds = Math.max(
                 0,
                 (data.roundAnimStartTime - nowServer) / 1000
@@ -377,18 +387,49 @@ export default class ClientRoomManager {
             if (waitAnimSeconds > 0) {
                 await PaiJiuUtil.wait(this as any, waitAnimSeconds);
             }
-            if (getServerNow() < data.roundAnimExpireTime) {
+            if (getServerNow() < data.roundAnimEndTime) {
                 await UIManager.instance.showRoundStartAnim(
                     this.roundId,
                     data.serverTime,
-                    data.roundAnimExpireTime
+                    data.roundAnimEndTime
                 );
             }
         } else {
             console.log("局数动画已过期，跳过");
         }
 
+    }
+
+    // 开始抢庄
+    public grabBankerStart(data: GrabBankerStartPush) {
+        console.log("开始抢庄", data);
+        const serverOffset = data.serverTime - Date.now();
+        const getServerNow = () => Date.now() + serverOffset;
+     
+        const waitGrabSeconds = Math.max(
+            0,
+            (data.grabStartTime - getServerNow()) / 1000
+        );
+
+        DelayTaskUtil.getInstance().schedule(() => {
+            UIManager.instance.clearTable();
+            UIManager.instance.showReady(ReadyBtnState.HIDE);
+            // 显示抢庄面板
+            this.setRoomState(data.roomState);
+           
+            const leftSeconds = Math.max(0,
+                Math.ceil((data.grabEndTime - getServerNow()) / 1000)
+            );
+
+            CountDownManager.show(leftSeconds);
+        }, waitGrabSeconds);
+    }
+    // 抢庄完毕
+    public grabBankerEnd(data: GrabBankerResultPush){
+        console.log("抢庄完毕", data);
         // 等到下注开始时间
+        const serverOffset = data.serverTime - Date.now();
+        const getServerNow = () => Date.now() + serverOffset;
         const waitBetSeconds = Math.max(
             0,
             (data.betStartTime - getServerNow()) / 1000
@@ -411,6 +452,8 @@ export default class ClientRoomManager {
 
         }, waitBetSeconds);
     }
+
+    
     // 下注回包
     public selfBetOk(data: {
         roomId: number,
@@ -643,11 +686,13 @@ export default class ClientRoomManager {
 
 
     public setRoomState(state: number) {
+        console.log("roomStatus:", state);
         if(state == undefined){
             return;
         }
         this.roomState = state as RoomState;
         this.refreshBetUI();
+        this.refreshGrabBankerUI();
     }
 
     public getRoomState() {
@@ -661,8 +706,15 @@ export default class ClientRoomManager {
 
     private refreshBetUI() {
         const canBet = this.canBet();
-        //cc.log("是否可以下注:", canBet, "roomState:", this.roomState, "mySeatId:", this.mySeatId, "bankerSeat:", this.bankerSeat);
         UIManager.instance.setBetPanelVisible(canBet);
+    }
+
+    private refreshGrabBankerUI(){
+        if(this.roomState === RoomState.GRAB_BANKER){
+             UIManager.instance.setGrabBankerPanelVisible(true);
+        }else{
+             UIManager.instance.setGrabBankerPanelVisible(false);
+        }
     }
 
     public getRoomId(): number {

@@ -17,6 +17,7 @@ export default class UIManager extends cc.Component {
     private uiNode!: cc.Node;
     private tableNode!: cc.Node;
     private chipSelectPanel!: cc.Node;
+    private grabBankerPanel!: cc.Node;
     private betContainer!: cc.Node;
     private rooomTopBarNode!: cc.Node;
     private clockContainerNode!: cc.Node;
@@ -37,6 +38,7 @@ export default class UIManager extends cc.Component {
         this.uiNode = this.node.getChildByName("UI");
         this.tableNode = cc.find("Canvas/MainLayout/Table");
         this.chipSelectPanel = cc.find("Canvas/MainLayout/Table/ChipSelectPanel");
+        this.grabBankerPanel = cc.find("Canvas/MainLayout/Table/GrabBankerPanel");
         this.betContainer = cc.find("Canvas/MainLayout/Table/BetContainer");
         this.rooomTopBarNode = cc.find("Canvas/MainLayout/RoomTopBar");
         this.clockContainerNode = cc.find("Canvas/MainLayout/Table/ClockContainer");
@@ -48,6 +50,7 @@ export default class UIManager extends cc.Component {
          this.intSeatPos();
          this.initRoomTopBar();
          this.initChipSelectPanel();
+         this.initGrabBankerPanel();
     }
 
     public initRoomTopBar(){
@@ -64,6 +67,13 @@ export default class UIManager extends cc.Component {
         const node = cc.instantiate(GameRes.instance.chipSelectPanelPrefab);
         node.parent = this.chipSelectPanel;
     }
+
+    public initGrabBankerPanel(){
+        this.grabBankerPanel.removeAllChildren();
+        const node = cc.instantiate(GameRes.instance.grabBankerPanelPrefab);
+        node.parent = this.grabBankerPanel;
+    }
+
 
     public getTableNode(){
         return this.tableNode;
@@ -108,6 +118,13 @@ export default class UIManager extends cc.Component {
             this.chipSelectPanel.active = visible;
         }
     }
+
+     public setGrabBankerPanelVisible(visible: boolean) {
+        if (this.grabBankerPanel) {
+            this.grabBankerPanel.active = visible;
+        }
+    }
+
 
     
     public onSelectChip(chip: number, seatId: number) {
@@ -194,7 +211,7 @@ export default class UIManager extends cc.Component {
     public async showRoundStartAnim(
         roundId: number,
         serverTime: number,
-        roundAnimExpireTime: number
+        roundAnimEndTime: number
     ): Promise<void> {
 
         const node = cc.instantiate(
@@ -208,7 +225,7 @@ export default class UIManager extends cc.Component {
         await comp.play(
             roundId,
             serverTime,
-            roundAnimExpireTime
+            roundAnimEndTime
         );
 
         node.destroy();
