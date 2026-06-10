@@ -142,7 +142,11 @@ export default class WsClient {
        
         if (msg.code !== 0) {
             console.error("服务端错误:", msg.cmd, msg.code, msg.msg);
-            ToastManager.show(msg.msg)
+            if(msg.code === 2002){
+                ToastManager.show("网络中断")
+            }else{
+                ToastManager.show(msg.msg)
+            }
             return;
         }
 

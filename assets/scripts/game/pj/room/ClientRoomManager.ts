@@ -50,7 +50,6 @@ export interface GrabBankerStartPush {
     roundId: number;
     roomState: number;
     serverTime: number;
-    grabBankerSeconds: number;
     grabStartTime: number;
     grabEndTime: number;
 }
@@ -62,8 +61,8 @@ export interface GrabBankerResultPush {
     bankerUserId: number;
     bankerSeat: number;
     serverTime: number;
-    bankerAnimStartTime: number;
-    bankerAnimExpireTime: number;
+    bankerAnimStartTime: number; // 庄家动画
+    bankerAnimEndTime: number;
     betStartTime: number;
     betEndTime: number;
     players: PlayerDTO[];
@@ -366,6 +365,8 @@ export default class ClientRoomManager {
         roundAnimEndTime: number,
     }) {
         console.log("游戏开始", "roundId:", data.roundId);
+        UIManager.instance.clearTable();
+        UIManager.instance.showReady(ReadyBtnState.HIDE);
 
         this.roundId = data.roundId;
 
@@ -412,21 +413,24 @@ export default class ClientRoomManager {
         );
 
         DelayTaskUtil.getInstance().schedule(() => {
-            UIManager.instance.clearTable();
-            UIManager.instance.showReady(ReadyBtnState.HIDE);
             // 显示抢庄面板
             this.setRoomState(data.roomState);
            
             const leftSeconds = Math.max(0,
                 Math.ceil((data.grabEndTime - getServerNow()) / 1000)
             );
-
+            console.log("抢庄倒计时 剩余:", leftSeconds);
+            // 倒计时
             CountDownManager.show(leftSeconds);
         }, waitGrabSeconds);
     }
-    // 抢庄完毕
+
+    // 抢庄完毕-
     public grabBankerEnd(data: GrabBankerResultPush){
         console.log("抢庄完毕", data);
+        this.bankerSeat = data.bankerSeat;
+        this.updatePlayers(data.players);
+        
         // 等到下注开始时间
         const serverOffset = data.serverTime - Date.now();
         const getServerNow = () => Date.now() + serverOffset;
@@ -446,10 +450,8 @@ export default class ClientRoomManager {
                 Math.ceil((data.betEndTime - getServerNow()) / 1000)
             );
 
-            cc.log("下注倒计时 剩余:", leftSeconds);
-
+            console.log("下注倒计时 剩余:", leftSeconds);
             CountDownManager.show(leftSeconds);
-
         }, waitBetSeconds);
     }
 
@@ -706,6 +708,11 @@ export default class ClientRoomManager {
 
     private refreshBetUI() {
         const canBet = this.canBet();
+        if(canBet){
+            console.log("投注面板展示");
+        }else{
+             console.log("投注面板隐藏", this.mySeatId, this.bankerSeat);
+        }
         UIManager.instance.setBetPanelVisible(canBet);
     }
 

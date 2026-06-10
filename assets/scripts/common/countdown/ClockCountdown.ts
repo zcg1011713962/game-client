@@ -37,7 +37,6 @@ export default class ClockCountdown extends cc.Component {
     }
 
     public startCountdown(seconds: number, finishCb?: Function) {
-        this.totalTime = seconds;
         this.running = true;
         this.finishCb = finishCb;
         this.lastSecond = -1;

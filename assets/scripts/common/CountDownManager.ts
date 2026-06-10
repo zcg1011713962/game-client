@@ -17,6 +17,8 @@ export default class CountDownManager {
             cc.error("CountDownManager 未初始化");
             return;
         }
+        // 复用倒计时，防止上一个还在关闭中
+        this.close();
 
         const canvas = cc.find("Canvas/MainLayout/Table/ClockContainer");
         if (!canvas) {
