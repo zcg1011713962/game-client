@@ -5,6 +5,8 @@ import HallRes from "../hall/HallRes";
 import { SceneUtil } from "../util/SceneUtil";
 import UserData from "../login/entity/UserData";
 import GameRes from "../game/pj/GameRes";
+import UIUtil from "../util/UIUtil";
+import UIColorUtil from "../util/UIColorUtil";
 
 @ccclass
 export default class Loading extends cc.Component {
@@ -24,6 +26,7 @@ export default class Loading extends cc.Component {
         this.initNodeRefs();
 
         this.setTargetProgress(0, "准备加载...");
+      
 
         await this.startLoad();
     }
@@ -79,6 +82,8 @@ export default class Loading extends cc.Component {
             cc.error("找不到 Label_Tip");
             return;
         }
+        UIUtil.setLabel(tipNode, null, UIColorUtil.RED, UIColorUtil.TITLE_OUTLINE, 1);
+        UIUtil.setLabel(percentNode, null, UIColorUtil.RED, UIColorUtil.TITLE_OUTLINE, 1);
 
         this.progressBar = progressBarNode.getComponent(cc.ProgressBar);
         this.percentLabel = percentNode.getComponent(cc.Label);

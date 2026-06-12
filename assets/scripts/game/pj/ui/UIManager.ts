@@ -11,6 +11,7 @@ import GameRes from "../GameRes";
 import RoundStartPopup from "../../../common/RoundStartPopup";
 import SettleManager from "../../../common/SettleManager";
 import ReadyButton, { ReadyBtnState } from "../../btn/ReadyButton";
+import GrabBankerPopup from "../banker/GrabBankerPopup";
 
 @ccclass
 export default class UIManager extends cc.Component {
@@ -121,10 +122,18 @@ export default class UIManager extends cc.Component {
 
      public setGrabBankerPanelVisible(visible: boolean) {
         if (this.grabBankerPanel) {
-            this.grabBankerPanel.active = visible;
+            const grabBankerPanelNode = this.grabBankerPanel.getChildByName("GrabBankerPanel");
+            if(grabBankerPanelNode){
+                const comp = grabBankerPanelNode.getComponent(GrabBankerPopup);
+                if(visible === true && grabBankerPanelNode){
+                    console.log("22222222222222222222")
+                    comp.show();
+                }else{
+                    comp.hide();
+                }
+            }
         }
     }
-
 
     
     public onSelectChip(chip: number, seatId: number) {
