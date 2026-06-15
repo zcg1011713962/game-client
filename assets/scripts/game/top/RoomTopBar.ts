@@ -6,6 +6,7 @@ import { UserState } from "../pj/user/UserInfo";
 import ToastManager from "../../common/ToastManager";
 import WsClient from "../pj/net/WsClient";
 import { Cmd } from "../pj/enum/Cmd";
+import UIManager from "../pj/ui/UIManager";
 
 export interface RoomBarData {
     roomId: number | string;
@@ -20,7 +21,7 @@ export class RooomTopBar extends cc.Component {
 
     private btnRule: cc.Node = null;
 
-    private btnSetting: cc.Node = null;
+    private btnRecord: cc.Node = null;
 
     private btnMore: cc.Node = null;
 
@@ -34,7 +35,7 @@ export class RooomTopBar extends cc.Component {
     onLoad() {
         this.btnBack = this.node.getChildByName("btnBack");
         this.btnRule = this.node.getChildByName("btnRule");
-        this.btnSetting = this.node.getChildByName("btnSetting");
+        this.btnRecord = this.node.getChildByName("btnRecord");
         this.btnMore = this.node.getChildByName("btnMore");
        
         this.roomIdLabel = cc.find("RoomGroup/roomIdLabel", this.node);
@@ -43,7 +44,7 @@ export class RooomTopBar extends cc.Component {
             
         this.bindBtn(this.btnBack, this.onBackClick);
         this.bindBtn(this.btnRule, this.onRuleClick);
-        this.bindBtn(this.btnSetting, this.onSettingClick);
+        this.bindBtn(this.btnRecord, this.onRecordClick);
 
     }
 
@@ -106,8 +107,9 @@ export class RooomTopBar extends cc.Component {
         cc.log("打开规则");
     }
 
-    private onSettingClick() {
-        cc.log("打开设置");
+    private onRecordClick() {
+        cc.log("打开战绩");
+        UIManager.instance.showRecord();
     }
 
     private setText(

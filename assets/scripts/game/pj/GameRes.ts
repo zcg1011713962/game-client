@@ -22,6 +22,8 @@ export default class GameRes {
     public clockCountdownPrefab!: cc.Prefab;
     public roundStartPrefab!: cc.Prefab;
     public readyButtonPrefab!: cc.Prefab;
+    public recordItemPrefab!: cc.Prefab;
+    public recordPopupPrefab!: cc.Prefab;
 
        /** 牌图片缓存，key 例如 pai_1 */
     public cardImgMap: { [key: string]: cc.SpriteFrame } = {};
@@ -70,6 +72,8 @@ export default class GameRes {
                 this.loadGameBgmAudio(),
                 this.loadClickAudio(),
                 this.loadBetAudio(),
+                this.loadRecordItemPrefab(),
+                this.loadRecordPopupPrefab()
             ]);
 
             SettleManager.init(this.settlePrefab);
@@ -183,7 +187,19 @@ export default class GameRes {
         this.chipSelectPanelPrefab = await this.loadPrefab("prefabs/ChipSelectPanel");
         //cc.log("选择筹码预制体加载完成");
     }
+    
 
+    private async loadRecordPopupPrefab(): Promise<void> {
+        if (this.recordPopupPrefab) return;
+
+        this.recordPopupPrefab = await this.loadPrefab("prefabs/RecordPopup");
+    }
+
+    private async loadRecordItemPrefab(): Promise<void> {
+        if (this.recordItemPrefab) return;
+
+        this.recordItemPrefab = await this.loadPrefab("prefabs/RecordItem");
+    }
 
     private async loadSettlePrefab(): Promise<void> {
         if (this.settlePrefab) return;

@@ -25,7 +25,8 @@ export default class UIManager extends cc.Component {
     private seats : { x : number, y : number, id:  number }[] = [];
     private rooomTopBarComponent! : RooomTopBar;
     private readyButtonNode!: cc.Node;
-    
+    private recordPopupNode!: cc.Node;
+    private canvas!: cc.Node;
 
     private static _instance: UIManager = null;
     public static get instance(): UIManager {
@@ -36,6 +37,7 @@ export default class UIManager extends cc.Component {
         const t = Date.now();
         // 保存单例引用
         UIManager._instance = this;
+        this.canvas= this.node;
         this.uiNode = this.node.getChildByName("UI");
         this.tableNode = cc.find("Canvas/MainLayout/Table");
         this.chipSelectPanel = cc.find("Canvas/MainLayout/Table/ChipSelectPanel");
@@ -149,6 +151,20 @@ export default class UIManager extends cc.Component {
             console.error("betArea节点为空");
         }
         
+    }
+
+    public async showRecord(){
+            let recordPopupPrefab = GameRes.instance.recordPopupPrefab;
+            if(!recordPopupPrefab){
+                await GameRes.instance.loadPrefab("prefabs/RecordPopup");
+                recordPopupPrefab = GameRes.instance.recordPopupPrefab;
+            }
+            if(!this.recordPopupNode){
+                this.recordPopupNode = cc.instantiate(recordPopupPrefab);
+                this.canvas?.addChild(this.recordPopupNode);
+            }else{
+                this.recordPopupNode.active = true;
+            }
     }
     
     // 全部清理

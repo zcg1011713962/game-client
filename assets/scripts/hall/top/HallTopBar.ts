@@ -1,6 +1,7 @@
 import UserData from "../../login/entity/UserData";
 import UIColorUtil from "../../util/UIColorUtil";
 import UIUtil from "../../util/UIUtil";
+import HallUIManager from "../HallUIManager";
 
 const { ccclass } = cc._decorator;
 
@@ -15,7 +16,11 @@ export default class HallTopBar extends cc.Component {
         this.playerInfoNode = this.node.getChildByName("PlayerInfo");
         this.coinBoxNode = this.node.getChildByName("CoinBox");
         this.roomCardBoxNode = this.node.getChildByName("RoomCardBox");
+        const addCoinNode = this.coinBoxNode.getChildByName("Add");
+        const addCardNode = this.roomCardBoxNode.getChildByName("Add");
 
+        addCoinNode.on(cc.Node.EventType.TOUCH_END, this.shopShow, this);
+        addCardNode.on(cc.Node.EventType.TOUCH_END, this.shopShow, this);
         this.refresh();
     }
 
@@ -38,6 +43,10 @@ export default class HallTopBar extends cc.Component {
         UIUtil.setLabel(roomCardValNode, String(user.roomCard), UIColorUtil.GOLD, UIColorUtil.TITLE, 1);
 
 
+    }
+
+    private shopShow(){
+        HallUIManager.instance.showShop();
     }
 
 }
