@@ -12,6 +12,7 @@ import { ServerMsg } from "../login/entity/ServerMsg";
 import ToastManager from "../common/ToastManager";
 import HallTopBar from "./top/HallTopBar";
 import Shop from "../shop/Shop";
+import GameRes from "../game/pj/GameRes";
 
 const {ccclass, property} = cc._decorator;
 
@@ -27,6 +28,8 @@ export default class HallUIManager extends cc.Component {
     public btnRankSprite!: cc.Sprite;
     public btnRecordSprite!: cc.Sprite;
     public btnShopSprite!: cc.Sprite;
+    public recordPopupNode!: cc.Node;
+   
     
     private topBar!: cc.Node;
     public gameCardNode!: cc.Node;
@@ -38,6 +41,7 @@ export default class HallUIManager extends cc.Component {
     private destroyed: boolean = false;
     private isPlayingBgm: boolean = false;
     private static _instance: HallUIManager = null;
+    
     public static get instance(): HallUIManager {
         return this._instance;
     }
@@ -353,6 +357,26 @@ export default class HallUIManager extends cc.Component {
         const shopTopBar = this.canvas.getChildByName("Shop").getComponent(Shop);
         if(shopTopBar){
             shopTopBar.refresh();
+        }
+    }
+
+    public async showRecord(parent: cc.Node) {
+        let recordPopupPrefab = HallRes.instance.recordPopupPrefab;
+        if (!recordPopupPrefab) {
+            await HallRes.instance.loadPrefab("prefabs/RecordPopup");
+            recordPopupPrefab = HallRes.instance.recordPopupPrefab;
+        }
+        if (!this.recordPopupNode) {
+            this.recordPopupNode = cc.instantiate(recordPopupPrefab);
+            parent.addChild(this.recordPopupNode);
+        } else {
+            this.recordPopupNode.active = true;
+        }
+    }
+    
+    public hideRecord(){
+        if(this.recordPopupNode){
+            this.recordPopupNode.active = false;
         }
     }
 

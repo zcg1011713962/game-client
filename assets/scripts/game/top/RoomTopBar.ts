@@ -7,6 +7,7 @@ import ToastManager from "../../common/ToastManager";
 import WsClient from "../pj/net/WsClient";
 import { Cmd } from "../pj/enum/Cmd";
 import UIManager from "../pj/ui/UIManager";
+import HallUIManager from "../../hall/HallUIManager";
 
 export interface RoomBarData {
     roomId: number | string;
@@ -109,7 +110,7 @@ export class RooomTopBar extends cc.Component {
 
     private onRecordClick() {
         cc.log("打开战绩");
-        UIManager.instance.showRecord();
+        HallUIManager.instance.showRecord(cc.find("Canvas"));
     }
 
     private setText(

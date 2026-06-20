@@ -1,17 +1,20 @@
-const {ccclass, property} = cc._decorator;
+const { ccclass, property } = cc._decorator;
 import ClientRoomManager from "../room/ClientRoomManager";
 import WsClient from "../net/WsClient";
-import {Cmd} from "../enum/Cmd";
+import { Cmd } from "../enum/Cmd";
 import BetArea from "../chip/BetArea";
 import { RoomState } from "../room/RoomState";
 import SeatComponentManager from "../seat/SeatComponentManager";
-import {RoomBarData, RooomTopBar} from "../../top/RoomTopBar";
+import { RoomBarData, RooomTopBar } from "../../top/RoomTopBar";
 import PaiJiuTable from "../PaiJiuTable";
 import GameRes from "../GameRes";
 import RoundStartPopup from "../../../common/RoundStartPopup";
 import SettleManager from "../../../common/SettleManager";
 import ReadyButton, { ReadyBtnState } from "../../btn/ReadyButton";
 import GrabBankerPopup from "../banker/GrabBankerPopup";
+import RecordPopup from "../record/RecordPopup";
+import RecordApi from "../../../record/RecordApi";
+import HallRes from "../../../hall/HallRes";
 
 @ccclass
 export default class UIManager extends cc.Component {
@@ -22,11 +25,10 @@ export default class UIManager extends cc.Component {
     private betContainer!: cc.Node;
     private rooomTopBarNode!: cc.Node;
     private clockContainerNode!: cc.Node;
-    private seats : { x : number, y : number, id:  number }[] = [];
-    private rooomTopBarComponent! : RooomTopBar;
+    private seats: { x: number, y: number, id: number }[] = [];
+    private rooomTopBarComponent!: RooomTopBar;
     private readyButtonNode!: cc.Node;
-    private recordPopupNode!: cc.Node;
-    private canvas!: cc.Node;
+
 
     private static _instance: UIManager = null;
     public static get instance(): UIManager {
@@ -37,7 +39,7 @@ export default class UIManager extends cc.Component {
         const t = Date.now();
         // 保存单例引用
         UIManager._instance = this;
-        this.canvas= this.node;
+        this.canvas = this.node;
         this.uiNode = this.node.getChildByName("UI");
         this.tableNode = cc.find("Canvas/MainLayout/Table");
         this.chipSelectPanel = cc.find("Canvas/MainLayout/Table/ChipSelectPanel");
@@ -49,44 +51,44 @@ export default class UIManager extends cc.Component {
         console.log("游戏初始化预制体耗时:", Date.now() - t, "ms");
     }
 
-    private init(){
-         this.intSeatPos();
-         this.initRoomTopBar();
-         this.initChipSelectPanel();
-         this.initGrabBankerPanel();
+    private init() {
+        this.intSeatPos();
+        this.initRoomTopBar();
+        this.initChipSelectPanel();
+        this.initGrabBankerPanel();
     }
 
-    public initRoomTopBar(){
+    public initRoomTopBar() {
         this.rooomTopBarNode.removeAllChildren();
-            
+
         const node = cc.instantiate(GameRes.instance.roomTopBarPrefab);
         node.parent = this.rooomTopBarNode;
         this.rooomTopBarComponent = node.getComponent(RooomTopBar);
     }
 
-    public initChipSelectPanel(){
+    public initChipSelectPanel() {
         this.chipSelectPanel.removeAllChildren();
-            
+
         const node = cc.instantiate(GameRes.instance.chipSelectPanelPrefab);
         node.parent = this.chipSelectPanel;
     }
 
-    public initGrabBankerPanel(){
+    public initGrabBankerPanel() {
         this.grabBankerPanel.removeAllChildren();
         const node = cc.instantiate(GameRes.instance.grabBankerPanelPrefab);
         node.parent = this.grabBankerPanel;
     }
 
 
-    public getTableNode(){
+    public getTableNode() {
         return this.tableNode;
     }
 
 
 
-    public setNickNameView(labelNode: cc.Node, isBanker: boolean, isSelf: boolean, name : string) {
+    public setNickNameView(labelNode: cc.Node, isBanker: boolean, isSelf: boolean, name: string) {
         const label = labelNode.getComponent(cc.Label);
-         label.string = name;
+        label.string = name;
         if (isSelf) {
             label.node.color = cc.Color.GREEN;
         } else if (isBanker) {
@@ -96,22 +98,22 @@ export default class UIManager extends cc.Component {
         }
     }
 
-    public intSeatPos(){
+    public intSeatPos() {
         this.seats = [];
         // 设置座位坐标
-        this.seats.push({ x : 0, y : -800, id:  0 });
-        this.seats.push({ x : 420, y : -420, id:  1 });
-        this.seats.push({ x : 460, y : 20, id:  2 });
-        this.seats.push({ x : 420, y : 420, id:  3});
-        this.seats.push({ x : 0, y : 750, id:  4});
-        this.seats.push({ x : -420, y : 420, id:  5 });
-        this.seats.push({ x : -460, y : 20, id:  6});
-        this.seats.push({ x : -420, y : -420, id:  7});
+        this.seats.push({ x: 0, y: -800, id: 0 });
+        this.seats.push({ x: 420, y: -420, id: 1 });
+        this.seats.push({ x: 460, y: 20, id: 2 });
+        this.seats.push({ x: 420, y: 420, id: 3 });
+        this.seats.push({ x: 0, y: 750, id: 4 });
+        this.seats.push({ x: -420, y: 420, id: 5 });
+        this.seats.push({ x: -460, y: 20, id: 6 });
+        this.seats.push({ x: -420, y: -420, id: 7 });
     }
 
 
 
-    public getSeat() : { x : number, y : number, id:  number }[] {
+    public getSeat(): { x: number, y: number, id: number }[] {
         return this.seats;
     }
 
@@ -122,53 +124,39 @@ export default class UIManager extends cc.Component {
         }
     }
 
-     public setGrabBankerPanelVisible(visible: boolean) {
+    public setGrabBankerPanelVisible(visible: boolean) {
         if (this.grabBankerPanel) {
             const grabBankerPanelNode = this.grabBankerPanel.getChildByName("GrabBankerPanel");
-            if(grabBankerPanelNode){
+            if (grabBankerPanelNode) {
                 const comp = grabBankerPanelNode.getComponent(GrabBankerPopup);
-                if(visible === true && grabBankerPanelNode){
-                    console.log("22222222222222222222")
+                if (visible === true && grabBankerPanelNode) {
                     comp.show();
-                }else{
+                } else {
                     comp.hide();
                 }
             }
         }
     }
 
-    
+
     public onSelectChip(chip: number, seatId: number) {
         const betArea = this.betContainer.getComponent(BetArea);
-        if(betArea){
+        if (betArea) {
             const seatComponen = SeatComponentManager.getInstance().seatComponentList.find(s => s["seatData"].id === seatId);
-            if(seatComponen){
+            if (seatComponen) {
                 // 起点：座位世界坐标
                 const worldStartPos = seatComponen.node.convertToWorldSpaceAR(cc.v2(0, 0));
                 betArea.addChip(chip, seatId, worldStartPos);
             }
-        }else{
+        } else {
             console.error("betArea节点为空");
         }
-        
+
     }
 
-    public async showRecord(){
-            let recordPopupPrefab = GameRes.instance.recordPopupPrefab;
-            if(!recordPopupPrefab){
-                await GameRes.instance.loadPrefab("prefabs/RecordPopup");
-                recordPopupPrefab = GameRes.instance.recordPopupPrefab;
-            }
-            if(!this.recordPopupNode){
-                this.recordPopupNode = cc.instantiate(recordPopupPrefab);
-                this.canvas?.addChild(this.recordPopupNode);
-            }else{
-                this.recordPopupNode.active = true;
-            }
-    }
-    
+
     // 全部清理
-    public clearTable(){
+    public clearTable() {
         //console.log("执行全部清理, 房间状态:", ClientRoomManager.instance.getRoomState())
         this.clearCardContainer();
         this.clearBetContainer();
@@ -177,38 +165,38 @@ export default class UIManager extends cc.Component {
     }
 
     // 清理发牌区
-    public clearCardContainer(){
-         const tableNode = UIManager.instance.getTableNode();
-         if(tableNode){
+    public clearCardContainer() {
+        const tableNode = UIManager.instance.getTableNode();
+        if (tableNode) {
             const paiJiuTableNode = tableNode.getComponent(PaiJiuTable);
             paiJiuTableNode.clearCardContainer();
             //console.log("清理牌区")
-         }
+        }
     }
 
     // 清理投注的筹码
-    public clearBetContainer(){
-         if(ClientRoomManager.instance.getRoomState() === RoomState.WAIT || ClientRoomManager.instance.getRoomState() === RoomState.READY){
-             const betArea = this.betContainer.getComponent(BetArea);
-             if(betArea){
+    public clearBetContainer() {
+        if (ClientRoomManager.instance.getRoomState() === RoomState.WAIT || ClientRoomManager.instance.getRoomState() === RoomState.READY) {
+            const betArea = this.betContainer.getComponent(BetArea);
+            if (betArea) {
                 betArea.clearChips(this.seats);
                 //console.log("清理筹码区")
-             }
-         }
+            }
+        }
     }
 
-    public clearClockContainer(){
+    public clearClockContainer() {
         this.clockContainerNode.removeAllChildren();
         //console.log("清理倒计时钟")
     }
 
 
-    public updateTopView(roomId: number, curPlayer: number, baseScore: number){
-        if(this.rooomTopBarComponent){
+    public updateTopView(roomId: number, curPlayer: number, baseScore: number) {
+        if (this.rooomTopBarComponent) {
             const roomBarData: RoomBarData = {
-            roomId: roomId,
-            curPlayer: curPlayer,
-            baseScore: baseScore,
+                roomId: roomId,
+                curPlayer: curPlayer,
+                baseScore: baseScore,
             };
             console.log("update RoomTopBar", roomBarData);
             this.rooomTopBarComponent.setRoomInfo(roomBarData);
@@ -216,20 +204,20 @@ export default class UIManager extends cc.Component {
     }
 
 
-     public setFrontView(labelNode: cc.Node, name : string, outlineWidth: number, color : cc.Color) {
+    public setFrontView(labelNode: cc.Node, name: string, outlineWidth: number, color: cc.Color) {
         const label = labelNode.getComponent(cc.Label);
         let outline = labelNode.getComponent(cc.LabelOutline);
         if (!outline) {
-                outline = labelNode.addComponent(cc.LabelOutline);
-                // 黑色描边
-                outline.color = cc.Color.BLACK;
-                // 宽度
-                outline.width = outlineWidth;
+            outline = labelNode.addComponent(cc.LabelOutline);
+            // 黑色描边
+            outline.color = cc.Color.BLACK;
+            // 宽度
+            outline.width = outlineWidth;
         }
-        if(name.length > 0){
+        if (name.length > 0) {
             label.string = name;
         }
-        label.node.color = color; 
+        label.node.color = color;
     }
 
 
@@ -258,32 +246,32 @@ export default class UIManager extends cc.Component {
 
 
     public showReady(status: ReadyBtnState) {
-        if(!this.readyButtonNode || !cc.isValid(this.readyButtonNode)){
-             this.readyButtonNode = cc.instantiate(GameRes.instance.readyButtonPrefab);
+        if (!this.readyButtonNode || !cc.isValid(this.readyButtonNode)) {
+            this.readyButtonNode = cc.instantiate(GameRes.instance.readyButtonPrefab);
             this.readyButtonNode.parent = this.uiNode;
         }
         const comp = this.readyButtonNode.getComponent(ReadyButton);
         comp.setState(status);
     }
 
-    public readyBtnClick(){
-         UIManager.instance.clearTable();
-         cc.audioEngine.playEffect(GameRes.instance.clickAudio, false);
-         const roomId = ClientRoomManager.instance.getRoomId();
-         WsClient.instance.send(Cmd.READY, {
+    public readyBtnClick() {
+        UIManager.instance.clearTable();
+        cc.audioEngine.playEffect(GameRes.instance.clickAudio, false);
+        const roomId = ClientRoomManager.instance.getRoomId();
+        WsClient.instance.send(Cmd.READY, {
             roomId: roomId
-         });
+        });
     }
 
-    public cancelBtnClick(){
-         cc.audioEngine.playEffect(GameRes.instance.clickAudio, false);
-         const roomId = ClientRoomManager.instance.getRoomId();
-         WsClient.instance.send(Cmd.CANCEL_READY, {
+    public cancelBtnClick() {
+        cc.audioEngine.playEffect(GameRes.instance.clickAudio, false);
+        const roomId = ClientRoomManager.instance.getRoomId();
+        WsClient.instance.send(Cmd.CANCEL_READY, {
             roomId: roomId
-         });
+        });
     }
 
 
-    
-    
+
+
 }

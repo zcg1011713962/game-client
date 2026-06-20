@@ -14,6 +14,8 @@ export default class HallRes {
     public joinRoomPanelPrefab: cc.Prefab = null;
     public topBarPrefab: cc.Prefab = null;
     public createRoomPopupPrefab: cc.Prefab = null;
+    public recordPopupPrefab!: cc.Prefab;
+    public recordItemPrefab!: cc.Prefab;
 
     public bg1Map: { [key: string]: cc.SpriteFrame } = {};
     public gameIconMap: { [key: string]: cc.SpriteFrame } = {};
@@ -46,6 +48,8 @@ export default class HallRes {
         await this.loadHallBannerImg("banner_paijiu");
         await this.loadBottomIcons();
         await this.createRoomPopupPrefabs();
+        await this.loadRecordItemPrefab();
+        await this.loadRecordPopupPrefab();
    
         const avatar = user != null ? user.avatar : "0";
         this.loadAvatarImg("avatar_" + avatar);
@@ -70,6 +74,18 @@ export default class HallRes {
                 resolve(bundle);
             });
         });
+    }
+
+    private async loadRecordItemPrefab(): Promise<void> {
+        if (this.recordItemPrefab) return;
+
+        this.recordItemPrefab = await this.loadPrefab("prefabs/RecordItem");
+    }
+
+    private async loadRecordPopupPrefab(): Promise<void> {
+        if (this.recordPopupPrefab) return;
+
+        this.recordPopupPrefab = await this.loadPrefab("prefabs/RecordPopup");
     }
 
      public async loadAvatarImg(name: string): Promise<cc.SpriteFrame> {
@@ -225,6 +241,23 @@ export default class HallRes {
                 this.joinRoomPanelPrefab = prefab;
 
                 //cc.log("加入房间预制体加载完成");
+                resolve(prefab);
+            });
+        });
+    }
+
+
+    public async loadPrefab(path: string): Promise<cc.Prefab> {
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+            bundle.load(path, cc.Prefab, (err, prefab: cc.Prefab) => {
+                if (err) {
+                    cc.error(`${path} 预制体加载失败`, err);
+                    reject(err);
+                    return;
+                }
+
                 resolve(prefab);
             });
         });

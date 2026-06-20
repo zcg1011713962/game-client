@@ -1,5 +1,30 @@
 export default class Http {
 
+    static postAsync<T>(
+    url: string,
+    data?: any,
+    headers?: { [key: string]: string }
+    ): Promise<T> {
+
+        return new Promise((resolve, reject) => {
+
+            Http.post<T>(
+                url,
+                data,
+                (err, res) => {
+
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    resolve(res as T);
+                },
+                headers
+            );
+        });
+    }
+
     static post<T>(
         url: string,
         data: any,
