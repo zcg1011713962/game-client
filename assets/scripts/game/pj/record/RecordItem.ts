@@ -1,3 +1,4 @@
+import HallRes from "../../../hall/HallRes";
 import GameRes from "../GameRes";
 
 const { ccclass } = cc._decorator;
@@ -107,7 +108,7 @@ export default class RecordItem extends cc.Component {
                 ? `+${data.winAmount.toLocaleString()}`
                 : data.winAmount.toLocaleString();
 
-        this.resultSprite.spriteFrame = GameRes.instance.resultImgMap[`icon_result_${data.win}`];        
+        this.resultSprite.spriteFrame = HallRes.instance.resultImgMap[`icon_result_${data.win}`];        
 
         this.updateResultStyle(data.winAmount);
         this.updateTypeColor(data.cardTypeName);

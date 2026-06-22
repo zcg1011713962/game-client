@@ -28,8 +28,6 @@ export default class GameRes {
     public cardImgMap: { [key: string]: cc.SpriteFrame } = {};
 
 
-    public resultImgMap: { [key: string]: cc.SpriteFrame } = {};
-
     public static get instance(): GameRes {
         if (!this._instance) {
             this._instance = new GameRes();
@@ -56,7 +54,6 @@ export default class GameRes {
             this.loadRoundStartPrefab(),
             this.loadReadyBtnPrefab(),
             this.loadCardImg(),
-            this.loadResultImg(),
         ]);
 
         CountDownManager.init(this.clockCountdownPrefab);
@@ -276,35 +273,6 @@ export default class GameRes {
                 //console.log("所有牌加载完成", this.cardImgMap);
 
                 resolve(this.cardImgMap);
-
-            });
-
-        });
-    }
-
-    private async loadResultImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
-
-        if (Object.keys(this.resultImgMap).length > 0) {
-            return this.resultImgMap;
-        }
-
-        const bundle = await GameRes.instance.loadGameBundle();
-
-        return new Promise((resolve, reject) => {
-
-            bundle.loadDir("record/result", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
-
-                if (err) {
-                    cc.error("输赢图片加载失败", err);
-                    reject(err);
-                    return;
-                }
-
-                assets.forEach(sp => {
-                    this.resultImgMap[sp.name] = sp;
-                });
-
-                resolve(this.resultImgMap);
 
             });
 

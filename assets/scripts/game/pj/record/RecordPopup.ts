@@ -14,9 +14,10 @@ export default class RecordPopup extends cc.Component {
     private content: cc.Node = null;
     private emptyNode: cc.Node = null;
     private btnClose:cc.Node = null;
+    private scrollView: cc.ScrollView = null;
 
     private pageNo: number = 1;
-    private pageSize: number = 7;
+    private pageSize: number = 10;
 
     private loading: boolean = false;
     private hasMore: boolean = true;
@@ -26,6 +27,9 @@ export default class RecordPopup extends cc.Component {
         this.content = cc.find("ListView/View/Content", this.node);
         this.emptyNode = cc.find("EmptyNode", this.node);
         this.btnClose = this.node.getChildByName("BtnClose");
+        this.scrollView = this.node.getChildByName("ListView").getComponent(cc.ScrollView);
+
+        this.scrollView.node.on("scroll-ended",this.onScrollEnded,this);
         if (this.btnClose) {
             this.btnClose.on(cc.Node.EventType.TOUCH_END, this.hide, this);
         }
@@ -37,6 +41,9 @@ export default class RecordPopup extends cc.Component {
             this.mask.on(cc.Node.EventType.TOUCH_CANCEL, this.onMaskTouch, this);
         }
         this.initTitleStyle();
+
+        console.log("View height:", cc.find("ListView/View", this.node).height);
+        console.log("Content height:", this.content.height);
     }
 
     protected onEnable(): void {
@@ -55,11 +62,29 @@ export default class RecordPopup extends cc.Component {
         HallUIManager.instance.hideRecord();
     }
 
+    // 加载第一页
     private async loadFirstPage() {
         this.pageNo = 1;
         this.hasMore = true;
 
         await this.loadRecord(true);
+    }
+
+
+    private onScrollEnded() {
+        if (!this.scrollView) {
+            console.error("scrollView null")
+            return;
+        }
+        console.log("scrollView")
+
+        const offset = this.scrollView.getScrollOffset();
+
+        const maxOffset = this.scrollView.getMaxScrollOffset();
+        // 已经接近底部
+        if (offset.y >= maxOffset.y - 50) {
+            this.loadMore();
+        }
     }
 
     public async loadMore() {
@@ -87,7 +112,7 @@ export default class RecordPopup extends cc.Component {
             const records: RecordItemDTO[] =
                 res.data.records || [];
 
-            this.hasMore = records.length >= this.pageSize;
+            this.hasMore = res.data.total > this.pageSize;
 
             if (refresh) {
                 this.refresh(records);
@@ -189,4 +214,6 @@ export default class RecordPopup extends cc.Component {
             }
         });
     }
+
+
 }

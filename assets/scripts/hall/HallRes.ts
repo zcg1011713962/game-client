@@ -4,7 +4,7 @@ export default class HallRes {
     private static _instance: HallRes = null;
 
     private hallBundle: cc.AssetManager.Bundle = null;
-    public avatarMap : { [key: string]: cc.SpriteFrame } = {}; // 预加载头像图片资源
+    public avatarMap: { [key: string]: cc.SpriteFrame } = {}; // 预加载头像图片资源
     public bottomIconMap: { [key: string]: cc.SpriteFrame } = {}; // 预加载底部ICON资源
     public hallBgmAudio: cc.AudioClip = null;
     public hallClickAudio: cc.AudioClip = null;
@@ -19,6 +19,7 @@ export default class HallRes {
 
     public bg1Map: { [key: string]: cc.SpriteFrame } = {};
     public gameIconMap: { [key: string]: cc.SpriteFrame } = {};
+    public resultImgMap: { [key: string]: cc.SpriteFrame } = {};
 
     public static get instance(): HallRes {
         if (!this._instance) {
@@ -27,7 +28,7 @@ export default class HallRes {
         return this._instance;
     }
 
-    private constructor() {}
+    private constructor() { }
 
 
     public async preload(): Promise<void> {
@@ -41,16 +42,19 @@ export default class HallRes {
         this.loadHallClickAudio();
 
         // 必须资源
-        await this.loadTopBarPrefabs();
-        await this.loadGameCardPrefabs();
-        await this.loadRoomSelectPanelPrefabs();
-        await this.joinRoomPanelPrefabs();
-        await this.loadHallBannerImg("banner_paijiu");
-        await this.loadBottomIcons();
-        await this.createRoomPopupPrefabs();
-        await this.loadRecordItemPrefab();
-        await this.loadRecordPopupPrefab();
-   
+        await Promise.all([
+            this.loadTopBarPrefabs(),
+            this.loadGameCardPrefabs(),
+            this.loadRoomSelectPanelPrefabs(),
+            this.joinRoomPanelPrefabs(),
+            this.loadHallBannerImg("banner_paijiu"),
+            this.loadBottomIcons(),
+            this.createRoomPopupPrefabs(),
+            this.loadRecordItemPrefab(),
+            this.loadRecordPopupPrefab(),
+            this.loadResultImg(),
+        ]);
+
         const avatar = user != null ? user.avatar : "0";
         this.loadAvatarImg("avatar_" + avatar);
         console.log("初始化大厅资源耗时:", Date.now() - t, "ms");
@@ -88,7 +92,7 @@ export default class HallRes {
         this.recordPopupPrefab = await this.loadPrefab("prefabs/RecordPopup");
     }
 
-     public async loadAvatarImg(name: string): Promise<cc.SpriteFrame> {
+    public async loadAvatarImg(name: string): Promise<cc.SpriteFrame> {
 
         // 已缓存
         if (this.avatarMap[name]) {
@@ -113,6 +117,35 @@ export default class HallRes {
                 //cc.log(`头像加载完成: ${name}`);
 
                 resolve(sp);
+
+            });
+
+        });
+    }
+
+    private async loadResultImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
+
+        if (Object.keys(this.resultImgMap).length > 0) {
+            return this.resultImgMap;
+        }
+
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+
+            bundle.loadDir("record/result", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
+
+                if (err) {
+                    cc.error("输赢图片加载失败", err);
+                    reject(err);
+                    return;
+                }
+
+                assets.forEach(sp => {
+                    this.resultImgMap[sp.name] = sp;
+                });
+
+                resolve(this.resultImgMap);
 
             });
 
@@ -160,7 +193,7 @@ export default class HallRes {
     }
 
 
-     public async loadTopBarPrefabs(): Promise<cc.Prefab> {
+    public async loadTopBarPrefabs(): Promise<cc.Prefab> {
         if (this.topBarPrefab) return this.topBarPrefab;
 
         const bundle = await this.loadHallBundle();
@@ -264,7 +297,7 @@ export default class HallRes {
     }
 
 
-     public async createRoomPopupPrefabs(): Promise<cc.Prefab> {
+    public async createRoomPopupPrefabs(): Promise<cc.Prefab> {
         if (this.createRoomPopupPrefab) return this.createRoomPopupPrefab;
 
         const bundle = await this.loadHallBundle();
@@ -285,7 +318,7 @@ export default class HallRes {
 
 
 
-    
+
 
     public async loadBg1Img(name: string): Promise<cc.SpriteFrame> {
         if (this.bg1Map[name]) return this.bg1Map[name];
@@ -325,7 +358,7 @@ export default class HallRes {
         });
     }
 
-    
+
 
     public playClickAudio(): void {
         if (!this.hallClickAudio) return;
@@ -354,7 +387,7 @@ export default class HallRes {
     }
 
 
-   public async loadBottomIcons(): Promise<void> {
+    public async loadBottomIcons(): Promise<void> {
         const bundle = await this.loadHallBundle();
 
         return new Promise((resolve, reject) => {
