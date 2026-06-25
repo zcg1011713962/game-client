@@ -1,8 +1,6 @@
-import GameRes from "../GameRes";
 import ToastManager from "../../../common/ToastManager";
 import RecordApi from "./RecordApi";
 import RecordItem, { RecordItemDTO } from "./RecordItem";
-import UIManager from "../ui/UIManager";
 import HallUIManager from "../../../hall/HallUIManager";
 import HallRes from "../../../hall/HallRes";
 
@@ -12,12 +10,12 @@ const { ccclass } = cc._decorator;
 export default class RecordPopup extends cc.Component {
     private mask: cc.Node = null;
     private content: cc.Node = null;
-    private emptyNode: cc.Node = null;
     private btnClose:cc.Node = null;
     private scrollView: cc.ScrollView = null;
 
     private pageNo: number = 1;
-    private pageSize: number = 10;
+    private pageSize: number = 20;
+    private roomId: number | null = null;
 
     private loading: boolean = false;
     private hasMore: boolean = true;
@@ -25,11 +23,11 @@ export default class RecordPopup extends cc.Component {
     protected onLoad(): void {
         this.mask = this.node.getChildByName("Mask");
         this.content = cc.find("ListView/View/Content", this.node);
-        this.emptyNode = cc.find("EmptyNode", this.node);
         this.btnClose = this.node.getChildByName("BtnClose");
         this.scrollView = this.node.getChildByName("ListView").getComponent(cc.ScrollView);
-
         this.scrollView.node.on("scroll-ended",this.onScrollEnded,this);
+        this.scrollView.content = this.content
+        
         if (this.btnClose) {
             this.btnClose.on(cc.Node.EventType.TOUCH_END, this.hide, this);
         }
@@ -41,14 +39,9 @@ export default class RecordPopup extends cc.Component {
             this.mask.on(cc.Node.EventType.TOUCH_CANCEL, this.onMaskTouch, this);
         }
         this.initTitleStyle();
-
-        console.log("View height:", cc.find("ListView/View", this.node).height);
-        console.log("Content height:", this.content.height);
+      
     }
 
-    protected onEnable(): void {
-        this.loadFirstPage();
-    }
 
     private onMaskTouch(event: cc.Event.EventTouch) {
         event.stopPropagation();
@@ -63,9 +56,10 @@ export default class RecordPopup extends cc.Component {
     }
 
     // 加载第一页
-    private async loadFirstPage() {
+    public async loadFirstPage(roomId :number | null) {
         this.pageNo = 1;
         this.hasMore = true;
+        this.roomId = roomId;
 
         await this.loadRecord(true);
     }
@@ -76,8 +70,6 @@ export default class RecordPopup extends cc.Component {
             console.error("scrollView null")
             return;
         }
-        console.log("scrollView")
-
         const offset = this.scrollView.getScrollOffset();
 
         const maxOffset = this.scrollView.getMaxScrollOffset();
@@ -106,9 +98,9 @@ export default class RecordPopup extends cc.Component {
         try {
             const res = await RecordApi.queryRecord(
                 this.pageNo,
-                this.pageSize
+                this.pageSize,
+                this.roomId
             );
-            console.log("RecordApi", res)
             const records: RecordItemDTO[] =
                 res.data.records || [];
 
@@ -140,8 +132,6 @@ export default class RecordPopup extends cc.Component {
 
         this.content.removeAllChildren();
 
-        this.setEmptyVisible(!list || list.length === 0);
-
         if (!list || list.length === 0) {
             return;
         }
@@ -154,7 +144,6 @@ export default class RecordPopup extends cc.Component {
             return;
         }
 
-        this.setEmptyVisible(false);
         this.createItems(list);
     }
 
@@ -172,12 +161,15 @@ export default class RecordPopup extends cc.Component {
                 item.updateView(data);
             }
         });
-    }
-
-    private setEmptyVisible(visible: boolean) {
-        if (this.emptyNode) {
-            this.emptyNode.active = visible;
+        const layout = this.content.getComponent(cc.Layout);
+        if (layout) {
+            layout.updateLayout();
         }
+
+        // console.log("ListView", this.scrollView.node.width, this.scrollView.node.height);
+        // console.log("View", cc.find("ListView/View", this.node).width, cc.find("ListView/View", this.node).height);
+        // console.log("Content", this.content.width, this.content.height);
+        // console.log("MaxOffset", this.scrollView.getMaxScrollOffset());
     }
 
 

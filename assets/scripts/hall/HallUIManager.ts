@@ -13,6 +13,7 @@ import ToastManager from "../common/ToastManager";
 import HallTopBar from "./top/HallTopBar";
 import Shop from "../shop/Shop";
 import GameRes from "../game/pj/GameRes";
+import RecordPopup from "../game/pj/record/RecordPopup";
 
 const {ccclass, property} = cc._decorator;
 
@@ -360,7 +361,7 @@ export default class HallUIManager extends cc.Component {
         }
     }
 
-    public async showRecord(parent: cc.Node) {
+    public async showRecord(parent: cc.Node, roomId :number | null) {
         let recordPopupPrefab = HallRes.instance.recordPopupPrefab;
         if (!recordPopupPrefab) {
             await HallRes.instance.loadPrefab("prefabs/RecordPopup");
@@ -372,6 +373,8 @@ export default class HallUIManager extends cc.Component {
         } else {
             this.recordPopupNode.active = true;
         }
+        const recordPopup = this.recordPopupNode.getComponent(RecordPopup);
+        recordPopup.loadFirstPage(roomId);
     }
     
     public hideRecord(){

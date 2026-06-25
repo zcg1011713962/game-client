@@ -20,7 +20,8 @@ export default class RecordApi {
 
     public static queryRecord(
         pageNo: number,
-        pageSize: number
+        pageSize: number,
+        roomId: number | null
     ): Promise<ApiResult<PageResult<RecordItemDTO>>> {
 
         const guest = UserData.get();
@@ -31,7 +32,8 @@ export default class RecordApi {
             Config.API_URL + "/settle/record",
             {
                 "pageNo": pageNo,
-                "pageSize": pageSize
+                "pageSize": pageSize,
+                "roomId": roomId
             },
             {
                 token: guest ? guest.token : ""

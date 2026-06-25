@@ -1,16 +1,14 @@
 const { ccclass, property } = cc._decorator;
 import UserData from "../../login/entity/UserData";
-import {SceneData, SceneUtil} from "../../util/SceneUtil";
 import ClientRoomManager from "../pj/room/ClientRoomManager";
 import { UserState } from "../pj/user/UserInfo";
 import ToastManager from "../../common/ToastManager";
 import WsClient from "../pj/net/WsClient";
 import { Cmd } from "../pj/enum/Cmd";
-import UIManager from "../pj/ui/UIManager";
 import HallUIManager from "../../hall/HallUIManager";
 
 export interface RoomBarData {
-    roomId: number | string;
+    roomId: number;
     curPlayer: number;
     baseScore: number;
 }
@@ -31,6 +29,8 @@ export class RooomTopBar extends cc.Component {
     private playerNumLabel: cc.Node = null;
 
     private baseScoreLabel: cc.Node = null;
+
+    private roomId: number = null;
 
 
     onLoad() {
@@ -53,6 +53,7 @@ export class RooomTopBar extends cc.Component {
 
     public setRoomInfo(data: RoomBarData) {
         if(data.roomId){
+            this.roomId = data.roomId;
             this.setText(
                 this.roomIdLabel,
                 `${data.roomId}`,
@@ -110,7 +111,7 @@ export class RooomTopBar extends cc.Component {
 
     private onRecordClick() {
         cc.log("打开战绩");
-        HallUIManager.instance.showRecord(cc.find("Canvas"));
+        HallUIManager.instance.showRecord(cc.find("Canvas"), this.roomId);
     }
 
     private setText(

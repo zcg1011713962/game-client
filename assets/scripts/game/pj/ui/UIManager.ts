@@ -12,9 +12,6 @@ import RoundStartPopup from "../../../common/RoundStartPopup";
 import SettleManager from "../../../common/SettleManager";
 import ReadyButton, { ReadyBtnState } from "../../btn/ReadyButton";
 import GrabBankerPopup from "../banker/GrabBankerPopup";
-import RecordPopup from "../record/RecordPopup";
-import RecordApi from "../../../record/RecordApi";
-import HallRes from "../../../hall/HallRes";
 
 @ccclass
 export default class UIManager extends cc.Component {
