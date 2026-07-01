@@ -274,15 +274,17 @@ export default class PaiJiuTable extends cc.Component {
         this.dealCards(this.currentServerResult, () => {
             this.isPlaying = false;
             this.tableState = PaiJiuTableState.IDLE;
-
             //cc.log("发牌完成");
             this.clearDeck();
 
-            this.waitShowCardByServerTime();
+            UIManager.instance.setLookCardPanelVisible(true);
+
+
+            // this.waitShowCardByServerTime();
         });
     }
 
-    private waitShowCardByServerTime() {
+    public waitShowCardByServerTime() {
         const waitShowSeconds = Math.max(
             0,
             (this.currentShowCardTime - this.getServerNow()) / 1000
@@ -815,7 +817,7 @@ export default class PaiJiuTable extends cc.Component {
         }
     }
 
-    private fastShowAllCards() {
+    public fastShowAllCards() {
         this.stopAllAnimAndSchedule();
 
         const players = ClientRoomManager.instance.getPlayers();

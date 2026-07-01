@@ -12,6 +12,7 @@ import RoundStartPopup from "../../../common/RoundStartPopup";
 import SettleManager from "../../../common/SettleManager";
 import ReadyButton, { ReadyBtnState } from "../../btn/ReadyButton";
 import GrabBankerPopup from "../banker/GrabBankerPopup";
+import LookCardPopup from "../room/LookCardPopup";
 
 @ccclass
 export default class UIManager extends cc.Component {
@@ -19,6 +20,7 @@ export default class UIManager extends cc.Component {
     private tableNode!: cc.Node;
     private chipSelectPanel!: cc.Node;
     private grabBankerPanel!: cc.Node;
+    private lookCardPanel!: cc.Node;
     private betContainer!: cc.Node;
     private rooomTopBarNode!: cc.Node;
     private clockContainerNode!: cc.Node;
@@ -36,11 +38,11 @@ export default class UIManager extends cc.Component {
         const t = Date.now();
         // 保存单例引用
         UIManager._instance = this;
-        this.canvas = this.node;
         this.uiNode = this.node.getChildByName("UI");
         this.tableNode = cc.find("Canvas/MainLayout/Table");
         this.chipSelectPanel = cc.find("Canvas/MainLayout/Table/ChipSelectPanel");
         this.grabBankerPanel = cc.find("Canvas/MainLayout/Table/GrabBankerPanel");
+        this.lookCardPanel = cc.find("Canvas/MainLayout/Table/LookCardPanel");
         this.betContainer = cc.find("Canvas/MainLayout/Table/BetContainer");
         this.rooomTopBarNode = cc.find("Canvas/MainLayout/RoomTopBar");
         this.clockContainerNode = cc.find("Canvas/MainLayout/Table/ClockContainer");
@@ -53,6 +55,7 @@ export default class UIManager extends cc.Component {
         this.initRoomTopBar();
         this.initChipSelectPanel();
         this.initGrabBankerPanel();
+        this.initLookCardPanel();
     }
 
     public initRoomTopBar() {
@@ -74,6 +77,12 @@ export default class UIManager extends cc.Component {
         this.grabBankerPanel.removeAllChildren();
         const node = cc.instantiate(GameRes.instance.grabBankerPanelPrefab);
         node.parent = this.grabBankerPanel;
+    }
+
+     public initLookCardPanel() {
+        this.lookCardPanel.removeAllChildren();
+        const node = cc.instantiate(GameRes.instance.lookCardPanelPrefab);
+        node.parent = this.lookCardPanel;
     }
 
 
@@ -123,13 +132,31 @@ export default class UIManager extends cc.Component {
 
     public setGrabBankerPanelVisible(visible: boolean) {
         if (this.grabBankerPanel) {
-            const grabBankerPanelNode = this.grabBankerPanel.getChildByName("GrabBankerPanel");
-            if (grabBankerPanelNode) {
-                const comp = grabBankerPanelNode.getComponent(GrabBankerPopup);
-                if (visible === true && grabBankerPanelNode) {
-                    comp.show();
-                } else {
-                    comp.hide();
+            const node = this.grabBankerPanel.getChildByName("GrabBankerPanel");
+            if (node) {
+                const comp = node.getComponent(GrabBankerPopup);
+                if(comp){
+                    if (visible === true) {
+                        comp.show();
+                    } else {
+                        comp.hide();
+                    }
+                }
+            }
+        }
+    }
+
+     public setLookCardPanelVisible(visible: boolean) {
+        if (this.grabBankerPanel) {
+            const node = this.lookCardPanel.getChildByName("LookCardPanel");
+            if (node) {
+                const comp = node.getComponent(LookCardPopup);
+                if(comp){
+                    if (visible === true) {
+                        comp.show();
+                    } else {
+                        comp.hide();
+                    }
                 }
             }
         }
@@ -266,6 +293,15 @@ export default class UIManager extends cc.Component {
         WsClient.instance.send(Cmd.CANCEL_READY, {
             roomId: roomId
         });
+    }
+
+
+    public showCard(){
+        const tableNode = UIManager.instance.getTableNode();
+        if (tableNode) {
+            const paiJiuTableNode = tableNode.getComponent(PaiJiuTable);
+            paiJiuTableNode.fastShowAllCards();
+        }
     }
 
 

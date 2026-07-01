@@ -13,7 +13,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "GrabBankerPanel",
+    "_name": "LookCardPanel",
     "_objFlags": 0,
     "_parent": null,
     "_children": [
@@ -146,7 +146,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "Btn_Grab",
+    "_name": "BtnRubCard",
     "_objFlags": 0,
     "_parent": {
       "__id__": 2
@@ -224,7 +224,7 @@
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
     "_spriteFrame": {
-      "__uuid__": "946b5969-b016-42b0-9176-bdc12ceba1a9"
+      "__uuid__": "71f19eb3-9e7f-49d9-ad1c-fd0e05f13b79"
     },
     "_type": 0,
     "_sizeMode": 0,
@@ -248,12 +248,12 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "cbLKFINupDIbdwLgMe8Eou",
+    "fileId": "c3mSz6blpK4KkdnvZnJKyt",
     "sync": false
   },
   {
     "__type__": "cc.Node",
-    "_name": "Btn_NoGrab",
+    "_name": "BtnOpenCard",
     "_objFlags": 0,
     "_parent": {
       "__id__": 2
@@ -331,7 +331,7 @@
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
     "_spriteFrame": {
-      "__uuid__": "42eb53b7-1d55-48e7-98cc-74f157719f51"
+      "__uuid__": "08ca1248-284b-4b24-b8ba-ca65e8c5b0bb"
     },
     "_type": 0,
     "_sizeMode": 0,
@@ -355,7 +355,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "7bOKxoLSZEYrfyWjq9hUpb",
+    "fileId": "36qaH91z5HH4eDe3eYAwpC",
     "sync": false
   },
   {
@@ -366,11 +366,11 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "93H2mRwGBJyL9taUeb+BZ7",
+    "fileId": "f2EYFzBmBCIYAwJAIRcQR2",
     "sync": false
   },
   {
-    "__type__": "4fad5nwa+9FOaKAH+51XkAA",
+    "__type__": "1460764uKpGz6IadZZBzPOi",
     "_name": "",
     "_objFlags": 0,
     "node": {

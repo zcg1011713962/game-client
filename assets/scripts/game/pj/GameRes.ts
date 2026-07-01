@@ -12,6 +12,8 @@ export default class GameRes {
 
     public chipSelectPanelPrefab!: cc.Prefab;
     public grabBankerPanelPrefab!: cc.Prefab;
+    public lookCardPanelPrefab!: cc.Prefab;
+    
     public roomTopBarPrefab!: cc.Prefab;
     public settlePrefab!: cc.Prefab;
     public warnAudio!: cc.AudioClip;
@@ -51,6 +53,7 @@ export default class GameRes {
             this.loadClockCountdownPrefab(),
             this.loadChipSelectPanelPrefab(),
             this.loadGrabBankerPopupPrefab(),
+            this.loadLookCardPanelPrefab(),
             this.loadRoundStartPrefab(),
             this.loadReadyBtnPrefab(),
             this.loadCardImg(),
@@ -177,6 +180,12 @@ export default class GameRes {
         if (this.grabBankerPanelPrefab) return;
 
         this.grabBankerPanelPrefab = await this.loadPrefab("prefabs/GrabBankerPanel");
+    }
+
+    private async loadLookCardPanelPrefab(): Promise<void> {
+        if (this.lookCardPanelPrefab) return;
+
+        this.lookCardPanelPrefab = await this.loadPrefab("prefabs/LookCardPanel");
     }
 
     private async loadChipSelectPanelPrefab(): Promise<void> {
