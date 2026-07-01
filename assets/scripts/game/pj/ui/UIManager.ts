@@ -300,7 +300,15 @@ export default class UIManager extends cc.Component {
         const tableNode = UIManager.instance.getTableNode();
         if (tableNode) {
             const paiJiuTableNode = tableNode.getComponent(PaiJiuTable);
-            paiJiuTableNode.fastShowAllCards();
+            paiJiuTableNode.onClickOpenCard();
+        }
+    }
+
+    public rubCard(){
+        const tableNode = UIManager.instance.getTableNode();
+        if (tableNode) {
+            const paiJiuTableNode = tableNode.getComponent(PaiJiuTable);
+            paiJiuTableNode.onClickRubCard();
         }
     }
 

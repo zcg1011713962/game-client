@@ -1,3 +1,5 @@
+import UIManager from "../ui/UIManager";
+
 const { ccclass } = cc._decorator;
 
 @ccclass
@@ -98,15 +100,19 @@ export default class LookCardPopup extends cc.Component {
      */
     private onClickRubCard() {
         this.hide();
+        UIManager.instance.rubCard();
     }
 
     /**
      * 点击亮牌
      */
     private onClickOpenCard() {
-
         this.hide();
-
+        UIManager.instance.showCard();
     }
+
+
+
+
 
 }

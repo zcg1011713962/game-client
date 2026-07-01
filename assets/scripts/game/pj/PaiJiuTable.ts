@@ -279,8 +279,18 @@ export default class PaiJiuTable extends cc.Component {
 
             UIManager.instance.setLookCardPanelVisible(true);
 
+            // 发牌完成进入亮牌状态
+            this.tableState = PaiJiuTableState.SHOW_CARD;
+            const waitShowSeconds = Math.max(
+                0,
+                (this.currentShowCardTime - this.getServerNow()) / 1000
+            );
+            this.scheduleOnce(() => {
+                UIManager.instance.setLookCardPanelVisible(false);
+            }, waitShowSeconds);
 
-            // this.waitShowCardByServerTime();
+            // 自动开所有人的牌
+            this.waitShowCardByServerTime();
         });
     }
 
@@ -773,6 +783,229 @@ export default class PaiJiuTable extends cc.Component {
     public getSeatCards(seat: number): cc.Node[] {
         return this.playerCardMap[seat] || [];
     }
+
+    // 开牌
+    public onClickOpenCard() {
+        const mySeatId = ClientRoomManager.instance.getMySeatId();
+        this.flipSeatCards(mySeatId, () => {
+            this.sortSeatCards(mySeatId);
+        });
+    }
+
+    private onClickRubCard() {
+    const mySeatId = ClientRoomManager.instance.getMySeatId();
+
+    this.playSlideRubOpenEffect(mySeatId, () => {
+        cc.log("搓牌开牌完成");
+    });
+}
+
+
+    /**
+ * 滑动搓牌 + 第一张直接开 + 第二张慢慢掀开
+ */
+private playSlideRubOpenEffect(seat: number, cb?: Function) {
+    const cards = this.playerCardMap[seat] || [];
+
+    if (cards.length < 2) {
+        cb && cb();
+        return;
+    }
+
+    this.moveCardsToCenter(cards, () => {
+        console.log("牌移动到中间");
+        this.enablePeelRub(cards, () => {
+            this.returnCenterCardsToSeat(seat, cards, cb);
+        });
+    });
+}
+
+
+
+private moveCardsToCenter(cards: cc.Node[], cb?: Function) {
+    const centerY = -80;
+    const gap = 75;
+
+    let finish = 0;
+
+    cards.forEach((card, index) => {
+        cc.Tween.stopAllByTarget(card);
+
+        const comp = card.getComponent(PaiJiuCard);
+        if (comp) {
+            comp.showBack();
+        }
+
+        card.zIndex = 999 + index;
+
+        const targetX = index === 0 ? -gap / 2 : gap / 2;
+        const targetAngle = index === 0 ? -8 : 8;
+
+        cc.tween(card)
+            .to(0.28, {
+                x: targetX,
+                y: centerY,
+                scaleX: 1.25,
+                scaleY: 1.25,
+                angle: targetAngle
+            }, { easing: "backOut" })
+            .call(() => {
+                finish++;
+
+                if (finish >= cards.length) {
+                    cb && cb();
+                }
+            })
+            .start();
+    });
+}
+
+
+private enablePeelRub(cards: cc.Node[], cb?: Function) {
+    if (cards.length < 2) return;
+
+    const firstCard = cards[0];
+    const secondCard = cards[1];
+    
+    secondCard.setContentSize(80, 170);
+
+    let startX = 0;
+    let progress = 0;
+    let flipped = false;
+    let finished = false;
+
+    const needDistance = 260;
+
+    const comp = secondCard.getComponent(PaiJiuCard);
+    if (comp) {
+        comp.showBack();
+    }
+
+    const onStart = (event: cc.Event.EventTouch) => {
+        startX = event.getLocationX();
+    };
+
+    const onMove = (event: cc.Event.EventTouch) => {
+        if (finished) return;
+
+        const curX = event.getLocationX();
+        const dx = Math.max(0, curX - startX);
+
+        progress = Math.min(dx / needDistance, 1);
+
+        this.applyPeelProgress(secondCard, progress);
+
+        if (progress >= 1) {
+            finished = true;
+
+            secondCard.off(cc.Node.EventType.TOUCH_START, onStart, this);
+            secondCard.off(cc.Node.EventType.TOUCH_MOVE, onMove, this);
+            secondCard.off(cc.Node.EventType.TOUCH_END, onEnd, this);
+            secondCard.off(cc.Node.EventType.TOUCH_CANCEL, onEnd, this);
+
+            cb && cb();
+        }
+    };
+
+    const onEnd = () => {
+        if (finished) return;
+
+        if (progress < 1) {
+            cc.tween(secondCard)
+                .to(0.15, {
+                    scaleX: 1.25,
+                    angle: 8
+                })
+                .start();
+        }
+    };
+
+    secondCard.on(cc.Node.EventType.TOUCH_START, onStart, this);
+    secondCard.on(cc.Node.EventType.TOUCH_MOVE, onMove, this);
+    secondCard.on(cc.Node.EventType.TOUCH_END, onEnd, this);
+    secondCard.on(cc.Node.EventType.TOUCH_CANCEL, onEnd, this);
+
+    // 第一张先直接亮
+    const firstComp = firstCard.getComponent(PaiJiuCard);
+    if (firstComp) {
+        firstComp.flipToFront();
+    }
+}
+
+
+private peelFlipped: boolean = false;
+
+private applyPeelProgress(card: cc.Node, progress: number) {
+    const comp = card.getComponent(PaiJiuCard);
+    const p = Math.max(0, Math.min(progress, 1));
+
+    // 前半段：背面逐渐压扁
+    if (p < 0.5) {
+        this.peelFlipped = false;
+
+        if (comp) {
+            comp.showBack();
+        }
+
+        const t = p / 0.5;
+
+        card.scaleX = 1.25 - t * 1.15; // 1.25 -> 0.1
+        card.scaleY = 1.25;
+        card.angle = 8 + t * 18;
+
+        return;
+    }
+
+    // 到一半时：切正面，只切一次
+    if (!this.peelFlipped) {
+        this.peelFlipped = true;
+
+        if (comp) {
+            comp.showFront();
+        }
+    }
+
+    // 后半段：正面展开
+    const t = (p - 0.5) / 0.5;
+
+    card.scaleX = 0.1 + t * 1.15; // 0.1 -> 1.25
+    card.scaleY = 1.25;
+    card.angle = 26 - t * 18;
+}
+
+
+
+
+private returnCenterCardsToSeat(seat: number, cards: cc.Node[], cb?: Function) {
+    let finish = 0;
+
+    cards.forEach((card, index) => {
+        const targetPos = this.getCardTargetPos(seat, index);
+
+        cc.Tween.stopAllByTarget(card);
+
+        cc.tween(card)
+            .to(0.3, {
+                x: targetPos.x,
+                y: targetPos.y,
+                scaleX: 1,
+                scaleY: 1,
+                angle: 0
+            }, { easing: "sineOut" })
+            .call(() => {
+                finish++;
+
+                if (finish >= cards.length) {
+                    this.sortSeatCards(seat);
+                    cb && cb();
+                }
+            })
+            .start();
+    });
+}
+ 
+
+    
 
     public async showCard() {
         if (this.currentSettleTime > 0 && this.getServerNow() >= this.currentSettleTime) {
