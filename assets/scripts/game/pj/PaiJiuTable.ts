@@ -2,8 +2,10 @@ import PaiJiuCard, { IPaiJiuCardData } from "./card/PaiJiuCard";
 import GameRes from "./GameRes";
 import ClientRoomManager from "./room/ClientRoomManager";
 import { RoomState } from "./room/RoomState";
+import { Cmd } from "./enum/Cmd";
 import UIManager from "./ui/UIManager";
 import PaiJiuUtil from "./util/PaiJiuUtil";
+import WsClient from "./net/WsClient";
 
 const { ccclass } = cc._decorator;
 
@@ -90,6 +92,7 @@ export default class PaiJiuTable extends cc.Component {
 
     private currentSettleTime: number = 0;
     private currentNextRoundTime: number = 0;
+    private reportedOpenSeats: { [seat: number]: boolean } = {};
 
     async onLoad() {
         this.cardList = [];
@@ -117,6 +120,7 @@ export default class PaiJiuTable extends cc.Component {
         const mySeatId = ClientRoomManager.instance.getMySeatId();
         this.flipSeatCards(mySeatId, () => {
             this.sortSeatCards(mySeatId);
+            this.sendOpenCard(1);
         });
     }
     // 搓牌
@@ -124,6 +128,20 @@ export default class PaiJiuTable extends cc.Component {
         const mySeatId = ClientRoomManager.instance.getMySeatId();
         this.playReferenceRubOpenEffect(mySeatId, () => {
             cc.log("搓牌开牌完成");
+            this.sendOpenCard(2);
+        });
+    }
+
+    private sendOpenCard(openType: number) {
+        const mySeatId = ClientRoomManager.instance.getMySeatId();
+        if (mySeatId < 0 || this.reportedOpenSeats[mySeatId]) {
+            return;
+        }
+
+        this.reportedOpenSeats[mySeatId] = true;
+        WsClient.instance.send(Cmd.OPEN_CARD, {
+            roomId: ClientRoomManager.instance.getRoomId(),
+            openType: openType
         });
     }
 
@@ -221,6 +239,7 @@ export default class PaiJiuTable extends cc.Component {
         
 
         this.isPlaying = true;
+        this.reportedOpenSeats = {};
         this.currentServerResult = serverResult;
         this.currentDealOrder = this.buildDealOrder(serverResult);
         this.dealFinishCalled = false;
@@ -373,6 +392,7 @@ export default class PaiJiuTable extends cc.Component {
 
         this.cardList = [];
         this.playerCardMap = {};
+        this.reportedOpenSeats = {};
     }
 
     private clearDeck() {
@@ -782,6 +802,24 @@ export default class PaiJiuTable extends cc.Component {
                 }
             }, i * 0.1);
         }
+    }
+
+    public openSeatCardsByServer(seat: number) {
+        if (
+            this.tableState === PaiJiuTableState.SHUFFLING ||
+            this.tableState === PaiJiuTableState.DEALING
+        ) {
+            this.fastCompleteDeal(false);
+        }
+
+        if (!this.hasAllDealedCards()) {
+            return;
+        }
+
+        this.tableState = PaiJiuTableState.SHOW_CARD;
+        this.flipSeatCards(seat, () => {
+            this.sortSeatCards(seat);
+        });
     }
 
     public sortSeatCards(seat: number) {

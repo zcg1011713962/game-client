@@ -110,6 +110,8 @@ export interface SettlePush {
 
     serverTime: number;
     settleTime: number;
+    setServerTime?: number;
+    setSettleTime?: number;
     nextRoundTime: number;
 }
 
@@ -119,6 +121,15 @@ export interface NextRoundPush {
     roomState: number;
     players: PlayerDTO[];
     nextRoundTime: number;
+    serverTime: number;
+}
+
+export interface PlayerOpenCardPush {
+    roomId: number;
+    userId: number;
+    seatId: number;
+    openType: number;
+    roomState: number;
     serverTime: number;
 }
 
@@ -544,17 +555,52 @@ export default class ClientRoomManager {
     }
 
     // 结算
+    public playerOpenCard(data: PlayerOpenCardPush) {
+        if (!data || data.seatId == null) {
+            return;
+        }
+
+        if (data.roomState != null) {
+            this.setRoomState(data.roomState);
+        }
+
+        if (data.userId === this.myUserId) {
+            return;
+        }
+
+        const tableNode = UIManager.instance.getTableNode();
+        if (!tableNode || !cc.isValid(tableNode)) {
+            return;
+        }
+
+        const paiJiuTable = tableNode.getComponent("PaiJiuTable") as any;
+        if (!paiJiuTable || !paiJiuTable.openSeatCardsByServer) {
+            return;
+        }
+
+        paiJiuTable.openSeatCardsByServer(data.seatId);
+    }
+
     public settle(settleInfo: SettlePush) {
 
+        const serverTime = settleInfo.serverTime || settleInfo.setServerTime;
+        const settleTime = settleInfo.settleTime || settleInfo.setSettleTime;
+
+        if (!serverTime || !settleTime) {
+            cc.error("settle 缺少时间字段", settleInfo);
+            this.doSettle(settleInfo);
+            return;
+        }
+
         const serverOffset =
-            settleInfo.serverTime - Date.now();
+            serverTime - Date.now();
 
         const nowServer =
             Date.now() + serverOffset;
 
         const delay = Math.max(
             0,
-            (settleInfo.settleTime - nowServer) / 1000
+            (settleTime - nowServer) / 1000
         );
 
         DelayTaskUtil.getInstance().schedule(() => {

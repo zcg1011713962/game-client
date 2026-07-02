@@ -199,6 +199,9 @@ export default class WsClient {
             case Cmd.DEAL_CARD:    
                 ClientRoomManager.instance.dealCard(msg.data);
                 break
+            case Cmd.PLAYER_OPEN_CARD:
+                ClientRoomManager.instance.playerOpenCard(msg.data);
+                break;
             case Cmd.SETTLE: 
                 ClientRoomManager.instance.settle(msg.data);
                 break;       

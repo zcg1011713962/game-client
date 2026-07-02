@@ -55,6 +55,8 @@ export enum Cmd {
 
     // 发牌 / 结算
     DEAL_CARD = "DEAL_CARD",
+    OPEN_CARD = "OPEN_CARD",
+    PLAYER_OPEN_CARD = "PLAYER_OPEN_CARD",
     GRAB_BANKER = "GRAB_BANKER",
     SETTLE = "SETTLE",
     // 下一轮
