@@ -792,13 +792,13 @@ export default class PaiJiuTable extends cc.Component {
         });
     }
 
-    private onClickRubCard() {
-    const mySeatId = ClientRoomManager.instance.getMySeatId();
+    public onClickRubCard() {
+        const mySeatId = ClientRoomManager.instance.getMySeatId();
 
-    this.playSlideRubOpenEffect(mySeatId, () => {
-        cc.log("搓牌开牌完成");
-    });
-}
+        this.playSlideRubOpenEffect(mySeatId, () => {
+            cc.log("搓牌开牌完成");
+        });
+    }
 
 
     /**
