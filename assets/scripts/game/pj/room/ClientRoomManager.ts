@@ -633,22 +633,7 @@ export default class ClientRoomManager {
             }
         });
 
-        const map = new Map(settlePlayers.map(p => [p.userId, p]));
-        const user = UserData.get();
-
-        if (user) {
-            const settlePlayer = map.get(user.userId);
-
-            if (settlePlayer) {
-                SettleManager.show(
-                    settlePlayer.win,
-                    settlePlayer.winAmount,
-                    settlePlayer.afterGold,
-                    settlePlayer.cardTypeName,
-                    settlePlayer.settleDesc
-                );
-            }
-        }
+        UIManager.instance.playSettleEffects(settlePlayers, bankerSeat);
     }
 
     public doNextRound(){   
