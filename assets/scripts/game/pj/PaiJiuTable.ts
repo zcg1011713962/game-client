@@ -93,6 +93,7 @@ export default class PaiJiuTable extends cc.Component {
     private currentSettleTime: number = 0;
     private currentNextRoundTime: number = 0;
     private reportedOpenSeats: { [seat: number]: boolean } = {};
+    private openedSeats: { [seat: number]: boolean } = {};
 
     async onLoad() {
         this.cardList = [];
@@ -139,6 +140,7 @@ export default class PaiJiuTable extends cc.Component {
         }
 
         this.reportedOpenSeats[mySeatId] = true;
+        this.openedSeats[mySeatId] = true;
         WsClient.instance.send(Cmd.OPEN_CARD, {
             roomId: ClientRoomManager.instance.getRoomId(),
             openType: openType
@@ -240,6 +242,7 @@ export default class PaiJiuTable extends cc.Component {
 
         this.isPlaying = true;
         this.reportedOpenSeats = {};
+        this.openedSeats = {};
         this.currentServerResult = serverResult;
         this.currentDealOrder = this.buildDealOrder(serverResult);
         this.dealFinishCalled = false;
@@ -275,7 +278,8 @@ export default class PaiJiuTable extends cc.Component {
          */
         if (nowServer > dealStartTime) {
             this.fastCompleteDeal(false);
-            this.waitShowCardByServerTime();
+            this.tableState = PaiJiuTableState.SHOW_CARD;
+            UIManager.instance.setLookCardPanelVisible(true);
             return;
         }
 
@@ -339,20 +343,8 @@ export default class PaiJiuTable extends cc.Component {
                 UIManager.instance.setLookCardPanelVisible(false);
             }, waitShowSeconds);
 
-            // 自动开所有人的牌
-            this.waitShowCardByServerTime();
+            return;
         });
-    }
-
-    public waitShowCardByServerTime() {
-        const waitShowSeconds = Math.max(
-            0,
-            (this.currentShowCardTime - this.getServerNow()) / 1000
-        );
-
-        this.scheduleOnce(() => {
-            this.showCard();
-        }, waitShowSeconds);
     }
 
     private async createDeck() {
@@ -393,6 +385,7 @@ export default class PaiJiuTable extends cc.Component {
         this.cardList = [];
         this.playerCardMap = {};
         this.reportedOpenSeats = {};
+        this.openedSeats = {};
     }
 
     private clearDeck() {
@@ -805,6 +798,10 @@ export default class PaiJiuTable extends cc.Component {
     }
 
     public openSeatCardsByServer(seat: number) {
+        if (this.openedSeats[seat]) {
+            return;
+        }
+
         if (
             this.tableState === PaiJiuTableState.SHUFFLING ||
             this.tableState === PaiJiuTableState.DEALING
@@ -816,6 +813,7 @@ export default class PaiJiuTable extends cc.Component {
             return;
         }
 
+        this.openedSeats[seat] = true;
         this.tableState = PaiJiuTableState.SHOW_CARD;
         this.flipSeatCards(seat, () => {
             this.sortSeatCards(seat);
@@ -1512,7 +1510,12 @@ export default class PaiJiuTable extends cc.Component {
         const players = ClientRoomManager.instance.getPlayers();
 
         players.forEach(player => {
+            if (this.openedSeats[player.seatId]) {
+                return;
+            }
+
             this.flipSeatCards(player.seatId, () => {
+                this.openedSeats[player.seatId] = true;
                 this.sortSeatCards(player.seatId);
             });
         });
