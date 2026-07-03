@@ -13,7 +13,6 @@ import ToastManager from "../common/ToastManager";
 import HallTopBar from "./top/HallTopBar";
 import Shop from "../shop/Shop";
 import GameRes from "../game/pj/GameRes";
-import RecordPopup from "../game/pj/record/RecordPopup";
 
 const {ccclass, property} = cc._decorator;
 
@@ -30,6 +29,8 @@ export default class HallUIManager extends cc.Component {
     public btnRecordSprite!: cc.Sprite;
     public btnShopSprite!: cc.Sprite;
     public recordPopupNode!: cc.Node;
+    public hallRecordPopupNode!: cc.Node;
+    public gameRecordPopupNode!: cc.Node;
    
     
     private topBar!: cc.Node;
@@ -362,23 +363,49 @@ export default class HallUIManager extends cc.Component {
     }
 
     public async showRecord(parent: cc.Node, roomId :number | null) {
-        let recordPopupPrefab = HallRes.instance.recordPopupPrefab;
+        const isHallRecord = roomId == null;
+        let recordPopupPrefab = isHallRecord
+            ? HallRes.instance.hallRecordPopupPrefab
+            : HallRes.instance.gameRecordPopupPrefab;
+
         if (!recordPopupPrefab) {
-            await HallRes.instance.loadPrefab("prefabs/RecordPopup");
-            recordPopupPrefab = HallRes.instance.recordPopupPrefab;
+            recordPopupPrefab = await HallRes.instance.loadPrefab(
+                isHallRecord ? "prefabs/HallRecordPopup" : "prefabs/GameRecordPopup"
+            );
+            if (isHallRecord) {
+                HallRes.instance.hallRecordPopupPrefab = recordPopupPrefab;
+            } else {
+                HallRes.instance.gameRecordPopupPrefab = recordPopupPrefab;
+            }
         }
-        if (!this.recordPopupNode) {
-            this.recordPopupNode = cc.instantiate(recordPopupPrefab);
-            parent.addChild(this.recordPopupNode);
+
+        const oldNode = isHallRecord ? this.gameRecordPopupNode : this.hallRecordPopupNode;
+        if (oldNode) {
+            oldNode.active = false;
+        }
+
+        let popupNode = isHallRecord ? this.hallRecordPopupNode : this.gameRecordPopupNode;
+        if (!popupNode) {
+            popupNode = cc.instantiate(recordPopupPrefab);
+            parent.addChild(popupNode);
+            if (isHallRecord) {
+                this.hallRecordPopupNode = popupNode;
+            } else {
+                this.gameRecordPopupNode = popupNode;
+            }
         } else {
-            this.recordPopupNode.active = true;
+            popupNode.active = true;
         }
-        const recordPopup = this.recordPopupNode.getComponent(RecordPopup);
+
+        this.recordPopupNode = popupNode;
+        const recordPopup = popupNode.getComponent(
+            isHallRecord ? "HallRecordPopup" : "GameRecordPopup"
+        ) as any;
         recordPopup.loadFirstPage(roomId);
     }
     
     public hideRecord(){
-        if(this.recordPopupNode){
+        if (this.recordPopupNode) {
             this.recordPopupNode.active = false;
         }
     }

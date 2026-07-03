@@ -1,5 +1,6 @@
 import HallRes from "../../../hall/HallRes";
 import GameRes from "../GameRes";
+import HallRes from "../../../hall/HallRes";
 
 const { ccclass } = cc._decorator;
 
@@ -10,18 +11,24 @@ export interface RecordCardDTO {
 }
 
 export interface RecordItemDTO {
-    roundId: number;
+    roomId?: number;
+    roundId?: number;
+    roundCount?: number;
+    bankerCount?: number;
     win: number;
     betAmount: number;
     winAmount: number;
     cardTypeName: string;
     settleDesc: string;
-    cards: RecordCardDTO[];
+    cards?: RecordCardDTO[];
     settleTime: number;
+    startTime?: number;
+    endTime?: number;
+    duration?: number;
 }
 
 @ccclass
-export default class RecordItem extends cc.Component {
+export default class GameRecordItem extends cc.Component {
 
     private roundLabel: cc.Label = null;
     private timeLabel: cc.Label = null;
@@ -44,7 +51,6 @@ export default class RecordItem extends cc.Component {
         const cardRoot = this.node.getChildByName("CardRoot");
 
         this.roundLabel = roundRoot.getChildByName("RoundLabel").getComponent(cc.Label);
-       
 
         this.card1 = cardRoot.getChildByName("Card1").getComponent(cc.Sprite);
         this.card2 = cardRoot.getChildByName("Card2").getComponent(cc.Sprite);
@@ -84,17 +90,19 @@ export default class RecordItem extends cc.Component {
 
     public updateView(data: RecordItemDTO) {
         if (!this.roundLabel || !this.timeLabel || !this.typeLabel || !this.typeDescLabel || !this.betLabel || !this.amountLabel) {
-            cc.error("RecordItem 节点绑定失败，请检查预制体节点名");
+            cc.error("GameRecordItem 节点绑定失败，请检查预制体节点名");
             return;
         }
 
         this.roundLabel.string = `第${data.roundId}局`;
         this.timeLabel.string = this.formatTime(data.settleTime);
 
-        const card1Spirte = GameRes.instance.cardImgMap[`pai_${data.cards[0].id}`];
-        this.card1.spriteFrame = card1Spirte;
-        const card2Spirte = GameRes.instance.cardImgMap[`pai_${data.cards[1].id}`];
-        this.card2.spriteFrame = card2Spirte;
+        if (data.cards && data.cards.length >= 2) {
+            const card1Spirte = GameRes.instance.cardImgMap[`pai_${data.cards[0].id}`];
+            this.card1.spriteFrame = card1Spirte;
+            const card2Spirte = GameRes.instance.cardImgMap[`pai_${data.cards[1].id}`];
+            this.card2.spriteFrame = card2Spirte;
+        }
 
 
 

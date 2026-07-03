@@ -108,8 +108,10 @@
 | 文件 | 职责 |
 | --- | --- |
 | `assets/scripts/game/pj/record/RecordApi.ts` | 战绩 HTTP 查询入口，调用 `/settle/record`。 |
-| `assets/scripts/game/pj/record/RecordPopup.ts` | 战绩弹窗，分页加载、滚动到底加载更多、实例化战绩 item。 |
-| `assets/scripts/game/pj/record/RecordItem.ts` | 单条战绩显示。 |
+| `assets/scripts/game/pj/record/GameRecordPopup.ts` | 游戏内战绩弹窗，分页加载、滚动到底加载更多、实例化游戏内单局战绩 item。 |
+| `assets/scripts/game/pj/record/GameRecordItem.ts` | 游戏内单局战绩显示。 |
+| `assets/scripts/game/pj/record/HallRecordPopup.ts` | 大厅战绩弹窗，按房间汇总展示参与记录。 |
+| `assets/scripts/game/pj/record/HallRecordItem.ts` | 大厅房间汇总战绩显示。 |
 | `assets/scripts/game/pj/record/SettleRecord.ts` | 战绩请求与返回结构。 |
 
 ### 其他辅助
@@ -180,7 +182,7 @@ Canvas
 - `RoomSelectPanel`：实例化 `bundle_hall/prefabs/RoomSelectPanel`。
 - `JoinRoomPanel`：实例化 `bundle_hall/prefabs/JoinRoomPanel`。
 - `CreateRoomPopupPanel`：实例化 `bundle_hall/prefabs/CreateRoomPopup`。
-- `Canvas`：打开商店时实例化 `bundle_shop/prefabs/Shop`；打开战绩时实例化 `RecordPopup`。
+- `Canvas`：打开商店时实例化 `bundle_shop/prefabs/Shop`；大厅战绩实例化 `HallRecordPopup`，游戏内战绩实例化 `GameRecordPopup`。
 
 ### Game 场景：`assets/bundle_game/scene/game_1.fire`
 
@@ -274,7 +276,7 @@ RoomSelectPanel
 - `JoinRoomPanel`：`Panel/CloseBtn`、`Panel/EnterBtn`、`Panel/InputRoot`、`Panel/Keyboard/Key0..Key9`、`KeyDel`、`KeyClear`。
 - `CreateRoomPopup`：`Mask`、`Panel`、`Panel/Btn_Close`、`Panel/Btn_Create`、`Panel/ScrollView/View`。
 - `Shop`：`Mask`、`Panel/CloseBtn`、`Panel/TopBar/CoinBox`、`Panel/TopBar/RoomCardBox`、`Panel/Content/ItemList`。
-- `RecordPopup`：`Mask`、`BtnClose`、`ListView/View/Content`、`TitleBg`。
+- `GameRecordPopup` / `HallRecordPopup`：`Mask`、`BtnClose`、`ListView/View/Content`、`TitleBg`。
 
 ## 3. 网络协议入口
 

@@ -14,8 +14,10 @@ export default class HallRes {
     public joinRoomPanelPrefab: cc.Prefab = null;
     public topBarPrefab: cc.Prefab = null;
     public createRoomPopupPrefab: cc.Prefab = null;
-    public recordPopupPrefab!: cc.Prefab;
-    public recordItemPrefab!: cc.Prefab;
+    public gameRecordPopupPrefab!: cc.Prefab;
+    public hallRecordPopupPrefab!: cc.Prefab;
+    public gameRecordItemPrefab!: cc.Prefab;
+    public hallRecordItemPrefab!: cc.Prefab;
 
     public bg1Map: { [key: string]: cc.SpriteFrame } = {};
     public gameIconMap: { [key: string]: cc.SpriteFrame } = {};
@@ -50,8 +52,10 @@ export default class HallRes {
             this.loadHallBannerImg("banner_paijiu"),
             this.loadBottomIcons(),
             this.createRoomPopupPrefabs(),
-            this.loadRecordItemPrefab(),
-            this.loadRecordPopupPrefab(),
+            this.loadGameRecordItemPrefab(),
+            this.loadHallRecordItemPrefab(),
+            this.loadGameRecordPopupPrefab(),
+            this.loadHallRecordPopupPrefab(),
             this.loadResultImg(),
         ]);
 
@@ -80,16 +84,28 @@ export default class HallRes {
         });
     }
 
-    private async loadRecordItemPrefab(): Promise<void> {
-        if (this.recordItemPrefab) return;
+    private async loadGameRecordItemPrefab(): Promise<void> {
+        if (this.gameRecordItemPrefab) return;
 
-        this.recordItemPrefab = await this.loadPrefab("prefabs/RecordItem");
+        this.gameRecordItemPrefab = await this.loadPrefab("prefabs/GameRecordItem");
     }
 
-    private async loadRecordPopupPrefab(): Promise<void> {
-        if (this.recordPopupPrefab) return;
+    private async loadHallRecordItemPrefab(): Promise<void> {
+        if (this.hallRecordItemPrefab) return;
 
-        this.recordPopupPrefab = await this.loadPrefab("prefabs/RecordPopup");
+        this.hallRecordItemPrefab = await this.loadPrefab("prefabs/HallRecordItem");
+    }
+
+    private async loadGameRecordPopupPrefab(): Promise<void> {
+        if (this.gameRecordPopupPrefab) return;
+
+        this.gameRecordPopupPrefab = await this.loadPrefab("prefabs/GameRecordPopup");
+    }
+
+    private async loadHallRecordPopupPrefab(): Promise<void> {
+        if (this.hallRecordPopupPrefab) return;
+
+        this.hallRecordPopupPrefab = await this.loadPrefab("prefabs/HallRecordPopup");
     }
 
     public async loadAvatarImg(name: string): Promise<cc.SpriteFrame> {

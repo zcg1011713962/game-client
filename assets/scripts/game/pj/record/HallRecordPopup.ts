@@ -1,21 +1,24 @@
-import ToastManager from "../../../common/ToastManager";
 import RecordApi from "./RecordApi";
-import RecordItem, { RecordItemDTO } from "./RecordItem";
+import { RecordItemDTO } from "./GameRecordItem";
+import HallRecordItem from "./HallRecordItem";
 import HallUIManager from "../../../hall/HallUIManager";
 import HallRes from "../../../hall/HallRes";
+import ToastManager from "../../../common/ToastManager";
 
 const { ccclass } = cc._decorator;
 
 @ccclass
-export default class RecordPopup extends cc.Component {
+export default class HallRecordPopup extends cc.Component {
+    private static readonly TITLE_NAMES = ["开始时间", "房间", "金币", "时长", "坐庄"];
+    private static readonly COLUMN_X = [-245, -105, 25, 155, 275];
+
     private mask: cc.Node = null;
     private content: cc.Node = null;
-    private btnClose:cc.Node = null;
+    private btnClose: cc.Node = null;
     private scrollView: cc.ScrollView = null;
 
     private pageNo: number = 1;
     private pageSize: number = 20;
-    private roomId: number | null = null;
 
     private loading: boolean = false;
     private hasMore: boolean = true;
@@ -25,9 +28,9 @@ export default class RecordPopup extends cc.Component {
         this.content = cc.find("ListView/View/Content", this.node);
         this.btnClose = this.node.getChildByName("BtnClose");
         this.scrollView = this.node.getChildByName("ListView").getComponent(cc.ScrollView);
-        this.scrollView.node.on("scroll-ended",this.onScrollEnded,this);
-        this.scrollView.content = this.content
-        
+        this.scrollView.node.on("scroll-ended", this.onScrollEnded, this);
+        this.scrollView.content = this.content;
+
         if (this.btnClose) {
             this.btnClose.on(cc.Node.EventType.TOUCH_END, this.hide, this);
         }
@@ -38,10 +41,16 @@ export default class RecordPopup extends cc.Component {
             this.mask.on(cc.Node.EventType.TOUCH_END, this.onMaskTouchEnd, this);
             this.mask.on(cc.Node.EventType.TOUCH_CANCEL, this.onMaskTouch, this);
         }
-        this.initTitleStyle();
-      
+
+        this.initTitleView();
     }
 
+    public async loadFirstPage(_roomId: number | null) {
+        this.pageNo = 1;
+        this.hasMore = true;
+
+        await this.loadRecord(true);
+    }
 
     private onMaskTouch(event: cc.Event.EventTouch) {
         event.stopPropagation();
@@ -51,35 +60,25 @@ export default class RecordPopup extends cc.Component {
         event.stopPropagation();
     }
 
-    private hide(){
+    private hide() {
         HallUIManager.instance.hideRecord();
     }
 
-    // 加载第一页
-    public async loadFirstPage(roomId :number | null) {
-        this.pageNo = 1;
-        this.hasMore = true;
-        this.roomId = roomId;
-
-        await this.loadRecord(true);
-    }
-
-
     private onScrollEnded() {
         if (!this.scrollView) {
-            console.error("scrollView null")
+            console.error("scrollView null");
             return;
         }
-        const offset = this.scrollView.getScrollOffset();
 
+        const offset = this.scrollView.getScrollOffset();
         const maxOffset = this.scrollView.getMaxScrollOffset();
-        // 已经接近底部
+
         if (offset.y >= maxOffset.y - 50) {
             this.loadMore();
         }
     }
 
-    public async loadMore() {
+    private async loadMore() {
         if (this.loading || !this.hasMore) {
             return;
         }
@@ -99,19 +98,17 @@ export default class RecordPopup extends cc.Component {
             const res = await RecordApi.queryRecord(
                 this.pageNo,
                 this.pageSize,
-                this.roomId
+                null
             );
-            const records: RecordItemDTO[] =
-                res.data.records || [];
+            const records: RecordItemDTO[] = res.data.records || [];
 
-            this.hasMore = res.data.total > this.pageSize;
+            this.hasMore = res.data.total > this.pageNo * this.pageSize;
 
             if (refresh) {
                 this.refresh(records);
             } else {
                 this.append(records);
             }
-
         } catch (e) {
             cc.error(e);
             ToastManager.show("获取战绩失败");
@@ -119,13 +116,12 @@ export default class RecordPopup extends cc.Component {
             if (!refresh) {
                 this.pageNo--;
             }
-
         } finally {
             this.loading = false;
         }
     }
 
-    public refresh(list: RecordItemDTO[]) {
+    private refresh(list: RecordItemDTO[]) {
         if (!this.content) {
             return;
         }
@@ -139,7 +135,7 @@ export default class RecordPopup extends cc.Component {
         this.createItems(list);
     }
 
-    public append(list: RecordItemDTO[]) {
+    private append(list: RecordItemDTO[]) {
         if (!this.content || !list || list.length === 0) {
             return;
         }
@@ -149,63 +145,52 @@ export default class RecordPopup extends cc.Component {
 
     private createItems(list: RecordItemDTO[]) {
         list.forEach(data => {
-            const itemNode = cc.instantiate(
-                HallRes.instance.recordItemPrefab
-            );
-
+            const itemNode = cc.instantiate(HallRes.instance.hallRecordItemPrefab);
             this.content.addChild(itemNode);
 
-            const item = itemNode.getComponent("RecordItem") as RecordItem;
-
+            const item = itemNode.getComponent("HallRecordItem") as HallRecordItem;
             if (item) {
                 item.updateView(data);
             }
         });
+
         const layout = this.content.getComponent(cc.Layout);
         if (layout) {
             layout.updateLayout();
         }
-
-        // console.log("ListView", this.scrollView.node.width, this.scrollView.node.height);
-        // console.log("View", cc.find("ListView/View", this.node).width, cc.find("ListView/View", this.node).height);
-        // console.log("Content", this.content.width, this.content.height);
-        // console.log("MaxOffset", this.scrollView.getMaxScrollOffset());
     }
 
+    private initTitleView() {
+        const content = cc.find("TitleBg", this.node);
+        if (!content) {
+            return;
+        }
 
+        const labels = content.getComponentsInChildren(cc.Label)
+            .filter(label => label.node.name === "label")
+            .sort((a, b) => a.node.x - b.node.x);
 
-    private initTitleStyle() {
+        labels.forEach((label, index) => {
+            const visible = index < HallRecordPopup.TITLE_NAMES.length;
+            label.node.active = visible;
 
-        const content = cc.find(
-            "TitleBg",
-            this.node
-        );
-
-        if (!content) return;
-
-        const labels = content.getComponentsInChildren(cc.Label);
-
-        labels.forEach(label => {
-
-         if(label.node.name === "label"){
-                label.fontSize = 35;
-
-                label.node.color = cc.color(246, 215, 122);
-
-                // 描边
-                let outline =
-                    label.getComponent(cc.LabelOutline);
-
-                if (!outline) {
-                    outline =
-                        label.addComponent(cc.LabelOutline);
-                }
-
-                outline.color = cc.color(107, 58, 0);
-                outline.width = 2;
+            if (!visible) {
+                return;
             }
+
+            label.string = HallRecordPopup.TITLE_NAMES[index];
+            label.node.x = HallRecordPopup.COLUMN_X[index];
+            label.fontSize = 28;
+            label.lineHeight = 32;
+            label.node.color = cc.color(246, 215, 122);
+
+            let outline = label.getComponent(cc.LabelOutline);
+            if (!outline) {
+                outline = label.addComponent(cc.LabelOutline);
+            }
+
+            outline.color = cc.color(107, 58, 0);
+            outline.width = 2;
         });
     }
-
-
 }

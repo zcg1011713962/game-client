@@ -7,7 +7,13 @@ export interface SettleRecordQueryReq {
 
 export interface SettleRecordVO {
 
-    roundId: number;
+    roomId?: number;
+
+    roundId?: number;
+
+    roundCount?: number;
+
+    bankerCount?: number;
 
     win: number;
 
@@ -19,7 +25,13 @@ export interface SettleRecordVO {
 
     settleDesc: string;
 
-    cards: string;
+    cards?: string;
 
     settleTime: number;
+
+    startTime?: number;
+
+    endTime?: number;
+
+    duration?: number;
 }
