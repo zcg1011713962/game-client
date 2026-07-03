@@ -1,4 +1,4 @@
-import UIManager from "../ui/UIManager";
+import GameUIManager from "../ui/GameUIManager";
 
 const { ccclass } = cc._decorator;
 
@@ -100,7 +100,7 @@ export default class LookCardPopup extends cc.Component {
      */
     private onClickRubCard() {
         this.hide();
-        UIManager.instance.rubCard();
+        GameUIManager.instance.rubCard();
     }
 
     /**
@@ -108,7 +108,7 @@ export default class LookCardPopup extends cc.Component {
      */
     private onClickOpenCard() {
         this.hide();
-        UIManager.instance.showCard();
+        GameUIManager.instance.showCard();
     }
 
 

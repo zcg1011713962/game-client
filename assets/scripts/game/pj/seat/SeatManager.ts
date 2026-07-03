@@ -3,7 +3,7 @@ import SeatComponent from "./SeatComponent";
 import { SeatData, SeatState } from "./SeatData";
 import SeatComponentManager from "./SeatComponentManager";
 import { UserInfo } from "../user/UserInfo";
-import UIManager from "../ui/UIManager";
+import GameUIManager from "../ui/GameUIManager";
 import ClientRoomManager from "../room/ClientRoomManager";
 import {Cmd} from "../enum/Cmd";
 import WsClient from "../net/WsClient";
@@ -28,7 +28,7 @@ export default class SeatManager extends cc.Component {
 
  
     private initData() {
-        const seats = UIManager.instance.getSeat();
+        const seats = GameUIManager.instance.getSeat();
         SeatComponentManager.getInstance().seatComponentDataList = [];
         for (let i = 0; i < seats.length; i++) {
             SeatComponentManager.getInstance().seatComponentDataList.push({

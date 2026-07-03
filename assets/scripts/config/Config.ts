@@ -3,7 +3,7 @@ export default class Config {
     public static PROTOCOL = "http";
     public static WS_PROTOCOL = "ws";
 
-    public static HOST = "192.168.5.22";
+    public static HOST = "192.168.124.20";
 
     public static API_PORT = 18080;
     public static WS_PORT = 19001;

@@ -3,7 +3,7 @@ import GameRes from "./GameRes";
 import ClientRoomManager from "./room/ClientRoomManager";
 import { RoomState } from "./room/RoomState";
 import { Cmd } from "./enum/Cmd";
-import UIManager from "./ui/UIManager";
+import GameUIManager from "./ui/GameUIManager";
 import PaiJiuUtil from "./util/PaiJiuUtil";
 import WsClient from "./net/WsClient";
 
@@ -168,8 +168,8 @@ export default class PaiJiuTable extends cc.Component {
             roomState === RoomState.READY ||
             roomState === RoomState.BET
         ) {
-            UIManager.instance.clearCardContainer();
-            UIManager.instance.clearBetContainer();
+            GameUIManager.instance.clearCardContainer();
+            GameUIManager.instance.clearBetContainer();
             return;
         }
 
@@ -279,7 +279,7 @@ export default class PaiJiuTable extends cc.Component {
         if (nowServer > dealStartTime) {
             this.fastCompleteDeal(false);
             this.tableState = PaiJiuTableState.SHOW_CARD;
-            UIManager.instance.setLookCardPanelVisible(true);
+            GameUIManager.instance.setLookCardPanelVisible(true);
             return;
         }
 
@@ -331,7 +331,7 @@ export default class PaiJiuTable extends cc.Component {
             //cc.log("发牌完成");
             this.clearDeck();
 
-            UIManager.instance.setLookCardPanelVisible(true);
+            GameUIManager.instance.setLookCardPanelVisible(true);
 
             // 发牌完成进入亮牌状态
             this.tableState = PaiJiuTableState.SHOW_CARD;
@@ -340,7 +340,7 @@ export default class PaiJiuTable extends cc.Component {
                 (this.currentShowCardTime - this.getServerNow()) / 1000
             );
             this.scheduleOnce(() => {
-                UIManager.instance.setLookCardPanelVisible(false);
+                GameUIManager.instance.setLookCardPanelVisible(false);
             }, waitShowSeconds);
 
             return;

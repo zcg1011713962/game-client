@@ -15,7 +15,7 @@ import GrabBankerPopup from "../banker/GrabBankerPopup";
 import LookCardPopup from "../room/LookCardPopup";
 
 @ccclass
-export default class UIManager extends cc.Component {
+export default class GameUIManager extends cc.Component {
     private uiNode!: cc.Node;
     private tableNode!: cc.Node;
     private chipSelectPanel!: cc.Node;
@@ -31,15 +31,15 @@ export default class UIManager extends cc.Component {
     private readyButtonNode!: cc.Node;
 
 
-    private static _instance: UIManager = null;
-    public static get instance(): UIManager {
+    private static _instance: GameUIManager = null;
+    public static get instance(): GameUIManager {
         return this._instance;
     }
 
     onLoad() {
         const t = Date.now();
         // 保存单例引用
-        UIManager._instance = this;
+        GameUIManager._instance = this;
         this.uiNode = this.node.getChildByName("UI");
         this.tableNode = cc.find("Canvas/MainLayout/Table");
         this.chipSelectPanel = cc.find("Canvas/MainLayout/Table/ChipSelectPanel");
@@ -196,7 +196,7 @@ export default class UIManager extends cc.Component {
 
     // 清理发牌区
     public clearCardContainer() {
-        const tableNode = UIManager.instance.getTableNode();
+        const tableNode = GameUIManager.instance.getTableNode();
         if (tableNode) {
             const paiJiuTableNode = tableNode.getComponent(PaiJiuTable);
             paiJiuTableNode.clearCardContainer();
@@ -467,7 +467,7 @@ export default class UIManager extends cc.Component {
     }
 
     public readyBtnClick() {
-        UIManager.instance.clearTable();
+        GameUIManager.instance.clearTable();
         cc.audioEngine.playEffect(GameRes.instance.clickAudio, false);
         const roomId = ClientRoomManager.instance.getRoomId();
         WsClient.instance.send(Cmd.READY, {
@@ -485,7 +485,7 @@ export default class UIManager extends cc.Component {
 
 
     public showCard(){
-        const tableNode = UIManager.instance.getTableNode();
+        const tableNode = GameUIManager.instance.getTableNode();
         if (tableNode) {
             const paiJiuTableNode = tableNode.getComponent(PaiJiuTable);
             paiJiuTableNode.onClickOpenCard();
@@ -493,7 +493,7 @@ export default class UIManager extends cc.Component {
     }
 
     public rubCard(){
-        const tableNode = UIManager.instance.getTableNode();
+        const tableNode = GameUIManager.instance.getTableNode();
         if (tableNode) {
             const paiJiuTableNode = tableNode.getComponent(PaiJiuTable);
             paiJiuTableNode.onClickRubCard();

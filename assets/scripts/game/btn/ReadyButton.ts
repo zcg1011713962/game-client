@@ -1,4 +1,4 @@
-import UIManager from "../pj/ui/UIManager";
+import GameUIManager from "../pj/ui/GameUIManager";
 
 const { ccclass, property } = cc._decorator;
 
@@ -54,11 +54,11 @@ export default class ReadyButton extends cc.Component {
     }
 
     public readyBtnClick(){
-        UIManager.instance.readyBtnClick();
+        GameUIManager.instance.readyBtnClick();
     }
 
     public cancelBtnClick(){
-        UIManager.instance.cancelBtnClick();
+        GameUIManager.instance.cancelBtnClick();
     }
 
     

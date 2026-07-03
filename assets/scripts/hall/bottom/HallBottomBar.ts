@@ -1,4 +1,3 @@
-import UIManager from "../../game/pj/ui/UIManager";
 import HallUIManager from "../HallUIManager";
 
 const { ccclass, property } = cc._decorator;

@@ -1,5 +1,5 @@
 import ClientRoomManager from "../game/pj/room/ClientRoomManager";
-import UIManager from "../game/pj/ui/UIManager";
+import GameUIManager from "../game/pj/ui/GameUIManager";
 import SettleManager from "./SettleManager";
 
 const { ccclass } = cc._decorator;
@@ -95,11 +95,11 @@ export default class SettlePopup extends cc.Component {
 
     private init(): void {
         if (this.labelDesc1) {
-            UIManager.instance.setFrontView(this.labelDesc1, "", 1, cc.Color.GREEN);
+            GameUIManager.instance.setFrontView(this.labelDesc1, "", 1, cc.Color.GREEN);
         }
 
         if (this.labelDesc2) {
-            UIManager.instance.setFrontView(this.labelDesc2, "", 1, cc.Color.GREEN);
+            GameUIManager.instance.setFrontView(this.labelDesc2, "", 1, cc.Color.GREEN);
         }
     }
 

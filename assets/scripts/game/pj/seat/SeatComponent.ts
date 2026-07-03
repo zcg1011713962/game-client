@@ -1,7 +1,7 @@
 const { ccclass } = cc._decorator;
 import { UserInfo, UserState } from "../user/UserInfo";
 import { SeatData, SeatState } from "./SeatData";
-import UIManager from "../ui/UIManager";
+import GameUIManager from "../ui/GameUIManager";
 import CurrUserManager from "../user/CurrUserManager";
 import ClientRoomManager from "../room/ClientRoomManager";
 import { RoomState } from "../room/RoomState";
@@ -95,7 +95,7 @@ export default class SeatComponent extends cc.Component {
             case UserState.Idle:
                 this.setNormal(true);
                 if(userId === ClientRoomManager.instance.getMyUserId()){
-                    UIManager.instance.showReady(ReadyBtnState.HIDE);
+                    GameUIManager.instance.showReady(ReadyBtnState.HIDE);
                 }
                 break;
             case UserState.Sit:
@@ -103,12 +103,12 @@ export default class SeatComponent extends cc.Component {
                 this.setStautsReady(0);
                 // 自己入座状态
                 if (userId === ClientRoomManager.instance.getMyUserId()) {
-                    UIManager.instance.showReady(ReadyBtnState.READY);
+                    GameUIManager.instance.showReady(ReadyBtnState.READY);
                 }
                 break;
             case UserState.Ready:
                 if (userId === ClientRoomManager.instance.getMyUserId()) {
-                    UIManager.instance.showReady(ReadyBtnState.CANCEL_READY);
+                    GameUIManager.instance.showReady(ReadyBtnState.CANCEL_READY);
                 }
                 this.setSetOut(true);
                 this.setStautsReady(1);
@@ -117,7 +117,7 @@ export default class SeatComponent extends cc.Component {
                 this.setSetOut(true);
                 this.setBankerView(true);
                 if(userId === ClientRoomManager.instance.getMyUserId()){
-                    UIManager.instance.showReady(ReadyBtnState.HIDE);
+                    GameUIManager.instance.showReady(ReadyBtnState.HIDE);
                 }
                 break;
         }
@@ -175,7 +175,7 @@ export default class SeatComponent extends cc.Component {
             // 昵称
             const name = this.setOut.getChildByName("Name");
             const nicknameNode = name.getChildByName("nickname");
-            UIManager.instance.setNickNameView(nicknameNode, bankerSeat === userInfo.seatId, CurrUserManager.getCurrentUserId() === userInfo.userId , userInfo.nickname);
+            GameUIManager.instance.setNickNameView(nicknameNode, bankerSeat === userInfo.seatId, CurrUserManager.getCurrentUserId() === userInfo.userId , userInfo.nickname);
 
 
             this.updateSetGold(userInfo.gold);

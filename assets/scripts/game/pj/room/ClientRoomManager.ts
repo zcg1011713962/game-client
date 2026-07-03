@@ -1,5 +1,5 @@
 import { UserInfo, UserState } from "../user/UserInfo";
-import UIManager from "../ui/UIManager";
+import GameUIManager from "../ui/GameUIManager";
 import SeatManager from "../seat/SeatManager";
 import {RoomState} from "../room/RoomState";
 import {CardInfo} from "../card/CardConfig";
@@ -195,8 +195,8 @@ export default class ClientRoomManager {
         this.cardMap = data.cardMap;
         this.baseScore = data.baseScore;
         
-        if(UIManager.instance){
-            UIManager.instance.updateTopView(data.roomId, players.length, data.baseScore);
+        if(GameUIManager.instance){
+            GameUIManager.instance.updateTopView(data.roomId, players.length, data.baseScore);
         }
         this.updatePlayer(data.userId, players);
        
@@ -248,7 +248,7 @@ export default class ClientRoomManager {
         if(this.myUserId === data.userId){
              this.updateMySeatId(seatId);
         }
-        UIManager.instance.clearTable();
+        GameUIManager.instance.clearTable();
         this.refreshAllSeatView();
         
     }
@@ -265,7 +265,7 @@ export default class ClientRoomManager {
         }
         this.players.set(data.player.userId, data.player);
         if(this.gameReady){
-            UIManager.instance.updateTopView(data.roomId, this.players.size, this.baseScore);
+            GameUIManager.instance.updateTopView(data.roomId, this.players.size, this.baseScore);
             this.refreshAllSeatView();
         }
        
@@ -290,7 +290,7 @@ export default class ClientRoomManager {
     }){
         this.updatePlayerStatusByUser(data.state, data.userId);
         this.refreshAllSeatView();
-        UIManager.instance.showReady(ReadyBtnState.CANCEL_READY);
+        GameUIManager.instance.showReady(ReadyBtnState.CANCEL_READY);
     }
 
     // 离开座位
@@ -309,8 +309,8 @@ export default class ClientRoomManager {
         if(this.myUserId === data.userId){
              this.updateMySeatId(seatId);
         }
-        UIManager.instance.clearTable();
-        UIManager.instance.showReady(ReadyBtnState.HIDE);
+        GameUIManager.instance.clearTable();
+        GameUIManager.instance.showReady(ReadyBtnState.HIDE);
         this.refreshAllSeatView(); 
     }
 
@@ -376,8 +376,8 @@ export default class ClientRoomManager {
         roundAnimEndTime: number,
     }) {
         console.log("游戏开始", "roundId:", data.roundId);
-        UIManager.instance.clearTable();
-        UIManager.instance.showReady(ReadyBtnState.HIDE);
+        GameUIManager.instance.clearTable();
+        GameUIManager.instance.showReady(ReadyBtnState.HIDE);
 
         this.roundId = data.roundId;
 
@@ -400,7 +400,7 @@ export default class ClientRoomManager {
                 await PaiJiuUtil.wait(this as any, waitAnimSeconds);
             }
             if (getServerNow() < data.roundAnimEndTime) {
-                await UIManager.instance.showRoundStartAnim(
+                await GameUIManager.instance.showRoundStartAnim(
                     this.roundId,
                     data.serverTime,
                     data.roundAnimEndTime
@@ -480,7 +480,7 @@ export default class ClientRoomManager {
         const players= data.players;
         const seatId = data.seatId;
         // 投注面板隐藏
-        UIManager.instance.setBetPanelVisible(false);
+        GameUIManager.instance.setBetPanelVisible(false);
         // 移除倒计时
         CountDownManager.close();
     }
@@ -513,10 +513,10 @@ export default class ClientRoomManager {
 
 
         if(seatId === this.mySeatId){
-            UIManager.instance.setBetPanelVisible(false);
+            GameUIManager.instance.setBetPanelVisible(false);
         }
         // 筹码动画
-        UIManager.instance.onSelectChip(data.chip, seatId);
+        GameUIManager.instance.onSelectChip(data.chip, seatId);
         // 更新座位信息
         this.refreshAllSeatView();
     }
@@ -527,7 +527,7 @@ export default class ClientRoomManager {
         this.setRoomState(deal.roomState);
         this.bankerSeat = deal.bankerSeat;
 
-        const tableNode = UIManager.instance.getTableNode();
+        const tableNode = GameUIManager.instance.getTableNode();
         if (!tableNode || !cc.isValid(tableNode)) {
             cc.error("dealCard 找不到 TableNode");
             return;
@@ -568,7 +568,7 @@ export default class ClientRoomManager {
             return;
         }
 
-        const tableNode = UIManager.instance.getTableNode();
+        const tableNode = GameUIManager.instance.getTableNode();
         if (!tableNode || !cc.isValid(tableNode)) {
             return;
         }
@@ -633,7 +633,7 @@ export default class ClientRoomManager {
             }
         });
 
-        UIManager.instance.playSettleEffects(settlePlayers, bankerSeat);
+        GameUIManager.instance.playSettleEffects(settlePlayers, bankerSeat);
     }
 
     public doNextRound(){   
@@ -652,10 +652,10 @@ export default class ClientRoomManager {
         this.updatePlayers(data.players);
 
         // 进入下一轮后先保留结算金额，等玩家点击准备时再完整清理
-        UIManager.instance.clearTable(true);
+        GameUIManager.instance.clearTable(true);
         this.refreshAllSeatView();
 
-        UIManager.instance.showReady(
+        GameUIManager.instance.showReady(
             ReadyBtnState.READY
         );
     }
@@ -674,8 +674,8 @@ export default class ClientRoomManager {
         this.players.delete(data.player.userId);
         if(data.player.userId !== this.myUserId && this.myUserId > -1){
              this.refreshAllSeatView();
-            if(UIManager.instance){
-                UIManager.instance.updateTopView(data.roomId, this.players.size, this.baseScore);
+            if(GameUIManager.instance){
+                GameUIManager.instance.updateTopView(data.roomId, this.players.size, this.baseScore);
             }
         }
     }
@@ -744,14 +744,14 @@ export default class ClientRoomManager {
         }else{
              console.log("投注面板隐藏", this.mySeatId, this.bankerSeat);
         }
-        UIManager.instance.setBetPanelVisible(canBet);
+        GameUIManager.instance.setBetPanelVisible(canBet);
     }
 
     private refreshGrabBankerUI(){
         if(this.roomState === RoomState.GRAB_BANKER){
-             UIManager.instance.setGrabBankerPanelVisible(true);
+             GameUIManager.instance.setGrabBankerPanelVisible(true);
         }else{
-             UIManager.instance.setGrabBankerPanelVisible(false);
+             GameUIManager.instance.setGrabBankerPanelVisible(false);
         }
     }
 
