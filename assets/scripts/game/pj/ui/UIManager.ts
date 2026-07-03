@@ -25,6 +25,7 @@ export default class UIManager extends cc.Component {
     private rooomTopBarNode!: cc.Node;
     private clockContainerNode!: cc.Node;
     private settleEffectRoot!: cc.Node;
+    private settleCoinSpriteFrame: cc.SpriteFrame = null;
     private seats: { x: number, y: number, id: number }[] = [];
     private rooomTopBarComponent!: RooomTopBar;
     private readyButtonNode!: cc.Node;
@@ -57,6 +58,7 @@ export default class UIManager extends cc.Component {
         this.initChipSelectPanel();
         this.initGrabBankerPanel();
         this.initLookCardPanel();
+        this.loadSettleCoinSpriteFrame();
     }
 
     public initRoomTopBar() {
@@ -181,12 +183,14 @@ export default class UIManager extends cc.Component {
 
 
     // 全部清理
-    public clearTable() {
+    public clearTable(keepSettleEffects: boolean = false) {
         //console.log("执行全部清理, 房间状态:", ClientRoomManager.instance.getRoomState())
         this.clearCardContainer();
         this.clearBetContainer();
         this.clearClockContainer();
-        this.clearSettleEffects();
+        if (!keepSettleEffects) {
+            this.clearSettleEffects();
+        }
         SettleManager.close();
     }
 
@@ -216,6 +220,22 @@ export default class UIManager extends cc.Component {
         //console.log("清理倒计时钟")
     }
 
+
+    // 加载结算飞金币图片，失败时会回退到 Graphics 绘制金币
+    private loadSettleCoinSpriteFrame() {
+        if (this.settleCoinSpriteFrame) {
+            return;
+        }
+
+        cc.resources.load("common/icon/coin", cc.SpriteFrame, (err, spriteFrame: cc.SpriteFrame) => {
+            if (err) {
+                cc.warn("结算金币图片加载失败，使用默认绘制金币", err);
+                return;
+            }
+
+            this.settleCoinSpriteFrame = spriteFrame;
+        });
+    }
 
     // 清理结算时桌面上的飞金币和输赢数字
     public clearSettleEffects() {
@@ -308,13 +328,6 @@ export default class UIManager extends cc.Component {
             .delay(delay)
             .to(0.16, { opacity: 255, scale: 1.15 }, { easing: "backOut" })
             .to(0.12, { scale: 1 })
-            .delay(1.1)
-            .to(0.25, { y: node.y + 28, opacity: 0 })
-            .call(() => {
-                if (cc.isValid(node)) {
-                    node.destroy();
-                }
-            })
             .start();
     }
 
@@ -336,14 +349,14 @@ export default class UIManager extends cc.Component {
             root.addChild(coin);
 
             cc.tween(coin)
-                .delay(delay + i * 0.055)
+                .delay(delay + i * 0.09)
                 .parallel(
-                    cc.tween().to(0.42, { position: end }, { easing: "quadOut" }),
-                    cc.tween().to(0.42, { scale: 1, angle: 360 + Math.random() * 120 }),
+                    cc.tween().to(0.9, { position: end }, { easing: "quadOut" }),
+                    cc.tween().to(0.9, { scale: 1, angle: 540 + Math.random() * 180 }),
                     cc.tween().sequence(
-                        cc.tween().to(0.1, { opacity: 255 }),
-                        cc.tween().delay(0.22),
-                        cc.tween().to(0.1, { opacity: 0 })
+                        cc.tween().to(0.16, { opacity: 255 }),
+                        cc.tween().delay(0.54),
+                        cc.tween().to(0.2, { opacity: 0 })
                     )
                 )
                 .call(() => {
@@ -355,11 +368,18 @@ export default class UIManager extends cc.Component {
         }
     }
 
-    // 临时用 Graphics 画金币，后续有金币图片后可以替换成 Sprite
+    // 创建飞金币节点，优先使用资源里的金币图片
     private createSettleCoin(): cc.Node {
         const node = new cc.Node("SettleCoin");
         node.setContentSize(34, 34);
         node.opacity = 0;
+
+        if (this.settleCoinSpriteFrame) {
+            const sprite = node.addComponent(cc.Sprite);
+            sprite.spriteFrame = this.settleCoinSpriteFrame;
+            sprite.sizeMode = cc.Sprite.SizeMode.CUSTOM;
+            return node;
+        }
 
         const graphics = node.addComponent(cc.Graphics);
         graphics.fillColor = new cc.Color(255, 199, 54, 255);

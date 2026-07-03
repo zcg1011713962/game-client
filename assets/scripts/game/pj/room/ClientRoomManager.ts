@@ -651,8 +651,8 @@ export default class ClientRoomManager {
         this.setRoomState(data.roomState);
         this.updatePlayers(data.players);
 
-         // 清桌
-        UIManager.instance.clearTable();
+        // 进入下一轮后先保留结算金额，等玩家点击准备时再完整清理
+        UIManager.instance.clearTable(true);
         this.refreshAllSeatView();
 
         UIManager.instance.showReady(
