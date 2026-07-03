@@ -1,6 +1,7 @@
 import { Cmd } from "../enum/Cmd";
 import WsClient from "../net/WsClient";
 import ClientRoomManager from "../room/ClientRoomManager";
+import CountDownManager from "../../../common/CountDownManager";
 
 const { ccclass } = cc._decorator;
 
@@ -87,6 +88,8 @@ export default class GrabBankerPopup extends cc.Component {
         }
         this.submitted = true;
         WsClient.instance.send(Cmd.GRAB_BANKER, {roomId: ClientRoomManager.instance.getRoomId(), grabBanker: grabBanker});
+        CountDownManager.close();
+        ClientRoomManager.instance.showGrabBankerWaitingTip(grabBanker);
         this.hide();
     }
 

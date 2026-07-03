@@ -37,6 +37,7 @@ export default class WsClient {
             this.ws.onopen = () => {
                 console.log("WebSocket连接成功");
                 this.startHeartbeat();
+                ClientRoomManager.instance.syncRoomInfo();
                 resolve(); // 👉 通知外部可以发消息了
             };
 
@@ -70,6 +71,7 @@ export default class WsClient {
         this.ws.onopen = () => {
             console.log("WebSocket重连成功");
             this.startHeartbeat();
+            ClientRoomManager.instance.syncRoomInfo();
         };
 
         this.ws.onmessage = (event) => {
@@ -186,7 +188,10 @@ export default class WsClient {
                 break;
             case Cmd.GRAB_BANKER_START:
                 ClientRoomManager.instance.grabBankerStart(msg.data);
-                break;    
+                break;
+            case Cmd.PLAYER_GRAB_BANKER:
+                ClientRoomManager.instance.playerGrabBanker(msg.data);
+                break;
             case Cmd.GRAB_BANKER_RESULT:
                 ClientRoomManager.instance.grabBankerEnd(msg.data);
                 break;        

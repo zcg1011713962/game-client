@@ -34,6 +34,7 @@ export default class ClockCountdown extends cc.Component {
     onDestroy() {
         cc.game.off(cc.game.EVENT_SHOW, this.onGameShow, this);
         cc.game.off(cc.game.EVENT_HIDE, this.onGameHide, this);
+        this.stopWarnAudio();
     }
 
     public startCountdown(seconds: number, finishCb?: Function) {
@@ -50,6 +51,7 @@ export default class ClockCountdown extends cc.Component {
     public stopCountdown() {
         this.running = false;
         this.stopWarnAnim();
+        this.stopWarnAudio();
     }
 
     update(dt: number) {
@@ -89,6 +91,7 @@ export default class ClockCountdown extends cc.Component {
 
         this.running = false;
         this.stopWarnAnim();
+        this.stopWarnAudio();
 
         if (this.timeLabel) {
             this.timeLabel.string = "0";
@@ -109,6 +112,7 @@ export default class ClockCountdown extends cc.Component {
     private onGameHide() {
         // 可选：切后台时停止动画，避免回来位置异常
         this.stopWarnAnim();
+        this.stopWarnAudio();
     }
 
     private async playWarn() {
@@ -140,13 +144,16 @@ export default class ClockCountdown extends cc.Component {
         this.clock.angle = 0;
     }
 
+    private stopWarnAudio() {
+        if (this.audioId !== null) {
+            cc.audioEngine.stopEffect(this.audioId);
+            this.audioId = null;
+        }
+    }
+
     public close() {
         if(this.node){
-            if(this.audioId !== null){
-                // 停止
-                cc.audioEngine.stopEffect(this.audioId);
-            }
-            this.audioId = null;
+            this.stopWarnAudio();
             this.node.destroy();
         }
     }

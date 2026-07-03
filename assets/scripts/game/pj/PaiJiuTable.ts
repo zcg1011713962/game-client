@@ -127,6 +127,7 @@ export default class PaiJiuTable extends cc.Component {
     // 搓牌
     public onClickRubCard() {
         const mySeatId = ClientRoomManager.instance.getMySeatId();
+        GameUIManager.instance.showPhaseTip("请完成搓牌", this.getSettleLeftSeconds());
         this.playReferenceRubOpenEffect(mySeatId, () => {
             cc.log("搓牌开牌完成");
             this.sendOpenCard(2);
@@ -141,6 +142,8 @@ export default class PaiJiuTable extends cc.Component {
 
         this.reportedOpenSeats[mySeatId] = true;
         this.openedSeats[mySeatId] = true;
+        GameUIManager.instance.setLookCardPanelVisible(false);
+        GameUIManager.instance.hidePhaseTip();
         WsClient.instance.send(Cmd.OPEN_CARD, {
             roomId: ClientRoomManager.instance.getRoomId(),
             openType: openType
@@ -183,7 +186,13 @@ export default class PaiJiuTable extends cc.Component {
             this.stopAllAnimAndSchedule();
             this.currentDealOrder = this.buildDealOrder(this.currentServerResult);
             this.fastCompleteDeal(false);
-            this.fastShowAllCards();
+            if (this.currentSettleTime > 0 && nowServer >= this.currentSettleTime) {
+                this.forceSettleReveal();
+            } else {
+                this.tableState = PaiJiuTableState.SHOW_CARD;
+                this.refreshLookCardPanel();
+                this.scheduleSettleReveal();
+            }
             return;
         }
 
@@ -199,7 +208,7 @@ export default class PaiJiuTable extends cc.Component {
         }
 
         if (this.tableState === PaiJiuTableState.SHOW_CARD) {
-            this.fastShowAllCards();
+            this.refreshLookCardPanel();
         }
     }
 
@@ -236,9 +245,9 @@ export default class PaiJiuTable extends cc.Component {
      */
     public async playStartAnim(serverResult: IServerDealResult) {
         if (this.isPlaying) {
-            return;
+            this.stopAllAnimAndSchedule();
+            this.isPlaying = false;
         }
-        
 
         this.isPlaying = true;
         this.reportedOpenSeats = {};
@@ -265,11 +274,17 @@ export default class PaiJiuTable extends cc.Component {
         await this.createDeck();
 
         /**
-         * 已经到翻牌时间，直接显示最终状态
+         * 已经过了亮牌时间，只补齐牌面位置，不补播翻牌动作。
          */
         if (nowServer >= showCardTime) {
             this.fastCompleteDeal(false);
-            this.fastShowAllCards();
+            if (nowServer >= settleTime) {
+                this.forceSettleReveal();
+            } else {
+                this.tableState = PaiJiuTableState.SHOW_CARD;
+                this.refreshLookCardPanel();
+                this.scheduleSettleReveal();
+            }
             return;
         }
 
@@ -279,7 +294,8 @@ export default class PaiJiuTable extends cc.Component {
         if (nowServer > dealStartTime) {
             this.fastCompleteDeal(false);
             this.tableState = PaiJiuTableState.SHOW_CARD;
-            GameUIManager.instance.setLookCardPanelVisible(true);
+            this.refreshLookCardPanel();
+            this.scheduleSettleReveal();
             return;
         }
 
@@ -303,7 +319,9 @@ export default class PaiJiuTable extends cc.Component {
 
         if (this.getServerNow() >= this.currentShowCardTime) {
             this.fastCompleteDeal(false);
-            this.fastShowAllCards();
+            this.tableState = PaiJiuTableState.SHOW_CARD;
+            this.refreshLookCardPanel();
+            this.scheduleSettleReveal();
             return;
         }
 
@@ -321,7 +339,9 @@ export default class PaiJiuTable extends cc.Component {
     private startDealAfterShuffleByServerTime() {
         if (this.getServerNow() >= this.currentShowCardTime) {
             this.fastCompleteDeal(false);
-            this.fastShowAllCards();
+            this.tableState = PaiJiuTableState.SHOW_CARD;
+            this.refreshLookCardPanel();
+            this.scheduleSettleReveal();
             return;
         }
 
@@ -331,20 +351,43 @@ export default class PaiJiuTable extends cc.Component {
             //cc.log("发牌完成");
             this.clearDeck();
 
-            GameUIManager.instance.setLookCardPanelVisible(true);
-
             // 发牌完成进入亮牌状态
             this.tableState = PaiJiuTableState.SHOW_CARD;
-            const waitShowSeconds = Math.max(
+            this.refreshLookCardPanel();
+            const waitSettleSeconds = Math.max(
                 0,
-                (this.currentShowCardTime - this.getServerNow()) / 1000
+                (this.currentSettleTime - this.getServerNow()) / 1000
             );
             this.scheduleOnce(() => {
-                GameUIManager.instance.setLookCardPanelVisible(false);
-            }, waitShowSeconds);
+                this.forceSettleReveal();
+            }, waitSettleSeconds);
 
             return;
         });
+    }
+
+    private scheduleSettleReveal() {
+        if (this.currentSettleTime <= 0) {
+            return;
+        }
+
+        const waitSeconds = Math.max(0, (this.currentSettleTime - this.getServerNow()) / 1000);
+        this.scheduleOnce(() => {
+            this.forceSettleReveal();
+        }, waitSeconds);
+    }
+
+    private refreshLookCardPanel() {
+        const visible = this.canManualOpenCard();
+        GameUIManager.instance.setLookCardPanelVisible(visible, false, visible ? this.getSettleLeftSeconds() : 0);
+    }
+
+    private getSettleLeftSeconds(): number {
+        if (this.currentSettleTime <= 0) {
+            return 0;
+        }
+
+        return Math.max(0, Math.ceil((this.currentSettleTime - this.getServerNow()) / 1000));
     }
 
     private async createDeck() {
@@ -759,6 +802,26 @@ export default class PaiJiuTable extends cc.Component {
         return count >= this.currentDealOrder.length;
     }
 
+    public hasCardsOnTable(): boolean {
+        for (const seat in this.playerCardMap) {
+            if (this.playerCardMap[seat] && this.playerCardMap[seat].length > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public canManualOpenCard(): boolean {
+        const mySeatId = ClientRoomManager.instance.getMySeatId();
+        return this.tableState === PaiJiuTableState.SHOW_CARD &&
+            mySeatId >= 0 &&
+            !this.reportedOpenSeats[mySeatId] &&
+            !this.openedSeats[mySeatId] &&
+            this.hasAllDealedCards() &&
+            (this.currentSettleTime <= 0 || this.getServerNow() < this.currentSettleTime);
+    }
+
     public flipSeatCards(seat: number, cb?: Function) {
         const cards = this.playerCardMap[seat] || [];
 
@@ -799,6 +862,7 @@ export default class PaiJiuTable extends cc.Component {
 
     public openSeatCardsByServer(seat: number) {
         if (this.openedSeats[seat]) {
+            this.refreshLookCardPanelBySeat(seat);
             return;
         }
 
@@ -813,11 +877,48 @@ export default class PaiJiuTable extends cc.Component {
             return;
         }
 
+        if (this.isBackground) {
+            this.showSeatCardsImmediately(seat);
+            return;
+        }
+
         this.openedSeats[seat] = true;
         this.tableState = PaiJiuTableState.SHOW_CARD;
         this.flipSeatCards(seat, () => {
             this.sortSeatCards(seat);
         });
+    }
+
+    public showSeatCardsImmediately(seat: number) {
+        if (
+            this.tableState === PaiJiuTableState.SHUFFLING ||
+            this.tableState === PaiJiuTableState.DEALING
+        ) {
+            this.fastCompleteDeal(false);
+        }
+
+        const cards = this.playerCardMap[seat] || [];
+        if (!cards.length) {
+            this.openedSeats[seat] = true;
+            this.reportedOpenSeats[seat] = true;
+            this.refreshLookCardPanelBySeat(seat);
+            return;
+        }
+
+        cards.forEach(card => {
+            this.forceCardFront(card);
+        });
+
+        this.openedSeats[seat] = true;
+        this.reportedOpenSeats[seat] = true;
+        this.sortSeatCards(seat);
+        this.refreshLookCardPanelBySeat(seat);
+    }
+
+    private refreshLookCardPanelBySeat(seat: number) {
+        if (seat === ClientRoomManager.instance.getMySeatId()) {
+            this.refreshLookCardPanel();
+        }
     }
 
     public sortSeatCards(seat: number) {
@@ -1483,8 +1584,7 @@ export default class PaiJiuTable extends cc.Component {
 
     public async showCard() {
         if (this.currentSettleTime > 0 && this.getServerNow() >= this.currentSettleTime) {
-            this.fastCompleteDeal(false);
-            this.fastShowAllCards();
+            this.forceSettleReveal();
             return;
         }
 
@@ -1546,6 +1646,23 @@ export default class PaiJiuTable extends cc.Component {
 
         this.tableState = PaiJiuTableState.IDLE;
         this.isPlaying = false;
+    }
+
+    public forceSettleReveal() {
+        if (
+            this.tableState === PaiJiuTableState.SHUFFLING ||
+            this.tableState === PaiJiuTableState.DEALING
+        ) {
+            this.fastCompleteDeal(false);
+        }
+
+        if (!this.hasAllDealedCards() && this.currentDealOrder && this.currentDealOrder.length > 0) {
+            this.fastCompleteDeal(false);
+        }
+
+        this.fastShowAllCards();
+        GameUIManager.instance.hidePhaseTip();
+        GameUIManager.instance.setLookCardPanelVisible(false, true);
     }
 
     private forceCardFront(card: cc.Node) {

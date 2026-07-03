@@ -25,6 +25,10 @@ export default class GameUIManager extends cc.Component {
     private rooomTopBarNode!: cc.Node;
     private clockContainerNode!: cc.Node;
     private settleEffectRoot!: cc.Node;
+    private phaseTipNode!: cc.Node;
+    private bankerBetStatusNode!: cc.Node;
+    private phaseTipText: string = "";
+    private phaseTipEndLocalTime: number = 0;
     private settleCoinSpriteFrame: cc.SpriteFrame = null;
     private seats: { x: number, y: number, id: number }[] = [];
     private rooomTopBarComponent!: RooomTopBar;
@@ -49,7 +53,16 @@ export default class GameUIManager extends cc.Component {
         this.rooomTopBarNode = cc.find("Canvas/MainLayout/RoomTopBar");
         this.clockContainerNode = cc.find("Canvas/MainLayout/Table/ClockContainer");
         this.init();
+        cc.game.on(cc.game.EVENT_SHOW, this.onGameShow, this);
         console.log("游戏初始化预制体耗时:", Date.now() - t, "ms");
+    }
+
+    protected onDestroy(): void {
+        cc.game.off(cc.game.EVENT_SHOW, this.onGameShow, this);
+    }
+
+    private onGameShow() {
+        ClientRoomManager.instance.syncRoomInfo();
     }
 
     private init() {
@@ -133,6 +146,130 @@ export default class GameUIManager extends cc.Component {
         }
     }
 
+    public showBankerBetStatus(players: any[], bankerSeat: number, mySeatId: number, betMap: Record<number, number>) {
+        if (mySeatId !== bankerSeat || bankerSeat < 0) {
+            this.hideBankerBetStatus();
+            return;
+        }
+
+        const betPlayers = (players || []).filter(player => {
+            return player && player.seatId != null && player.seatId >= 0 && player.seatId !== bankerSeat;
+        });
+
+        if (betPlayers.length <= 0) {
+            this.hideBankerBetStatus();
+            return;
+        }
+
+        const node = this.getBankerBetStatusNode();
+        node.active = true;
+        node.removeAllChildren();
+
+        this.drawBankerBetStatusBg(node);
+
+        const betCount = betPlayers.filter(player => betMap && betMap[player.userId] != null).length;
+        this.createStatusLabel(node, `闲家下注 ${betCount}/${betPlayers.length}`, 0, 106, 28, new cc.Color(255, 232, 140), cc.Label.HorizontalAlign.CENTER);
+
+        const colX = [-150, 150];
+        const startY = 58;
+        const rowGap = 42;
+
+        betPlayers.forEach((player, index) => {
+            const col = index % 2;
+            const row = Math.floor(index / 2);
+            const x = colX[col];
+            const y = startY - row * rowGap;
+            const amount = betMap ? betMap[player.userId] : null;
+            const hasBet = amount != null;
+            const name = this.formatStatusName(player.nickname || `座位${player.seatId}`);
+            const status = hasBet ? `已下注 ${this.formatGold(amount)}` : "等待下注";
+            const color = hasBet ? new cc.Color(116, 255, 156) : new cc.Color(255, 205, 106);
+
+            this.createStatusLabel(node, name, x - 76, y, 20, cc.Color.WHITE, cc.Label.HorizontalAlign.LEFT);
+            this.createStatusLabel(node, status, x + 18, y, 20, color, cc.Label.HorizontalAlign.LEFT);
+        });
+    }
+
+    public hideBankerBetStatus() {
+        if (!this.bankerBetStatusNode || !cc.isValid(this.bankerBetStatusNode)) {
+            return;
+        }
+
+        this.bankerBetStatusNode.active = false;
+        this.bankerBetStatusNode.removeAllChildren();
+    }
+
+    private getBankerBetStatusNode(): cc.Node {
+        if (this.bankerBetStatusNode && cc.isValid(this.bankerBetStatusNode)) {
+            return this.bankerBetStatusNode;
+        }
+
+        const node = new cc.Node("BankerBetStatusPanel");
+        node.zIndex = 4300;
+        node.setPosition(0, -120);
+        node.setContentSize(640, 260);
+        this.tableNode.addChild(node);
+        this.bankerBetStatusNode = node;
+        return node;
+    }
+
+    private drawBankerBetStatusBg(node: cc.Node) {
+        const bgNode = new cc.Node("Bg");
+        bgNode.setContentSize(640, 260);
+        node.addChild(bgNode);
+
+        const bg = bgNode.addComponent(cc.Graphics);
+        bg.fillColor = new cc.Color(0, 0, 0, 132);
+        bg.roundRect(-320, -130, 640, 260, 16);
+        bg.fill();
+        bg.strokeColor = new cc.Color(255, 204, 88, 190);
+        bg.lineWidth = 2;
+        bg.roundRect(-320, -130, 640, 260, 16);
+        bg.stroke();
+
+        const line = new cc.Node("Line");
+        line.setPosition(0, 80);
+        bgNode.addChild(line);
+        const graphics = line.addComponent(cc.Graphics);
+        graphics.strokeColor = new cc.Color(255, 204, 88, 120);
+        graphics.lineWidth = 1;
+        graphics.moveTo(-280, 0);
+        graphics.lineTo(280, 0);
+        graphics.stroke();
+    }
+
+    private createStatusLabel(parent: cc.Node, text: string, x: number, y: number, fontSize: number, color: cc.Color, align: cc.Label.HorizontalAlign) {
+        const node = new cc.Node("Label");
+        node.setPosition(x, y);
+        node.setContentSize(180, 32);
+        parent.addChild(node);
+
+        const label = node.addComponent(cc.Label);
+        label.string = text;
+        label.fontSize = fontSize;
+        label.lineHeight = fontSize + 4;
+        label.horizontalAlign = align;
+        label.verticalAlign = cc.Label.VerticalAlign.CENTER;
+        node.color = color;
+    }
+
+    private formatStatusName(name: string): string {
+        if (!name) {
+            return "";
+        }
+
+        return name.length > 4 ? `${name.slice(0, 4)}...` : name;
+    }
+
+    private formatGold(value: number): string {
+        const amount = Number(value || 0);
+        if (amount >= 10000) {
+            return `${Math.floor(amount / 1000) / 10}万`;
+        }
+
+        return String(amount);
+    }
+
     public setGrabBankerPanelVisible(visible: boolean) {
         if (this.grabBankerPanel) {
             const node = this.grabBankerPanel.getChildByName("GrabBankerPanel");
@@ -149,14 +286,123 @@ export default class GameUIManager extends cc.Component {
         }
     }
 
-     public setLookCardPanelVisible(visible: boolean) {
-        if (this.grabBankerPanel) {
+    public showPhaseTip(text: string, leftSeconds?: number) {
+        if (!this.tableNode || !text) {
+            return;
+        }
+
+        const node = this.getPhaseTipNode();
+        this.phaseTipText = text;
+        this.phaseTipEndLocalTime = leftSeconds != null && leftSeconds > 0
+            ? Date.now() + leftSeconds * 1000
+            : 0;
+        this.refreshPhaseTipText();
+        node.active = true;
+        node.opacity = 255;
+
+        this.unschedule(this.updatePhaseTipCountdown);
+        if (this.phaseTipEndLocalTime > 0) {
+            this.schedule(this.updatePhaseTipCountdown, 0.2);
+        }
+
+        cc.Tween.stopAllByTarget(node);
+        cc.tween(node)
+            .repeatForever(
+                cc.tween()
+                    .to(0.7, { opacity: 180 })
+                    .to(0.7, { opacity: 255 })
+            )
+            .start();
+    }
+
+    public hidePhaseTip() {
+        if (!this.phaseTipNode || !cc.isValid(this.phaseTipNode)) {
+            return;
+        }
+
+        cc.Tween.stopAllByTarget(this.phaseTipNode);
+        this.unschedule(this.updatePhaseTipCountdown);
+        this.phaseTipText = "";
+        this.phaseTipEndLocalTime = 0;
+        this.phaseTipNode.active = false;
+    }
+
+    private updatePhaseTipCountdown() {
+        this.refreshPhaseTipText();
+    }
+
+    private refreshPhaseTipText() {
+        const node = this.phaseTipNode && cc.isValid(this.phaseTipNode)
+            ? this.phaseTipNode
+            : this.getPhaseTipNode();
+        const labelNode = node.getChildByName("Label");
+        const label = labelNode ? labelNode.getComponent(cc.Label) : null;
+
+        if (!label) {
+            return;
+        }
+
+        if (this.phaseTipEndLocalTime <= 0) {
+            label.string = this.phaseTipText;
+            return;
+        }
+
+        const leftSeconds = Math.max(0, Math.ceil((this.phaseTipEndLocalTime - Date.now()) / 1000));
+        label.string = `${this.phaseTipText} ${leftSeconds}秒`;
+
+        if (leftSeconds <= 0) {
+            this.unschedule(this.updatePhaseTipCountdown);
+        }
+    }
+
+    private getPhaseTipNode(): cc.Node {
+        if (this.phaseTipNode && cc.isValid(this.phaseTipNode)) {
+            return this.phaseTipNode;
+        }
+
+        const node = new cc.Node("PhaseTip");
+        node.zIndex = 4500;
+        node.setPosition(0, 120);
+        node.setContentSize(520, 70);
+        this.tableNode.addChild(node);
+
+        const bgNode = new cc.Node("Bg");
+        bgNode.setContentSize(520, 70);
+        node.addChild(bgNode);
+        const bg = bgNode.addComponent(cc.Graphics);
+        bg.fillColor = new cc.Color(0, 0, 0, 145);
+        bg.roundRect(-260, -35, 520, 70, 18);
+        bg.fill();
+        bg.strokeColor = new cc.Color(255, 212, 92, 210);
+        bg.lineWidth = 2;
+        bg.roundRect(-260, -35, 520, 70, 18);
+        bg.stroke();
+
+        const labelNode = new cc.Node("Label");
+        labelNode.setContentSize(520, 70);
+        node.addChild(labelNode);
+        const label = labelNode.addComponent(cc.Label);
+        label.fontSize = 28;
+        label.lineHeight = 34;
+        label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
+        label.verticalAlign = cc.Label.VerticalAlign.CENTER;
+        label.string = "";
+        labelNode.color = new cc.Color(255, 235, 165);
+
+        this.phaseTipNode = node;
+        return node;
+    }
+
+     public setLookCardPanelVisible(visible: boolean, immediately: boolean = false, leftSeconds: number = 0) {
+        if (this.lookCardPanel) {
             const node = this.lookCardPanel.getChildByName("LookCardPanel");
             if (node) {
                 const comp = node.getComponent(LookCardPopup);
                 if(comp){
                     if (visible === true) {
-                        comp.show();
+                        comp.show(leftSeconds);
+                    } else if (immediately && (comp as any).hideImmediately) {
+                        (comp as any).hideImmediately();
                     } else {
                         comp.hide();
                     }
@@ -188,6 +434,8 @@ export default class GameUIManager extends cc.Component {
         this.clearCardContainer();
         this.clearBetContainer();
         this.clearClockContainer();
+        this.hidePhaseTip();
+        this.hideBankerBetStatus();
         if (!keepSettleEffects) {
             this.clearSettleEffects();
         }
@@ -240,8 +488,20 @@ export default class GameUIManager extends cc.Component {
     // 清理结算时桌面上的飞金币和输赢数字
     public clearSettleEffects() {
         if (this.settleEffectRoot && cc.isValid(this.settleEffectRoot)) {
+            this.stopSettleEffectTweens(this.settleEffectRoot);
             this.settleEffectRoot.removeAllChildren();
         }
+    }
+
+    private stopSettleEffectTweens(node: cc.Node) {
+        if (!node || !cc.isValid(node)) {
+            return;
+        }
+
+        cc.Tween.stopAllByTarget(node);
+        node.children.forEach(child => {
+            this.stopSettleEffectTweens(child);
+        });
     }
 
     // 播放结算表现：座位附近显示输赢金额，并按输赢方向飞金币

@@ -23,6 +23,7 @@ export interface PlayerDTO {
     avatar: string;
     nickname: string;
     gold: number;
+    grabBanker?: number;
 }
 
 export interface RoomSnapshot {
@@ -37,11 +38,21 @@ export interface RoomSnapshot {
 
     betMap: Record<number, number>;
     cardMap: Record<number, CardInfo[]>;
+    openedCardUsers?: number[];
 
     serverTime?: number;
+    roundAnimStartTime?: number;
+    roundAnimEndTime?: number;
+    grabStartTime?: number;
+    grabEndTime?: number;
+    bankerAnimStartTime?: number;
+    bankerAnimEndTime?: number;
+    betStartTime?: number;
+    betEndTime?: number;
     dealStartTime?: number;
     showCardTime?: number;
     settleTime?: number;
+    nextRoundTime?: number;
 
     settlePush: SettlePush;
 }
@@ -68,6 +79,15 @@ export interface GrabBankerResultPush {
     players: PlayerDTO[];
 }
 
+export interface GrabBankerPush {
+    roomId: number;
+    userId: number;
+    seatId: number;
+    grabBanker: number;
+    roomState: number;
+    serverTime: number;
+}
+
 export interface PlayerCardDTO {
     userId: number;
     seatId: number;
@@ -86,6 +106,7 @@ export interface DealCardPush {
 
     settleTime: number; 
     nextRoundTime: number;
+    openedCardUsers?: number[];
 }
 
 export interface SettlePlayerDTO {
@@ -146,6 +167,7 @@ export default class ClientRoomManager {
     private gameReady: boolean = false;
 
     private roomSnapshot: RoomSnapshot | null= null;
+    private syncingRoomInfo: boolean = false;
 
     private roundId: number = -1;
 
@@ -169,7 +191,13 @@ export default class ClientRoomManager {
     private betMap: Record<number, number> = {};
     private cardMap: Record<number, CardInfo[]> = {};
 
+    private grabBankerServerOffset: number = 0;
+    private grabBankerEndTime: number = 0;
+    private betServerOffset: number = 0;
+    private betEndTime: number = 0;
+
     private sentRoundIds: Set<number> = new Set();
+    private timelineVersion: number = 0;
 
     private constructor() {}
     
@@ -183,6 +211,8 @@ export default class ClientRoomManager {
 
     private renderRoom(data: RoomSnapshot){
         console.log("renderRoom", data);
+        (data as any).__clientReceiveTime = Date.now();
+        this.invalidateTimelineTasks();
 
         const bankerSeat = data.bankerSeat;
         const players = data.players;
@@ -203,15 +233,174 @@ export default class ClientRoomManager {
         // 更新房间状态
         this.setRoomState(data.roomState);
         this.refreshAllSeatView();
-        
-        if(data.cardMap && Object.keys(data.cardMap).length > 0){
-            console.log("断线重连恢复牌局");
-            const dealCardPush = ClientRoomManager.instance.buildDealCardPush(data);
-            // ClientRoomManager.instance.dealCard(dealCardPush);
-            if(data.settlePush){
-                this.settle(data.settlePush);
-            }
+        this.recoverRoomByState(data);
+    }
+
+    private recoverRoomByState(data: RoomSnapshot) {
+        switch (this.roomState) {
+            case RoomState.READY:
+                this.recoverRoundStart(data);
+                break;
+            case RoomState.GRAB_BANKER:
+                this.recoverGrabBankerCountdown(data);
+                break;
+            case RoomState.BET:
+                this.recoverBetCountdown(data);
+                this.refreshAllSeatView();
+                break;
+            case RoomState.DEAL:
+                if (data.cardMap && Object.keys(data.cardMap).length > 0) {
+                    const dealCardPush = this.buildDealCardPush(data);
+                    this.dealCard(dealCardPush);
+                } else {
+                    this.applyOpenedCardUsers(data.openedCardUsers);
+                }
+                break;
+            case RoomState.SETTLE:
+                if (data.settlePush) {
+                    this.doSettle(data.settlePush, false);
+                }
+                break;
+            default:
+                break;
         }
+    }
+
+    private async recoverRoundStart(data: RoomSnapshot) {
+        if (!data.roundAnimStartTime || !data.roundAnimEndTime || !data.serverTime) {
+            return;
+        }
+
+        const nowServer = this.getSnapshotServerNow(data);
+        if (nowServer >= data.roundAnimEndTime) {
+            return;
+        }
+
+        if (this.sentRoundIds.has(data.roundId)) {
+            return;
+        }
+
+        const version = this.timelineVersion;
+        this.sentRoundIds.add(data.roundId);
+        await GameUIManager.instance.showRoundStartAnim(
+            this.roundId,
+            data.serverTime,
+            data.roundAnimEndTime
+        );
+
+        if (!this.isCurrentTimeline(version, data.roundId)) {
+            return;
+        }
+    }
+
+    private recoverGrabBankerCountdown(data?: RoomSnapshot) {
+        const endTime = data && data.grabEndTime ? data.grabEndTime : this.grabBankerEndTime;
+        const nowServer = data && data.serverTime ? this.getSnapshotServerNow(data) : this.getGrabBankerServerNow();
+        if (data && data.serverTime) {
+            this.grabBankerServerOffset = data.serverTime - ((data as any).__clientReceiveTime || Date.now());
+            this.grabBankerEndTime = endTime;
+        }
+
+        if (endTime <= 0 || nowServer >= endTime) {
+            CountDownManager.close();
+            GameUIManager.instance.setGrabBankerPanelVisible(false);
+            GameUIManager.instance.hidePhaseTip();
+            return;
+        }
+
+        const myPlayer = this.players.get(this.myUserId);
+        if (myPlayer && myPlayer.grabBanker != null) {
+            CountDownManager.close();
+            GameUIManager.instance.setGrabBankerPanelVisible(false);
+            this.showGrabBankerWaitingTip(myPlayer.grabBanker, Math.ceil((endTime - nowServer) / 1000));
+            return;
+        }
+
+        GameUIManager.instance.hidePhaseTip();
+        GameUIManager.instance.setGrabBankerPanelVisible(true);
+        CountDownManager.show(Math.ceil((endTime - nowServer) / 1000));
+    }
+
+    private recoverBetCountdown(data?: RoomSnapshot) {
+        GameUIManager.instance.hidePhaseTip();
+        const startTime = data && data.betStartTime ? data.betStartTime : 0;
+        const endTime = data && data.betEndTime ? data.betEndTime : this.betEndTime;
+        const nowServer = data && data.serverTime ? this.getSnapshotServerNow(data) : this.getBetServerNow();
+
+        if (endTime <= 0 || nowServer >= endTime) {
+            CountDownManager.close();
+            GameUIManager.instance.setBetPanelVisible(false);
+            GameUIManager.instance.hideBankerBetStatus();
+            return;
+        }
+
+        if (startTime > 0 && nowServer < startTime) {
+            const version = this.timelineVersion;
+            const roundId = this.roundId;
+            CountDownManager.close();
+            GameUIManager.instance.setBetPanelVisible(false);
+            GameUIManager.instance.hideBankerBetStatus();
+            DelayTaskUtil.getInstance().schedule(() => {
+                if (!this.isCurrentTimeline(version, roundId)) {
+                    return;
+                }
+                this.recoverBetCountdown(data);
+            }, (startTime - nowServer));
+            return;
+        }
+
+        if (this.betMap && this.betMap[this.myUserId] != null) {
+            CountDownManager.close();
+            GameUIManager.instance.setBetPanelVisible(false);
+            this.refreshBankerBetStatus();
+            return;
+        }
+
+        GameUIManager.instance.setBetPanelVisible(this.canBet());
+        this.refreshBankerBetStatus();
+        CountDownManager.show(Math.ceil((endTime - nowServer) / 1000));
+    }
+
+    private getGrabBankerServerNow(): number {
+        return Date.now() + this.grabBankerServerOffset;
+    }
+
+    private getBetServerNow(): number {
+        return Date.now() + this.betServerOffset;
+    }
+
+    private shouldRecoverDealCards(data: RoomSnapshot): boolean {
+        const tableNode = GameUIManager.instance ? GameUIManager.instance.getTableNode() : null;
+        const paiJiuTable = tableNode && cc.isValid(tableNode)
+            ? tableNode.getComponent("PaiJiuTable") as any
+            : null;
+
+        if (paiJiuTable && paiJiuTable.hasCardsOnTable && paiJiuTable.hasCardsOnTable()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private getSnapshotServerNow(data: RoomSnapshot): number {
+        const receiveTime = (data as any).__clientReceiveTime || Date.now();
+        return Date.now() + ((data.serverTime || receiveTime) - receiveTime);
+    }
+
+    private invalidateTimelineTasks() {
+        this.timelineVersion++;
+    }
+
+    private isCurrentTimeline(version: number, roundId?: number): boolean {
+        if (version !== this.timelineVersion) {
+            return false;
+        }
+
+        if (roundId != null && roundId !== this.roundId) {
+            return false;
+        }
+
+        return true;
     }
 
     // 进房回包
@@ -221,6 +410,12 @@ export default class ClientRoomManager {
 
         // 1. 先缓存房间数据
         this.roomSnapshot = data;
+
+        if (this.syncingRoomInfo || (this.gameReady && this.roomId === data.roomId)) {
+            this.syncingRoomInfo = false;
+            this.renderRoom(data);
+            return;
+        }
 
         // 2. 切换到游戏场景
         SceneUtil.loadScene("game_1");
@@ -255,7 +450,25 @@ export default class ClientRoomManager {
 
 
     public applyRoomInfo(data: RoomSnapshot) {
+        this.syncingRoomInfo = false;
+        if (this.gameReady) {
+            this.roomSnapshot = data;
+            this.renderRoom(data);
+            return;
+        }
+
         this.applyEnterRoom(data);
+    }
+
+    public syncRoomInfo() {
+        if (!this.gameReady || this.roomId <= 0) {
+            return;
+        }
+
+        this.syncingRoomInfo = true;
+        WsClient.instance.send(Cmd.ROOM_INFO, {
+            roomId: this.roomId
+        });
     }
 
     // 玩家进房通知
@@ -376,6 +589,8 @@ export default class ClientRoomManager {
         roundAnimEndTime: number,
     }) {
         console.log("游戏开始", "roundId:", data.roundId);
+        this.invalidateTimelineTasks();
+        const version = this.timelineVersion;
         GameUIManager.instance.clearTable();
         GameUIManager.instance.showReady(ReadyBtnState.HIDE);
 
@@ -399,7 +614,8 @@ export default class ClientRoomManager {
             if (waitAnimSeconds > 0) {
                 await PaiJiuUtil.wait(this as any, waitAnimSeconds);
             }
-            if (getServerNow() < data.roundAnimEndTime) {
+            if (this.isCurrentTimeline(version, data.roundId) && getServerNow() < data.roundAnimEndTime) {
+                this.sentRoundIds.add(data.roundId);
                 await GameUIManager.instance.showRoundStartAnim(
                     this.roundId,
                     data.serverTime,
@@ -415,8 +631,13 @@ export default class ClientRoomManager {
     // 开始抢庄
     public grabBankerStart(data: GrabBankerStartPush) {
         console.log("开始抢庄", data);
+        this.invalidateTimelineTasks();
+        const version = this.timelineVersion;
+        const roundId = data.roundId;
         const serverOffset = data.serverTime - Date.now();
         const getServerNow = () => Date.now() + serverOffset;
+        this.grabBankerServerOffset = serverOffset;
+        this.grabBankerEndTime = data.grabEndTime;
      
         const waitGrabSeconds = Math.max(
             0,
@@ -424,46 +645,75 @@ export default class ClientRoomManager {
         );
 
         DelayTaskUtil.getInstance().schedule(() => {
-            // 显示抢庄面板
+            if (!this.isCurrentTimeline(version, roundId)) {
+                return;
+            }
+
             this.setRoomState(data.roomState);
-           
-            const leftSeconds = Math.max(0,
-                Math.ceil((data.grabEndTime - getServerNow()) / 1000)
-            );
-            console.log("抢庄倒计时 剩余:", leftSeconds);
-            // 倒计时
-            CountDownManager.show(leftSeconds);
-        }, waitGrabSeconds);
+            GameUIManager.instance.hidePhaseTip();
+            this.recoverGrabBankerCountdown();
+        }, waitGrabSeconds * 1000);
     }
 
     // 抢庄完毕-
     public grabBankerEnd(data: GrabBankerResultPush){
         console.log("抢庄完毕", data);
+        this.invalidateTimelineTasks();
+        const version = this.timelineVersion;
+        const roundId = data.roundId;
+        CountDownManager.close();
+        GameUIManager.instance.setGrabBankerPanelVisible(false);
+        GameUIManager.instance.hidePhaseTip();
         this.bankerSeat = data.bankerSeat;
         this.updatePlayers(data.players);
+        this.grabBankerEndTime = 0;
         
         // 等到下注开始时间
         const serverOffset = data.serverTime - Date.now();
         const getServerNow = () => Date.now() + serverOffset;
+        this.betServerOffset = serverOffset;
+        this.betEndTime = data.betEndTime;
         const waitBetSeconds = Math.max(
             0,
             (data.betStartTime - getServerNow()) / 1000
         );
 
         DelayTaskUtil.getInstance().schedule(() => {
+            if (!this.isCurrentTimeline(version, roundId)) {
+                return;
+            }
 
             this.setRoomState(data.roomState);
-
             this.refreshAllSeatView();
+            this.recoverBetCountdown();
+        }, waitBetSeconds * 1000);
+    }
 
-            const leftSeconds = Math.max(
-                0,
-                Math.ceil((data.betEndTime - getServerNow()) / 1000)
-            );
+    public playerGrabBanker(data: GrabBankerPush) {
+        if (!data) {
+            return;
+        }
 
-            console.log("下注倒计时 剩余:", leftSeconds);
-            CountDownManager.show(leftSeconds);
-        }, waitBetSeconds);
+        const player = this.players.get(data.userId);
+        if (player) {
+            player.grabBanker = data.grabBanker;
+        }
+
+        if (data.userId === this.myUserId) {
+            CountDownManager.close();
+            GameUIManager.instance.setGrabBankerPanelVisible(false);
+            this.showGrabBankerWaitingTip(data.grabBanker);
+        }
+    }
+
+    public showGrabBankerWaitingTip(grabBanker: number, leftSeconds?: number) {
+        const seconds = leftSeconds != null
+            ? leftSeconds
+            : Math.ceil((this.grabBankerEndTime - this.getGrabBankerServerNow()) / 1000);
+        GameUIManager.instance.showPhaseTip(
+            grabBanker === 1 ? "已抢庄，等待其他玩家" : "不抢，等待其他玩家",
+            Math.max(0, seconds)
+        );
     }
 
     
@@ -479,6 +729,9 @@ export default class ClientRoomManager {
     }){
         const players= data.players;
         const seatId = data.seatId;
+        this.betMap[data.userId] = data.totalBet || data.chip;
+        this.updatePlayers(players);
+        this.refreshBankerBetStatus();
         // 投注面板隐藏
         GameUIManager.instance.setBetPanelVisible(false);
         // 移除倒计时
@@ -499,6 +752,8 @@ export default class ClientRoomManager {
         const seatId = data.seatId;
 
         this.updatePlayers(players);
+        this.betMap[data.userId] = data.totalBet || data.chip;
+        this.refreshBankerBetStatus();
 
         const playerMap = new Map(players.map(player => [player.seatId, player]));
         // 更新玩家金币
@@ -522,7 +777,12 @@ export default class ClientRoomManager {
     }
     // 发牌
     public async dealCard(deal: DealCardPush) {
+        this.invalidateTimelineTasks();
         CountDownManager.close();
+        GameUIManager.instance.hidePhaseTip();
+        GameUIManager.instance.hideBankerBetStatus();
+        this.grabBankerEndTime = 0;
+        this.betEndTime = 0;
 
         this.setRoomState(deal.roomState);
         this.bankerSeat = deal.bankerSeat;
@@ -552,6 +812,7 @@ export default class ClientRoomManager {
         this.bankerSeat = deal.bankerSeat;
 
         await paiJiuTable.playStartAnim(serverResult);
+        this.applyOpenedCardUsers(deal.openedCardUsers);
     }
 
     // 结算
@@ -562,10 +823,6 @@ export default class ClientRoomManager {
 
         if (data.roomState != null) {
             this.setRoomState(data.roomState);
-        }
-
-        if (data.userId === this.myUserId) {
-            return;
         }
 
         const tableNode = GameUIManager.instance.getTableNode();
@@ -581,14 +838,38 @@ export default class ClientRoomManager {
         paiJiuTable.openSeatCardsByServer(data.seatId);
     }
 
+    private applyOpenedCardUsers(openedCardUsers?: number[]) {
+        if (!openedCardUsers || openedCardUsers.length <= 0) {
+            return;
+        }
+
+        const tableNode = GameUIManager.instance ? GameUIManager.instance.getTableNode() : null;
+        const paiJiuTable = tableNode && cc.isValid(tableNode)
+            ? tableNode.getComponent("PaiJiuTable") as any
+            : null;
+
+        if (!paiJiuTable || !paiJiuTable.showSeatCardsImmediately) {
+            return;
+        }
+
+        openedCardUsers.forEach(userId => {
+            const seatId = this.getSeatIdByUserId(Number(userId));
+            if (seatId >= 0) {
+                paiJiuTable.showSeatCardsImmediately(seatId);
+            }
+        });
+    }
+
     public settle(settleInfo: SettlePush) {
+        const version = this.timelineVersion;
+        const roundId = this.roundId;
 
         const serverTime = settleInfo.serverTime || settleInfo.setServerTime;
         const settleTime = settleInfo.settleTime || settleInfo.setSettleTime;
 
         if (!serverTime || !settleTime) {
             cc.error("settle 缺少时间字段", settleInfo);
-            this.doSettle(settleInfo);
+            this.doSettle(settleInfo, true);
             return;
         }
 
@@ -604,11 +885,16 @@ export default class ClientRoomManager {
         );
 
         DelayTaskUtil.getInstance().schedule(() => {
-            this.doSettle(settleInfo);
-        }, delay);
+            if (!this.isCurrentTimeline(version, roundId)) {
+                return;
+            }
+            this.doSettle(settleInfo, true);
+        }, delay * 1000);
     }
 
-    private doSettle(data: SettlePush) {
+    private doSettle(data: SettlePush, playEffects: boolean = true) {
+        GameUIManager.instance.hideBankerBetStatus();
+        this.forceTableSettleReveal();
         const bankerSeat = data.bankerSeat;
         const settlePlayers = data.settlePlayers;
         const players = data.players;
@@ -633,7 +919,24 @@ export default class ClientRoomManager {
             }
         });
 
-        GameUIManager.instance.playSettleEffects(settlePlayers, bankerSeat);
+        if (playEffects) {
+            GameUIManager.instance.playSettleEffects(settlePlayers, bankerSeat);
+        } else {
+            GameUIManager.instance.clearSettleEffects();
+        }
+    }
+
+    private forceTableSettleReveal() {
+        const tableNode = GameUIManager.instance ? GameUIManager.instance.getTableNode() : null;
+        const paiJiuTable = tableNode && cc.isValid(tableNode)
+            ? tableNode.getComponent("PaiJiuTable") as any
+            : null;
+
+        if (paiJiuTable && paiJiuTable.forceSettleReveal) {
+            paiJiuTable.forceSettleReveal();
+        } else {
+            GameUIManager.instance.setLookCardPanelVisible(false, true);
+        }
     }
 
     public doNextRound(){   
@@ -644,6 +947,8 @@ export default class ClientRoomManager {
     // 下一局
     public nextRound(data: NextRoundPush) {
         console.log("下一局:", data.roundId)
+        this.invalidateTimelineTasks();
+        GameUIManager.instance.hideBankerBetStatus();
         // 强制关闭结算界面
         SettleManager.close();
 
@@ -745,6 +1050,21 @@ export default class ClientRoomManager {
              console.log("投注面板隐藏", this.mySeatId, this.bankerSeat);
         }
         GameUIManager.instance.setBetPanelVisible(canBet);
+        this.refreshBankerBetStatus();
+    }
+
+    private refreshBankerBetStatus() {
+        if (this.roomState !== RoomState.BET) {
+            GameUIManager.instance.hideBankerBetStatus();
+            return;
+        }
+
+        GameUIManager.instance.showBankerBetStatus(
+            this.getPlayers(),
+            this.bankerSeat,
+            this.mySeatId,
+            this.betMap || {}
+        );
     }
 
     private refreshGrabBankerUI(){
@@ -845,6 +1165,7 @@ export default class ClientRoomManager {
 
     public buildDealCardPush(snapshot: RoomSnapshot): DealCardPush {
         const { roomId, roomState, players, cardMap } = snapshot;
+        const now = Date.now();
         const playerCards: PlayerCardDTO[] = players.map(player => {
             const userId = player.userId;
             const cards = cardMap[userId] || [];
@@ -860,7 +1181,13 @@ export default class ClientRoomManager {
             roomId,
             roomState,
             bankerSeat: snapshot.bankerSeat,
-            playerCards
+            playerCards,
+            serverTime: snapshot.serverTime || now,
+            dealStartTime: snapshot.dealStartTime || now,
+            showCardTime: snapshot.showCardTime || now + 20000,
+            settleTime: snapshot.settleTime || now + 23000,
+            nextRoundTime: (snapshot.settlePush && snapshot.settlePush.nextRoundTime) || now + 27000,
+            openedCardUsers: snapshot.openedCardUsers || []
         };
     }
 
@@ -882,6 +1209,10 @@ export default class ClientRoomManager {
         this.roomState = RoomState.WAIT;
         this.bankerSeat = -1;
         this.gameReady = false;
+        this.syncingRoomInfo = false;
+        this.grabBankerEndTime = 0;
+        this.betEndTime = 0;
+        this.timelineVersion++;
     }
 
 
