@@ -4,7 +4,7 @@ const { ccclass } = cc._decorator;
 
 @ccclass
 export default class HallRecordItem extends cc.Component {
-    private static readonly COLUMN_X = [-245, -105, 25, 155, 275];
+    private static readonly COLUMN_X = [-300, -105, 25, 155, 300];
 
     private labels: cc.Label[] = [];
 
@@ -19,8 +19,8 @@ export default class HallRecordItem extends cc.Component {
             this.node.addChild(labelNode);
 
             const label = labelNode.addComponent(cc.Label);
-            label.fontSize = 26;
-            label.lineHeight = 30;
+            label.fontSize = 35;
+            label.lineHeight = 35;
             label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
             label.verticalAlign = cc.Label.VerticalAlign.CENTER;
             labelNode.color = cc.color(60, 35, 20);

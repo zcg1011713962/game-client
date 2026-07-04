@@ -9,8 +9,8 @@ const { ccclass } = cc._decorator;
 
 @ccclass
 export default class HallRecordPopup extends cc.Component {
-    private static readonly TITLE_NAMES = ["开始时间", "房间", "金币", "时长", "坐庄"];
-    private static readonly COLUMN_X = [-245, -105, 25, 155, 275];
+    private static readonly TITLE_NAMES = ["开始时间", "房间", "金币", "时长", "庄次数"];
+    private static readonly COLUMN_X = [-300, -105, 25, 155, 300];
 
     private mask: cc.Node = null;
     private content: cc.Node = null;
@@ -180,8 +180,8 @@ export default class HallRecordPopup extends cc.Component {
 
             label.string = HallRecordPopup.TITLE_NAMES[index];
             label.node.x = HallRecordPopup.COLUMN_X[index];
-            label.fontSize = 28;
-            label.lineHeight = 32;
+            label.fontSize = 40;
+            label.lineHeight = 42;
             label.node.color = cc.color(246, 215, 122);
 
             let outline = label.getComponent(cc.LabelOutline);
