@@ -198,6 +198,7 @@ export default class ClientRoomManager {
 
     private sentRoundIds: Set<number> = new Set();
     private timelineVersion: number = 0;
+    private animatedBetKeys: Set<string> = new Set();
 
     private constructor() {}
     
@@ -595,6 +596,7 @@ export default class ClientRoomManager {
         GameUIManager.instance.showReady(ReadyBtnState.HIDE);
 
         this.roundId = data.roundId;
+        this.animatedBetKeys.clear();
 
         this.players.clear();
         data.players.forEach(p => {
@@ -739,6 +741,7 @@ export default class ClientRoomManager {
         this.betMap[data.userId] = data.totalBet || data.chip;
         this.updatePlayers(players);
         this.refreshBankerBetStatus();
+        this.playBetChipOnce(data);
         // 投注面板隐藏
         GameUIManager.instance.setBetPanelVisible(false);
         // 移除倒计时
@@ -777,10 +780,30 @@ export default class ClientRoomManager {
         if(seatId === this.mySeatId){
             GameUIManager.instance.setBetPanelVisible(false);
         }
-        // 筹码动画
-        GameUIManager.instance.onSelectChip(data.chip, seatId);
+        this.playBetChipOnce(data);
         // 更新座位信息
         this.refreshAllSeatView();
+    }
+
+    private playBetChipOnce(data: {
+        roomId: number,
+        userId: number,
+        seatId: number,
+        chip: number,
+        totalBet?: number
+    }) {
+        if (!data || data.seatId == null || data.chip == null) {
+            return;
+        }
+
+        const totalBet = data.totalBet || data.chip;
+        const key = `${this.roundId}:${data.roomId}:${data.userId}:${totalBet}`;
+        if (this.animatedBetKeys.has(key)) {
+            return;
+        }
+
+        this.animatedBetKeys.add(key);
+        GameUIManager.instance.onSelectChip(data.chip, data.seatId);
     }
     // 发牌
     public async dealCard(deal: DealCardPush) {
@@ -960,6 +983,8 @@ export default class ClientRoomManager {
         SettleManager.close();
 
         this.roundId = data.roundId;
+        this.betMap = {};
+        this.animatedBetKeys.clear();
         this.setRoomState(data.roomState);
         this.updatePlayers(data.players);
 
@@ -1219,6 +1244,7 @@ export default class ClientRoomManager {
         this.syncingRoomInfo = false;
         this.grabBankerEndTime = 0;
         this.betEndTime = 0;
+        this.animatedBetKeys.clear();
         this.timelineVersion++;
     }
 
