@@ -667,6 +667,8 @@ export default class ClientRoomManager {
         this.bankerSeat = data.bankerSeat;
         this.updatePlayers(data.players);
         this.grabBankerEndTime = 0;
+        this.setRoomState(data.roomState);
+        this.refreshAllSeatView();
         
         // 等到下注开始时间
         const serverOffset = data.serverTime - Date.now();
@@ -678,11 +680,16 @@ export default class ClientRoomManager {
             (data.betStartTime - getServerNow()) / 1000
         );
 
+        if (waitBetSeconds > 0) {
+            GameUIManager.instance.showPhaseTip("庄家已确定，准备下注", Math.ceil(waitBetSeconds));
+        }
+
         DelayTaskUtil.getInstance().schedule(() => {
             if (!this.isCurrentTimeline(version, roundId)) {
                 return;
             }
 
+            GameUIManager.instance.hidePhaseTip();
             this.setRoomState(data.roomState);
             this.refreshAllSeatView();
             this.recoverBetCountdown();
@@ -956,8 +963,8 @@ export default class ClientRoomManager {
         this.setRoomState(data.roomState);
         this.updatePlayers(data.players);
 
-        // 进入下一轮后先保留结算金额，等玩家点击准备时再完整清理
-        GameUIManager.instance.clearTable(true);
+        // 进入下一轮后保留牌面和输赢，等玩家点击准备时再完整清理
+        GameUIManager.instance.keepSettleViewForNextReady();
         this.refreshAllSeatView();
 
         GameUIManager.instance.showReady(

@@ -442,6 +442,16 @@ export default class GameUIManager extends cc.Component {
         SettleManager.close();
     }
 
+    public keepSettleViewForNextReady() {
+        this.clearClockContainer();
+        this.hidePhaseTip();
+        this.hideBankerBetStatus();
+        this.setBetPanelVisible(false);
+        this.setGrabBankerPanelVisible(false);
+        this.setLookCardPanelVisible(false, true);
+        SettleManager.close();
+    }
+
     // 清理发牌区
     public clearCardContainer() {
         const tableNode = GameUIManager.instance.getTableNode();
