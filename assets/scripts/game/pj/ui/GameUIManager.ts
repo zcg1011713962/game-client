@@ -28,6 +28,8 @@ export default class GameUIManager extends cc.Component {
     private phaseTipNode!: cc.Node;
     private bankerBetStatusNode!: cc.Node;
     private roomFinalSettleNode!: cc.Node;
+    private roundViewNode!: cc.Node;
+    private roundViewLabel!: cc.Label;
     private phaseTipText: string = "";
     private phaseTipEndLocalTime: number = 0;
     private settleCoinSpriteFrame: cc.SpriteFrame = null;
@@ -702,6 +704,70 @@ export default class GameUIManager extends cc.Component {
             console.log("update RoomTopBar", roomBarData);
             this.rooomTopBarComponent.setRoomInfo(roomBarData);
         }
+    }
+
+    public updateRoundView(roundId: number, maxRoundId: number = 0) {
+        if (!roundId || roundId <= 0) {
+            if (this.roundViewNode && cc.isValid(this.roundViewNode)) {
+                this.roundViewNode.active = false;
+            }
+            return;
+        }
+
+        const node = this.getRoundViewNode();
+        if (!node) {
+            return;
+        }
+
+        node.active = true;
+        const showTotal = maxRoundId > 0 && maxRoundId < 100000;
+        this.roundViewLabel.string = showTotal ? `第${roundId}/${maxRoundId}局` : `第${roundId}局`;
+    }
+
+    private getRoundViewNode(): cc.Node {
+        if (this.roundViewNode && cc.isValid(this.roundViewNode)) {
+            return this.roundViewNode;
+        }
+
+        const canvas = cc.find("Canvas");
+        if (!canvas || !cc.isValid(canvas)) {
+            return null;
+        }
+
+        const node = new cc.Node("RoundView");
+        node.zIndex = 1200;
+        node.setContentSize(200, 150);
+        canvas.addChild(node);
+        node.setPosition(-420,750);
+
+        const bg = node.addComponent(cc.Graphics);
+        bg.fillColor = new cc.Color(28, 16, 8, 95);
+        bg.strokeColor = new cc.Color(246, 188, 72, 185);
+        bg.lineWidth = 2;
+        bg.roundRect(-80, -22, 160, 44, 8);
+        bg.fill();
+        bg.stroke();
+
+        const labelNode = new cc.Node("Label");
+        labelNode.setContentSize(200, 150);
+        node.addChild(labelNode);
+
+        const label = labelNode.addComponent(cc.Label);
+        label.fontSize = 22;
+        label.lineHeight = 28;
+        label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
+        label.verticalAlign = cc.Label.VerticalAlign.CENTER;
+        label.overflow = cc.Label.Overflow.SHRINK;
+        label.string = "";
+        labelNode.color = new cc.Color(255, 226, 126);
+
+        const outline = labelNode.addComponent(cc.LabelOutline);
+        outline.color = cc.Color.BLACK;
+        outline.width = 2;
+
+        this.roundViewNode = node;
+        this.roundViewLabel = label;
+        return node;
     }
 
 

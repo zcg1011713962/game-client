@@ -28,6 +28,7 @@ export interface PlayerDTO {
 
 export interface RoomSnapshot {
     roundId: number;
+    maxRoundId?: number;
     roomId: number;
     userId: number;
     roomState: number;
@@ -140,6 +141,7 @@ export interface SettlePush {
 export interface NextRoundPush {
     roomId: number;
     roundId: number;
+    maxRoundId?: number;
     roomState: number;
     players: PlayerDTO[];
     nextRoundTime: number;
@@ -191,6 +193,7 @@ export default class ClientRoomManager {
     private syncingRoomInfo: boolean = false;
 
     private roundId: number = -1;
+    private maxRoundId: number = 0;
 
     private ownerUserId : number = -1;
 
@@ -242,6 +245,7 @@ export default class ClientRoomManager {
         const players = data.players;
 
         this.roundId = data.roundId;
+        this.maxRoundId = data.maxRoundId || this.maxRoundId || 0;
         this.roomId = data.roomId;
         this.myUserId = data.userId;
         this.bankerSeat = bankerSeat;
@@ -253,6 +257,7 @@ export default class ClientRoomManager {
         
         if(GameUIManager.instance){
             GameUIManager.instance.updateTopView(data.roomId, players.length, data.baseScore);
+            GameUIManager.instance.updateRoundView(this.roundId, this.maxRoundId);
         }
         this.updatePlayer(data.userId, players);
        
@@ -612,6 +617,7 @@ export default class ClientRoomManager {
     public async applyGameStart(data: {
         roomId: number,
         roundId: number,
+        maxRoundId?: number,
         players: PlayerDTO[],
         serverTime: number,
         roundAnimStartTime: number,
@@ -624,7 +630,9 @@ export default class ClientRoomManager {
         GameUIManager.instance.showReady(ReadyBtnState.HIDE);
 
         this.roundId = data.roundId;
+        this.maxRoundId = data.maxRoundId || this.maxRoundId || 0;
         this.animatedBetKeys.clear();
+        GameUIManager.instance.updateRoundView(this.roundId, this.maxRoundId);
 
         this.players.clear();
         data.players.forEach(p => {
@@ -1016,6 +1024,7 @@ export default class ClientRoomManager {
         SettleManager.close();
 
         this.roundId = data.roundId;
+        this.maxRoundId = data.maxRoundId || this.maxRoundId || 0;
         this.betMap = {};
         this.animatedBetKeys.clear();
         this.setRoomState(data.roomState);
@@ -1024,6 +1033,7 @@ export default class ClientRoomManager {
         // 进入下一轮后保留牌面和输赢，等玩家点击准备时再完整清理
         GameUIManager.instance.keepSettleViewForNextReady();
         this.refreshAllSeatView();
+        GameUIManager.instance.updateRoundView(this.roundId, this.maxRoundId);
 
         GameUIManager.instance.showReady(
             ReadyBtnState.READY
@@ -1293,6 +1303,7 @@ export default class ClientRoomManager {
         this.betMap = {};
         this.cardMap = {};
         this.roundId = -1;
+        this.maxRoundId = 0;
         this.ownerUserId = -1;
         this.roomId =-1;
         this.myUserId = -1;
@@ -1307,6 +1318,9 @@ export default class ClientRoomManager {
         this.timelineVersion++;
         this.roomFinalSettled = false;
         this.latestRoomFinalSettle = null;
+        if (GameUIManager.instance) {
+            GameUIManager.instance.updateRoundView(0, 0);
+        }
     }
 
 
