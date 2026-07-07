@@ -51,7 +51,26 @@ export default class BetArea extends cc.Component {
     public clearChips(seats : { x : number, y : number, id:  number }[]) {
         seats.forEach(seat => {
             const targetPosNode = this.node.getChildByName(`BetArea${seat.id}`);
-            targetPosNode.removeAllChildren();
+            if (targetPosNode) {
+                targetPosNode.removeAllChildren();
+            }
+        });
+    }
+
+    public finishFlyingChips() {
+        this.node.children.forEach(targetPosNode => {
+            targetPosNode.children.forEach(chipNode => {
+                const chipItem = chipNode.getComponent(ChipItem);
+                if (chipItem && chipItem.finishFlyImmediately) {
+                    chipItem.finishFlyImmediately();
+                } else {
+                    cc.Tween.stopAllByTarget(chipNode);
+                    chipNode.setPosition(0, 0);
+                    chipNode.scale = 1;
+                    chipNode.opacity = 255;
+                    chipNode.angle = 0;
+                }
+            });
         });
     }
 }

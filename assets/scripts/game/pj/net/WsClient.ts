@@ -144,7 +144,11 @@ export default class WsClient {
        
         if (msg.code !== 0) {
             console.error("服务端错误:", msg.cmd, msg.code, msg.msg);
-            if(msg.code === 2002){
+            if (msg.cmd === Cmd.READY && msg.code === 1019) {
+                if (!ClientRoomManager.instance.showLatestRoomFinalSettle()) {
+                    ClientRoomManager.instance.syncRoomInfo();
+                }
+            } else if(msg.code === 2002){
                 ToastManager.show("网络中断")
             }else{
                 ToastManager.show(msg.msg)
@@ -213,6 +217,9 @@ export default class WsClient {
             case Cmd.NEXT_ROUND:
                 // 下一局
                 ClientRoomManager.instance.nextRound(msg.data);
+                break;
+            case Cmd.ROOM_FINAL_SETTLE:
+                ClientRoomManager.instance.roomFinalSettle(msg.data);
                 break;
             case Cmd.LEAVE_ROOM_RESULT:
                 ClientRoomManager.instance.leaveRoom(msg.data);

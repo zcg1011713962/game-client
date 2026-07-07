@@ -92,6 +92,7 @@ export default class PaiJiuTable extends cc.Component {
 
     private currentSettleTime: number = 0;
     private currentNextRoundTime: number = 0;
+    private tableTimelineVersion: number = 0;
     private reportedOpenSeats: { [seat: number]: boolean } = {};
     private openedSeats: { [seat: number]: boolean } = {};
 
@@ -244,8 +245,13 @@ export default class PaiJiuTable extends cc.Component {
      * 发牌入口：使用服务器时间控制
      */
     public async playStartAnim(serverResult: IServerDealResult) {
+        this.tableTimelineVersion++;
+        const timelineVersion = this.tableTimelineVersion;
+
+        this.unscheduleAllCallbacks();
+
         if (this.isPlaying) {
-            this.stopAllAnimAndSchedule();
+            cc.Tween.stopAll();
             this.isPlaying = false;
         }
 
@@ -272,6 +278,10 @@ export default class PaiJiuTable extends cc.Component {
         this.currentSettleTime = settleTime;
 
         await this.createDeck();
+
+        if (timelineVersion !== this.tableTimelineVersion) {
+            return;
+        }
 
         /**
          * 已经过了亮牌时间，只补齐牌面位置，不补播翻牌动作。
@@ -308,6 +318,10 @@ export default class PaiJiuTable extends cc.Component {
         );
 
         this.scheduleOnce(() => {
+            if (timelineVersion !== this.tableTimelineVersion) {
+                return;
+            }
+
             this.startShuffleByServerTime();
         }, waitDealSeconds);
     }
@@ -358,7 +372,12 @@ export default class PaiJiuTable extends cc.Component {
                 0,
                 (this.currentSettleTime - this.getServerNow()) / 1000
             );
+            const timelineVersion = this.tableTimelineVersion;
             this.scheduleOnce(() => {
+                if (timelineVersion !== this.tableTimelineVersion) {
+                    return;
+                }
+
                 this.forceSettleReveal();
             }, waitSettleSeconds);
 
@@ -372,7 +391,12 @@ export default class PaiJiuTable extends cc.Component {
         }
 
         const waitSeconds = Math.max(0, (this.currentSettleTime - this.getServerNow()) / 1000);
+        const timelineVersion = this.tableTimelineVersion;
         this.scheduleOnce(() => {
+            if (timelineVersion !== this.tableTimelineVersion) {
+                return;
+            }
+
             this.forceSettleReveal();
         }, waitSeconds);
     }
@@ -1583,6 +1607,8 @@ export default class PaiJiuTable extends cc.Component {
     
 
     public async showCard() {
+        const timelineVersion = this.tableTimelineVersion;
+
         if (this.currentSettleTime > 0 && this.getServerNow() >= this.currentSettleTime) {
             this.forceSettleReveal();
             return;
@@ -1615,6 +1641,10 @@ export default class PaiJiuTable extends cc.Component {
             }
 
             this.flipSeatCards(player.seatId, () => {
+                if (timelineVersion !== this.tableTimelineVersion) {
+                    return;
+                }
+
                 this.openedSeats[player.seatId] = true;
                 this.sortSeatCards(player.seatId);
             });
@@ -1623,6 +1653,10 @@ export default class PaiJiuTable extends cc.Component {
         // 等待翻牌
         const waitSeconds = this.currentSettleTime > 0 ? Math.max(0, (this.currentSettleTime - this.getServerNow()) / 1000): 0.5;
         await PaiJiuUtil.wait(this, Math.min(waitSeconds, 0.8));
+
+        if (timelineVersion !== this.tableTimelineVersion) {
+            return;
+        }
 
         if (this.tableState === PaiJiuTableState.SHOW_CARD) {
             this.fastShowAllCards();

@@ -11,6 +11,10 @@ export default class CreateRoomPopup extends cc.Component {
     private mask: cc.Node = null;
     private btnClose: cc.Node = null;
     private btnCreate: cc.Node = null;
+    private selectedRoundCount: number = 16;
+    private roundOptionNodes: cc.Node[] = [];
+    private roundNormalSpriteFrame: cc.SpriteFrame = null;
+    private roundSelectedSpriteFrame: cc.SpriteFrame = null;
 
     onLoad() {
         this.mask = this.node.getChildByName("Mask");
@@ -39,6 +43,7 @@ export default class CreateRoomPopup extends cc.Component {
             this.btnCreate.on(cc.Node.EventType.TOUCH_END, this.onCreateRoom, this);
         }
         this.initTitleStyle();
+        this.initRoundOptions();
 
         this.node.active = false;
     }
@@ -154,6 +159,95 @@ export default class CreateRoomPopup extends cc.Component {
         });
     }
 
+    private initRoundOptions() {
+        const roundGroup = cc.find("Panel/ScrollView/View/RoundGroup", this.node);
+        if (!roundGroup) {
+            cc.warn("CreateRoomPopup 找不到 RoundGroup");
+            return;
+        }
+
+        const configs = [
+            { name: "s1", value: 8 },
+            { name: "s2", value: 16 },
+            { name: "s3", value: 32 },
+        ];
+
+        this.roundOptionNodes = [];
+
+        configs.forEach(config => {
+            const node = roundGroup.getChildByName(config.name);
+            if (!node) {
+                return;
+            }
+
+            const sprite = node.getComponent(cc.Sprite);
+            if (config.value === 8 && sprite) {
+                this.roundNormalSpriteFrame = sprite.spriteFrame;
+            } else if (config.value === 16 && sprite) {
+                this.roundSelectedSpriteFrame = sprite.spriteFrame;
+            }
+
+            (node as any).__roundCount = config.value;
+            node.off(cc.Node.EventType.TOUCH_END, this.onRoundOptionTouch, this);
+            node.on(cc.Node.EventType.TOUCH_END, this.onRoundOptionTouch, this);
+            this.roundOptionNodes.push(node);
+        });
+
+        this.updateRoundOptions();
+    }
+
+    private onRoundOptionTouch(event: cc.Event.EventTouch) {
+        event.stopPropagation();
+
+        const node = event.currentTarget as cc.Node;
+        const roundCount = (node as any).__roundCount;
+        if (!roundCount || this.selectedRoundCount === roundCount) {
+            return;
+        }
+
+        this.selectedRoundCount = roundCount;
+        this.updateRoundOptions();
+
+        cc.Tween.stopAllByTarget(node);
+        node.scale = 1;
+        cc.tween(node)
+            .to(0.08, { scale: 1.06 })
+            .to(0.08, { scale: 1 })
+            .start();
+    }
+
+    private updateRoundOptions() {
+        this.roundOptionNodes.forEach(node => {
+            const selected = (node as any).__roundCount === this.selectedRoundCount;
+            node.opacity = selected ? 255 : 210;
+
+            const sprite = node.getComponent(cc.Sprite);
+            if (sprite) {
+                if (selected && this.roundSelectedSpriteFrame) {
+                    sprite.spriteFrame = this.roundSelectedSpriteFrame;
+                } else if (!selected && this.roundNormalSpriteFrame) {
+                    sprite.spriteFrame = this.roundNormalSpriteFrame;
+                }
+            }
+
+            const titleNode = node.getChildByName("label1");
+            const titleLabel = titleNode ? titleNode.getComponent(cc.Label) : null;
+            if (titleLabel) {
+                titleLabel.node.color = selected
+                    ? new cc.Color(255, 248, 207)
+                    : new cc.Color(90, 51, 22);
+            }
+
+            const costNode = node.getChildByName("label2");
+            const costLabel = costNode ? costNode.getComponent(cc.Label) : null;
+            if (costLabel) {
+                costLabel.node.color = selected
+                    ? new cc.Color(255, 234, 170)
+                    : new cc.Color(90, 51, 22);
+            }
+        });
+    }
+
     /**
      * 显示弹窗
      */
@@ -207,7 +301,7 @@ export default class CreateRoomPopup extends cc.Component {
     private onCreateRoom() {
         const req = new CreateRoomReq();
         req.gameId = 1;
-        req.roundCount = 16;
+        req.roundCount = this.selectedRoundCount;
         req.playerCount = 4;
         req.bankerMode = 1;
         req.zhiZun = true;
@@ -226,6 +320,9 @@ export default class CreateRoomPopup extends cc.Component {
             this.mask.off(cc.Node.EventType.TOUCH_END, this.onMaskTouchEnd, this);
             this.mask.off(cc.Node.EventType.TOUCH_CANCEL, this.onMaskTouch, this);
         }
+        this.roundOptionNodes.forEach(node => {
+            node.off(cc.Node.EventType.TOUCH_END, this.onRoundOptionTouch, this);
+        });
     }
     
 }

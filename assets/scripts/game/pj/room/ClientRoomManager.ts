@@ -55,6 +55,7 @@ export interface RoomSnapshot {
     nextRoundTime?: number;
 
     settlePush: SettlePush;
+    roomFinalSettlePush?: RoomFinalSettlePush;
 }
 export interface GrabBankerStartPush {
     roomId: number;
@@ -145,8 +146,28 @@ export interface NextRoundPush {
     serverTime: number;
 }
 
+export interface RoomFinalSettlePlayerDTO {
+    userId: number;
+    seatId: number;
+    nickname: string;
+    avatar: string;
+    totalWinAmount: number;
+    bankerCount: number;
+    afterGold: number;
+}
+
+export interface RoomFinalSettlePush {
+    roomId: number;
+    roundId: number;
+    roundCount: number;
+    serverTime: number;
+    message?: string;
+    players: RoomFinalSettlePlayerDTO[];
+}
+
 export interface PlayerOpenCardPush {
     roomId: number;
+    roundId?: number;
     userId: number;
     seatId: number;
     openType: number;
@@ -199,6 +220,8 @@ export default class ClientRoomManager {
     private sentRoundIds: Set<number> = new Set();
     private timelineVersion: number = 0;
     private animatedBetKeys: Set<string> = new Set();
+    private roomFinalSettled: boolean = false;
+    private latestRoomFinalSettle: RoomFinalSettlePush | null = null;
 
     private constructor() {}
     
@@ -225,6 +248,8 @@ export default class ClientRoomManager {
         this.betMap = data.betMap;
         this.cardMap = data.cardMap;
         this.baseScore = data.baseScore;
+        this.roomFinalSettled = false;
+        this.latestRoomFinalSettle = null;
         
         if(GameUIManager.instance){
             GameUIManager.instance.updateTopView(data.roomId, players.length, data.baseScore);
@@ -235,6 +260,9 @@ export default class ClientRoomManager {
         this.setRoomState(data.roomState);
         this.refreshAllSeatView();
         this.recoverRoomByState(data);
+        if (data.roomFinalSettlePush) {
+            this.roomFinalSettle(data.roomFinalSettlePush);
+        }
     }
 
     private recoverRoomByState(data: RoomSnapshot) {
@@ -851,6 +879,11 @@ export default class ClientRoomManager {
             return;
         }
 
+        if (data.roundId != null && data.roundId !== this.roundId) {
+            cc.warn("忽略旧局亮牌推送", data.roundId, this.roundId);
+            return;
+        }
+
         if (data.roomState != null) {
             this.setRoomState(data.roomState);
         }
@@ -995,6 +1028,32 @@ export default class ClientRoomManager {
         GameUIManager.instance.showReady(
             ReadyBtnState.READY
         );
+    }
+
+    public roomFinalSettle(data: RoomFinalSettlePush) {
+        this.invalidateTimelineTasks();
+        this.roomFinalSettled = true;
+        this.latestRoomFinalSettle = data;
+        CountDownManager.close();
+        GameUIManager.instance.hidePhaseTip();
+        GameUIManager.instance.hideBankerBetStatus();
+        SettleManager.close();
+        GameUIManager.instance.showReady(ReadyBtnState.HIDE);
+        GameUIManager.instance.showRoomFinalSettle(data);
+    }
+
+    public isRoomFinalSettled(): boolean {
+        return this.roomFinalSettled;
+    }
+
+    public showLatestRoomFinalSettle(): boolean {
+        if (!this.latestRoomFinalSettle) {
+            return false;
+        }
+
+        GameUIManager.instance.showRoomFinalSettle(this.latestRoomFinalSettle);
+        GameUIManager.instance.showReady(ReadyBtnState.HIDE);
+        return true;
     }
 
 
@@ -1246,6 +1305,8 @@ export default class ClientRoomManager {
         this.betEndTime = 0;
         this.animatedBetKeys.clear();
         this.timelineVersion++;
+        this.roomFinalSettled = false;
+        this.latestRoomFinalSettle = null;
     }
 
 

@@ -27,6 +27,7 @@ export default class GameUIManager extends cc.Component {
     private settleEffectRoot!: cc.Node;
     private phaseTipNode!: cc.Node;
     private bankerBetStatusNode!: cc.Node;
+    private roomFinalSettleNode!: cc.Node;
     private phaseTipText: string = "";
     private phaseTipEndLocalTime: number = 0;
     private settleCoinSpriteFrame: cc.SpriteFrame = null;
@@ -53,15 +54,22 @@ export default class GameUIManager extends cc.Component {
         this.rooomTopBarNode = cc.find("Canvas/MainLayout/RoomTopBar");
         this.clockContainerNode = cc.find("Canvas/MainLayout/Table/ClockContainer");
         this.init();
+        cc.game.on(cc.game.EVENT_HIDE, this.onGameHide, this);
         cc.game.on(cc.game.EVENT_SHOW, this.onGameShow, this);
         console.log("游戏初始化预制体耗时:", Date.now() - t, "ms");
     }
 
     protected onDestroy(): void {
+        cc.game.off(cc.game.EVENT_HIDE, this.onGameHide, this);
         cc.game.off(cc.game.EVENT_SHOW, this.onGameShow, this);
     }
 
+    private onGameHide() {
+        this.finishFlyingBetChips();
+    }
+
     private onGameShow() {
+        this.finishFlyingBetChips();
         ClientRoomManager.instance.syncRoomInfo();
     }
 
@@ -427,6 +435,17 @@ export default class GameUIManager extends cc.Component {
 
     }
 
+    public finishFlyingBetChips() {
+        if (!this.betContainer || !cc.isValid(this.betContainer)) {
+            return;
+        }
+
+        const betArea = this.betContainer.getComponent(BetArea);
+        if (betArea && betArea.finishFlyingChips) {
+            betArea.finishFlyingChips();
+        }
+    }
+
 
     // 全部清理
     public clearTable(keepSettleEffects: boolean = false) {
@@ -732,11 +751,146 @@ export default class GameUIManager extends cc.Component {
             this.readyButtonNode = cc.instantiate(GameRes.instance.readyButtonPrefab);
             this.readyButtonNode.parent = this.uiNode;
         }
+        if (ClientRoomManager.instance && ClientRoomManager.instance.isRoomFinalSettled()) {
+            status = ReadyBtnState.HIDE;
+        }
         const comp = this.readyButtonNode.getComponent(ReadyButton);
         comp.setState(status);
     }
 
+    public showRoomFinalSettle(data: any) {
+        if (this.roomFinalSettleNode && cc.isValid(this.roomFinalSettleNode)) {
+            this.roomFinalSettleNode.destroy();
+        }
+
+        const root = new cc.Node("RoomFinalSettlePopup");
+        root.zIndex = 9000;
+        root.setContentSize(cc.winSize);
+        cc.find("Canvas").addChild(root);
+        this.roomFinalSettleNode = root;
+
+        const mask = new cc.Node("Mask");
+        root.addChild(mask);
+        mask.setContentSize(cc.winSize);
+        const blocker = mask.addComponent(cc.BlockInputEvents);
+        blocker.enabled = true;
+        const maskGraphics = mask.addComponent(cc.Graphics);
+        maskGraphics.fillColor = new cc.Color(0, 0, 0, 175);
+        maskGraphics.fillRect(-cc.winSize.width / 2, -cc.winSize.height / 2, cc.winSize.width, cc.winSize.height);
+
+        const panel = new cc.Node("Panel");
+        root.addChild(panel);
+        panel.setContentSize(760, 560);
+
+        const bg = panel.addComponent(cc.Graphics);
+        bg.fillColor = new cc.Color(68, 38, 20, 245);
+        bg.strokeColor = new cc.Color(244, 201, 118, 255);
+        bg.lineWidth = 3;
+        bg.roundRect(-380, -280, 760, 560, 12);
+        bg.fill();
+        bg.stroke();
+
+        this.createFinalSettleLabel(panel, "房间结算", 0, 232, 40, new cc.Color(255, 230, 160), cc.Label.HorizontalAlign.CENTER, 360);
+        this.createFinalSettleLabel(panel, `房间 ${data.roomId || ""}  共 ${data.roundCount || data.roundId || 0} 局`, 0, 188, 24, new cc.Color(235, 207, 154), cc.Label.HorizontalAlign.CENTER, 420);
+        this.createFinalSettleLabel(panel, data.message || "已打够房卡局数，本房间已结束", 0, 160, 22, new cc.Color(255, 150, 120), cc.Label.HorizontalAlign.CENTER, 520);
+        this.createFinalSettleHeader(panel);
+
+        const players = (data.players || []).slice().sort((a: any, b: any) => {
+            return (a.seatId || 0) - (b.seatId || 0);
+        });
+
+        players.forEach((player: any, index: number) => {
+            this.createFinalSettleRow(panel, player, 88 - index * 44, index);
+        });
+
+        const closeBtn = this.createFinalSettleButton(panel, "确定", 0, -230);
+        closeBtn.on(cc.Node.EventType.TOUCH_END, () => {
+            if (this.roomFinalSettleNode && cc.isValid(this.roomFinalSettleNode)) {
+                this.roomFinalSettleNode.destroy();
+            }
+        }, this);
+
+        panel.opacity = 0;
+        panel.scale = 0.9;
+        cc.tween(panel)
+            .parallel(
+                cc.tween().to(0.18, { opacity: 255 }),
+                cc.tween().to(0.18, { scale: 1 }, { easing: "backOut" })
+            )
+            .start();
+    }
+
+    private createFinalSettleHeader(parent: cc.Node) {
+        this.createFinalSettleLabel(parent, "玩家", -250, 130, 24, new cc.Color(255, 220, 145), cc.Label.HorizontalAlign.LEFT, 220);
+        this.createFinalSettleLabel(parent, "总输赢", 45, 130, 24, new cc.Color(255, 220, 145), cc.Label.HorizontalAlign.RIGHT, 160);
+        this.createFinalSettleLabel(parent, "做庄", 240, 130, 24, new cc.Color(255, 220, 145), cc.Label.HorizontalAlign.CENTER, 120);
+    }
+
+    private createFinalSettleRow(parent: cc.Node, player: any, y: number, index: number) {
+        const row = new cc.Node(`FinalSettleRow${index}`);
+        parent.addChild(row);
+        row.y = y;
+        row.setContentSize(660, 42);
+
+        const bg = row.addComponent(cc.Graphics);
+        bg.fillColor = index % 2 === 0 ? new cc.Color(92, 53, 28, 210) : new cc.Color(78, 44, 24, 190);
+        bg.roundRect(-330, -21, 660, 42, 6);
+        bg.fill();
+
+        const nickname = player.nickname || `玩家${player.userId || ""}`;
+        const amount = Number(player.totalWinAmount || 0);
+        const amountText = amount > 0 ? `+${amount}` : `${amount}`;
+        const amountColor = amount > 0
+            ? new cc.Color(255, 92, 75)
+            : amount < 0
+                ? new cc.Color(103, 225, 128)
+                : new cc.Color(235, 220, 190);
+
+        this.createFinalSettleLabel(row, nickname, -300, 0, 22, new cc.Color(255, 242, 205), cc.Label.HorizontalAlign.LEFT, 250);
+        this.createFinalSettleLabel(row, amountText, 80, 0, 24, amountColor, cc.Label.HorizontalAlign.RIGHT, 180);
+        this.createFinalSettleLabel(row, `${player.bankerCount || 0}次`, 245, 0, 22, new cc.Color(255, 230, 170), cc.Label.HorizontalAlign.CENTER, 120);
+    }
+
+    private createFinalSettleButton(parent: cc.Node, text: string, x: number, y: number): cc.Node {
+        const node = new cc.Node("FinalSettleButton");
+        parent.addChild(node);
+        node.setPosition(x, y);
+        node.setContentSize(180, 54);
+
+        const bg = node.addComponent(cc.Graphics);
+        bg.fillColor = new cc.Color(172, 82, 34, 255);
+        bg.strokeColor = new cc.Color(255, 217, 139, 255);
+        bg.lineWidth = 2;
+        bg.roundRect(-90, -27, 180, 54, 8);
+        bg.fill();
+        bg.stroke();
+
+        this.createFinalSettleLabel(node, text, 0, 0, 26, new cc.Color(255, 242, 205), cc.Label.HorizontalAlign.CENTER, 160);
+        return node;
+    }
+
+    private createFinalSettleLabel(parent: cc.Node, text: string, x: number, y: number, fontSize: number, color: cc.Color, align: cc.Label.HorizontalAlign, width: number): cc.Label {
+        const node = new cc.Node("FinalSettleLabel");
+        parent.addChild(node);
+        node.setPosition(x, y);
+        node.setContentSize(width, fontSize + 10);
+        node.color = color;
+
+        const label = node.addComponent(cc.Label);
+        label.string = text;
+        label.fontSize = fontSize;
+        label.lineHeight = fontSize + 8;
+        label.horizontalAlign = align;
+        label.verticalAlign = cc.Label.VerticalAlign.CENTER;
+        label.overflow = cc.Label.Overflow.SHRINK;
+        return label;
+    }
+
     public readyBtnClick() {
+        if (ClientRoomManager.instance.showLatestRoomFinalSettle()) {
+            return;
+        }
+
         GameUIManager.instance.clearTable();
         cc.audioEngine.playEffect(GameRes.instance.clickAudio, false);
         const roomId = ClientRoomManager.instance.getRoomId();

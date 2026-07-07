@@ -62,6 +62,7 @@ export enum Cmd {
     SETTLE = "SETTLE",
     // 下一轮
     NEXT_ROUND = "NEXT_ROUND",
+    ROOM_FINAL_SETTLE = "ROOM_FINAL_SETTLE",
     USER_ASSET_UPDATE = "USER_ASSET_UPDATE",
 }
 

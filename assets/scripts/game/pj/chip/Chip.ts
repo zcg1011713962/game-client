@@ -8,6 +8,8 @@ export default class Chip extends cc.Component {
     private chipValue: number = 0;
     private chipImgMap : { [key: string]: cc.SpriteFrame } = {}; // 筹码图片资源
     private bg : cc.Sprite | null = null;
+    private flyEndPos: cc.Vec2 = cc.v2(0, 0);
+    private flying: boolean = false;
 
     protected onLoad(): void {
         const node = this.node.getChildByName("bg");
@@ -43,6 +45,8 @@ export default class Chip extends cc.Component {
     public playFlyAnim(startPos: cc.Vec2, endPos: cc.Vec2, callback?: Function) {
         this.node.setPosition(startPos);
         this.node.scale = 0.6;
+        this.flyEndPos = endPos.clone();
+        this.flying = true;
 
         cc.tween(this.node)
             .parallel(
@@ -51,10 +55,24 @@ export default class Chip extends cc.Component {
                 cc.tween().to(0.28, { angle: this.node.angle + 360 })
             )
             .call(() => {
+                this.flying = false;
                 cc.audioEngine.playEffect(GameRes.instance.betAudio, false);
                 if (callback) callback();
             })
             .start();
+    }
+
+    public finishFlyImmediately() {
+        if (!this.node || !cc.isValid(this.node)) {
+            return;
+        }
+
+        cc.Tween.stopAllByTarget(this.node);
+        this.node.setPosition(this.flyEndPos);
+        this.node.scale = 1;
+        this.node.opacity = 255;
+        this.node.angle = 0;
+        this.flying = false;
     }
 
     public playRemoveAnim(callback?: Function) {
