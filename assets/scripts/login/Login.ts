@@ -73,6 +73,7 @@ export default class Login extends cc.Component {
         `${Config.API_URL}/login/guest`,
         {
             token: guest && guest.token ? guest.token : null,
+            deviceId: UserData.getOrCreateGuestDeviceId(),
         },
         (err, res) => {
             if (this.destroyed || !cc.isValid(this.node)) {

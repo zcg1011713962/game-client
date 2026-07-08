@@ -3,6 +3,7 @@ import { User } from "./User";
 export default class UserData {
 
     private static KEY = "user_login_data";
+    private static GUEST_DEVICE_KEY = "guest_device_id";
 
     /**
      * 保存用户信息
@@ -38,6 +39,28 @@ export default class UserData {
      */
     static clearUserData() {
         cc.sys.localStorage.removeItem(this.KEY);
+    }
+
+    /**
+     * 获取本机游客设备标识。只生成一次，用来保证一台设备尽量对应一个游客账号。
+     */
+    static getOrCreateGuestDeviceId(): string {
+        try {
+            let deviceId = cc.sys.localStorage.getItem(this.GUEST_DEVICE_KEY);
+            if (!deviceId) {
+                deviceId = this.createGuestDeviceId();
+                cc.sys.localStorage.setItem(this.GUEST_DEVICE_KEY, deviceId);
+            }
+            return deviceId;
+        } catch (e) {
+            cc.error("读取游客设备标识失败", e);
+            return this.createGuestDeviceId();
+        }
+    }
+
+    private static createGuestDeviceId(): string {
+        const random = Math.floor(Math.random() * 100000000).toString(36);
+        return `guest_${Date.now().toString(36)}_${random}`;
     }
 
     /**
