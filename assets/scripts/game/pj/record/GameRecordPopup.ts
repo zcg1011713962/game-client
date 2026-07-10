@@ -3,6 +3,7 @@ import GameRecordItem, { RecordItemDTO } from "./GameRecordItem";
 import HallUIManager from "../../../hall/HallUIManager";
 import HallRes from "../../../hall/HallRes";
 import ToastManager from "../../../common/ToastManager";
+import GameRes from "../GameRes";
 
 const { ccclass } = cc._decorator;
 
@@ -16,6 +17,7 @@ export default class GameRecordPopup extends cc.Component {
     private pageNo: number = 1;
     private pageSize: number = 20;
     private roomId: number | null = null;
+    private bankerDetailNode: cc.Node = null;
 
     private loading: boolean = false;
     private hasMore: boolean = true;
@@ -148,6 +150,7 @@ export default class GameRecordPopup extends cc.Component {
 
             const item = itemNode.getComponent("GameRecordItem") as GameRecordItem;
             if (item) {
+                item.setClickHandler(this.showBankerDetail.bind(this));
                 item.updateView(data);
             }
         });
@@ -181,5 +184,95 @@ export default class GameRecordPopup extends cc.Component {
                 outline.width = 2;
             }
         });
+    }
+
+    private showBankerDetail(data: RecordItemDTO) {
+        if (!data || !data.bankerCards || data.bankerCards.length < 2) {
+            ToastManager.show("暂无庄家牌信息");
+            return;
+        }
+
+        this.hideBankerDetail();
+
+        const root = new cc.Node("BankerRecordDetail");
+        root.zIndex = 10000;
+        this.node.addChild(root);
+        this.bankerDetailNode = root;
+
+        const mask = new cc.Node("Mask");
+        mask.setContentSize(2000, 2000);
+        mask.color = cc.Color.BLACK;
+        mask.opacity = 150;
+        root.addChild(mask);
+        mask.on(cc.Node.EventType.TOUCH_END, this.hideBankerDetail, this);
+
+        const panel = new cc.Node("Panel");
+        panel.setContentSize(520, 360);
+        panel.color = cc.color(70, 36, 16);
+        root.addChild(panel);
+        const panelGraphics = panel.addComponent(cc.Graphics);
+        panelGraphics.fillColor = cc.color(80, 42, 18, 245);
+        panelGraphics.strokeColor = cc.color(236, 176, 80);
+        panelGraphics.lineWidth = 4;
+        panelGraphics.roundRect(-260, -180, 520, 360, 14);
+        panelGraphics.fill();
+        panelGraphics.stroke();
+        panel.on(cc.Node.EventType.TOUCH_END, (event: cc.Event.EventTouch) => event.stopPropagation(), this);
+
+        this.createDetailLabel(panel, "庄家牌", 0, 130, 38, cc.color(255, 224, 150));
+        this.createDetailLabel(panel, this.formatCardTypeName(data.bankerCardTypeName || ""), 0, -120, 36, cc.color(255, 210, 95));
+
+        this.createDetailCard(panel, data.bankerCards[0].id, -70, 15);
+        this.createDetailCard(panel, data.bankerCards[1].id, 70, 15);
+
+        const close = new cc.Node("Close");
+        close.setPosition(235, 145);
+        panel.addChild(close);
+        const closeLabel = close.addComponent(cc.Label);
+        closeLabel.string = "X";
+        closeLabel.fontSize = 32;
+        closeLabel.lineHeight = 32;
+        close.color = cc.color(255, 230, 160);
+        close.on(cc.Node.EventType.TOUCH_END, this.hideBankerDetail, this);
+    }
+
+    private hideBankerDetail() {
+        if (this.bankerDetailNode && cc.isValid(this.bankerDetailNode)) {
+            this.bankerDetailNode.destroy();
+        }
+        this.bankerDetailNode = null;
+    }
+
+    private createDetailCard(parent: cc.Node, cardId: number, x: number, y: number) {
+        const cardNode = new cc.Node(`BankerCard${cardId}`);
+        cardNode.setPosition(x, y);
+        parent.addChild(cardNode);
+
+        const sprite = cardNode.addComponent(cc.Sprite);
+        sprite.spriteFrame = GameRes.instance.cardImgMap[`pai_${cardId}`];
+        cardNode.setContentSize(86, 126);
+        sprite.sizeMode = cc.Sprite.SizeMode.CUSTOM;
+    }
+
+    private createDetailLabel(parent: cc.Node, text: string, x: number, y: number, size: number, color: cc.Color) {
+        const labelNode = new cc.Node("Label");
+        labelNode.setPosition(x, y);
+        parent.addChild(labelNode);
+
+        const label = labelNode.addComponent(cc.Label);
+        label.string = text;
+        label.fontSize = size;
+        label.lineHeight = size + 4;
+        label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
+        label.verticalAlign = cc.Label.VerticalAlign.CENTER;
+        labelNode.color = color;
+    }
+
+    private formatCardTypeName(typeName: string): string {
+        if (!typeName) {
+            return "";
+        }
+
+        return typeName.indexOf("对子") === 0 ? "对子" : typeName;
     }
 }

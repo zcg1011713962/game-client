@@ -19,8 +19,10 @@ export interface RecordItemDTO {
     betAmount: number;
     winAmount: number;
     cardTypeName: string;
+    bankerCardTypeName?: string;
     settleDesc: string;
     cards?: RecordCardDTO[];
+    bankerCards?: RecordCardDTO[];
     settleTime: number;
     startTime?: number;
     endTime?: number;
@@ -42,6 +44,8 @@ export default class GameRecordItem extends cc.Component {
 
     private card1: cc.Sprite = null;
     private card2: cc.Sprite = null;
+    private recordData: RecordItemDTO = null;
+    private clickHandler: (data: RecordItemDTO) => void = null;
 
     protected onLoad(): void {
         const roundRoot = this.node.getChildByName("RoundRoot");
@@ -86,6 +90,11 @@ export default class GameRecordItem extends cc.Component {
 
         this.amountLabel.fontSize = 40;
         this.amountLabel.lineHeight = 40;
+        this.node.on(cc.Node.EventType.TOUCH_END, this.onClick, this);
+    }
+
+    public setClickHandler(handler: (data: RecordItemDTO) => void) {
+        this.clickHandler = handler;
     }
 
     public updateView(data: RecordItemDTO) {
@@ -94,6 +103,7 @@ export default class GameRecordItem extends cc.Component {
             return;
         }
 
+        this.recordData = data;
         this.roundLabel.string = `第${data.roundId}局`;
         this.timeLabel.string = this.formatTime(data.settleTime);
 
@@ -106,7 +116,8 @@ export default class GameRecordItem extends cc.Component {
 
 
 
-        this.typeLabel.string = data.cardTypeName;
+        const displayTypeName = this.formatCardTypeName(data.cardTypeName);
+        this.typeLabel.string = displayTypeName;
         this.typeDescLabel.string = data.settleDesc;
 
         this.betLabel.string = data.betAmount.toLocaleString();
@@ -119,7 +130,21 @@ export default class GameRecordItem extends cc.Component {
         this.resultSprite.spriteFrame = HallRes.instance.resultImgMap[`icon_result_${data.win}`];        
 
         this.updateResultStyle(data.winAmount);
-        this.updateTypeColor(data.cardTypeName);
+        this.updateTypeColor(displayTypeName);
+    }
+
+    private onClick() {
+        if (this.clickHandler && this.recordData) {
+            this.clickHandler(this.recordData);
+        }
+    }
+
+    private formatCardTypeName(typeName: string): string {
+        if (!typeName) {
+            return "";
+        }
+
+        return typeName.indexOf("对子") === 0 ? "对子" : typeName;
     }
 
     private formatTime(time: number): string {

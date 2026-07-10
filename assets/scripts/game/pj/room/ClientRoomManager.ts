@@ -14,6 +14,7 @@ import { SceneUtil } from "../../../util/SceneUtil";
 import { ReadyBtnState } from "../../btn/ReadyButton";
 import HallUIManager from "../../../hall/HallUIManager";
 import PaiJiuUtil from "../util/PaiJiuUtil";
+import GameRes from "../GameRes";
 
 export interface PlayerDTO {
     userId: number;
@@ -32,12 +33,14 @@ export interface RoomSnapshot {
     roomId: number;
     userId: number;
     roomState: number;
+    roomType?: number;
     baseScore: number;
 
     players: PlayerDTO[];
     bankerSeat: number;
 
     betMap: Record<number, number>;
+    roomTotalWinMap?: Record<string, number>;
     cardMap: Record<number, CardInfo[]>;
     openedCardUsers?: number[];
 
@@ -164,6 +167,8 @@ export interface RoomFinalSettlePush {
     roundCount: number;
     serverTime: number;
     message?: string;
+    roomType?: number;
+    scoreMode?: boolean;
     players: RoomFinalSettlePlayerDTO[];
 }
 
@@ -188,6 +193,7 @@ export default class ClientRoomManager {
         return this._instance;
     }
     private gameReady: boolean = false;
+    private isLoadingGameScene: boolean = false;
 
     private roomSnapshot: RoomSnapshot | null= null;
     private syncingRoomInfo: boolean = false;
@@ -206,6 +212,8 @@ export default class ClientRoomManager {
     private seatCount: number = 8;
 
     private roomState: RoomState = RoomState.WAIT;
+    private roomType: number = 1;
+    private roomScoreMap: Map<number, number> = new Map();
 
     private bankerSeat: number = -1;
 
@@ -231,6 +239,7 @@ export default class ClientRoomManager {
     // 游戏场景初始化完成后调用
     public onGameSceneReady() {
         this.gameReady = true;
+        this.isLoadingGameScene = false;
         if (this.roomSnapshot) {
             this.renderRoom(this.roomSnapshot);
         }
@@ -248,6 +257,8 @@ export default class ClientRoomManager {
         this.maxRoundId = data.maxRoundId || this.maxRoundId || 0;
         this.roomId = data.roomId;
         this.myUserId = data.userId;
+        this.roomType = data.roomType || this.roomType || 1;
+        this.resetRoomScoreMap(data.roomTotalWinMap);
         this.bankerSeat = bankerSeat;
         this.betMap = data.betMap;
         this.cardMap = data.cardMap;
@@ -452,8 +463,27 @@ export default class ClientRoomManager {
         }
 
         // 2. 切换到游戏场景
-        SceneUtil.loadScene("game_1");
+        this.loadGameScene();
         
+    }
+
+    private async loadGameScene() {
+        if (this.isLoadingGameScene) {
+            return;
+        }
+
+        this.isLoadingGameScene = true;
+        const t = Date.now();
+
+        try {
+            await GameRes.instance.preload();
+            console.log("进入游戏等待资源耗时:", Date.now() - t, "ms");
+            await SceneUtil.loadScene("game_1");
+            console.log("进入游戏总耗时:", Date.now() - t, "ms");
+        } catch (e) {
+            cc.error("进入游戏场景失败:", e);
+            this.isLoadingGameScene = false;
+        }
     }
 
     // 坐下回包
@@ -483,8 +513,13 @@ export default class ClientRoomManager {
     }
 
 
-    public applyRoomInfo(data: RoomSnapshot) {
+    public applyRoomInfo(data: RoomSnapshot | null) {
         this.syncingRoomInfo = false;
+        if (!data) {
+            this.handleNoRoomInfo();
+            return;
+        }
+
         if (this.gameReady) {
             this.roomSnapshot = data;
             this.renderRoom(data);
@@ -495,14 +530,27 @@ export default class ClientRoomManager {
     }
 
     public syncRoomInfo() {
-        if (!this.gameReady || this.roomId <= 0) {
+        this.syncingRoomInfo = true;
+        WsClient.instance.send(Cmd.ROOM_INFO, {
+            roomId: this.roomId > 0 ? this.roomId : null
+        });
+    }
+
+    private handleNoRoomInfo() {
+        this.roomSnapshot = null;
+        this.roomId = -1;
+        this.mySeatId = -1;
+        this.bankerSeat = -1;
+        this.players.clear();
+        this.roomScoreMap.clear();
+        this.invalidateTimelineTasks();
+
+        const currentScene = cc.director.getScene();
+        if (currentScene && currentScene.name === "hall") {
             return;
         }
 
-        this.syncingRoomInfo = true;
-        WsClient.instance.send(Cmd.ROOM_INFO, {
-            roomId: this.roomId
-        });
+        SceneUtil.loadScene("hall");
     }
 
     // 玩家进房通知
@@ -802,13 +850,12 @@ export default class ClientRoomManager {
         this.refreshBankerBetStatus();
 
         const playerMap = new Map(players.map(player => [player.seatId, player]));
-        // 更新玩家金币
+        // 更新玩家金币/积分
         SeatComponentManager.getInstance().seatComponentList.forEach(comp =>{
             const seatId = comp["seatData"].id;
             const player = playerMap.get(seatId)
             if(player){
-                // 更新玩家金币
-                comp.updateSetGold(player.gold);
+                comp.updateSetGold(this.getSeatDisplayAmount(player));
             }
         });
 
@@ -971,6 +1018,9 @@ export default class ClientRoomManager {
         const players = data.players;
 
         this.updatePlayers(players);
+        if (playEffects && this.isScoreRoom()) {
+            this.applyScoreSettle(settlePlayers);
+        }
         this.setRoomState(data.roomState);
 
         const playerMap = new Map(players.map(player => [player.seatId, player]));
@@ -982,7 +1032,7 @@ export default class ClientRoomManager {
             const settlePlayer = settlePlayerMap.get(seatId);
 
             if (player) {
-                comp.updateSetGold(player.gold);
+                comp.updateSetGold(this.getSeatDisplayAmount(player));
 
                 if (player.seatId !== bankerSeat && settlePlayer) {
                     comp.setResultStatusView(settlePlayer.win);
@@ -1043,6 +1093,7 @@ export default class ClientRoomManager {
     public roomFinalSettle(data: RoomFinalSettlePush) {
         this.invalidateTimelineTasks();
         this.roomFinalSettled = true;
+        data.scoreMode = data.scoreMode || data.roomType === 2 || this.isScoreRoom();
         this.latestRoomFinalSettle = data;
         CountDownManager.close();
         GameUIManager.instance.hidePhaseTip();
@@ -1050,6 +1101,44 @@ export default class ClientRoomManager {
         SettleManager.close();
         GameUIManager.instance.showReady(ReadyBtnState.HIDE);
         GameUIManager.instance.showRoomFinalSettle(data);
+    }
+
+    private isScoreRoom(): boolean {
+        return this.roomType === 2;
+    }
+
+    private resetRoomScoreMap(roomTotalWinMap?: Record<string, number>) {
+        this.roomScoreMap.clear();
+        if (!this.isScoreRoom() || !roomTotalWinMap) {
+            return;
+        }
+
+        Object.keys(roomTotalWinMap).forEach(userId => {
+            this.roomScoreMap.set(Number(userId), Number(roomTotalWinMap[userId]) || 0);
+        });
+    }
+
+    private applyScoreSettle(settlePlayers: SettlePlayerDTO[]) {
+        if (!settlePlayers) {
+            return;
+        }
+
+        settlePlayers.forEach(player => {
+            if (!player || player.userId == null) {
+                return;
+            }
+
+            const currentScore = this.roomScoreMap.get(player.userId) || 0;
+            this.roomScoreMap.set(player.userId, currentScore + Number(player.winAmount || 0));
+        });
+    }
+
+    private getSeatDisplayAmount(player: PlayerDTO): number {
+        if (!this.isScoreRoom()) {
+            return player.gold;
+        }
+
+        return this.roomScoreMap.get(player.userId) || 0;
     }
 
     public isRoomFinalSettled(): boolean {
@@ -1223,7 +1312,7 @@ export default class ClientRoomManager {
             userInfo.state = player.state;
             userInfo.avatar = player.avatar;
             userInfo.nickname = player.nickname;
-            userInfo.gold = player.gold;
+            userInfo.gold = this.getSeatDisplayAmount(player);
             seats.push(player.seatId);
             SeatManager.refreshSeat(player.seatId, userInfo);
         });
@@ -1311,6 +1400,7 @@ export default class ClientRoomManager {
         this.roomState = RoomState.WAIT;
         this.bankerSeat = -1;
         this.gameReady = false;
+        this.isLoadingGameScene = false;
         this.syncingRoomInfo = false;
         this.grabBankerEndTime = 0;
         this.betEndTime = 0;
@@ -1318,7 +1408,11 @@ export default class ClientRoomManager {
         this.timelineVersion++;
         this.roomFinalSettled = false;
         this.latestRoomFinalSettle = null;
-        if (GameUIManager.instance) {
+        if (
+            GameUIManager.instance &&
+            GameUIManager.instance.node &&
+            cc.isValid(GameUIManager.instance.node)
+        ) {
             GameUIManager.instance.updateRoundView(0, 0);
         }
     }

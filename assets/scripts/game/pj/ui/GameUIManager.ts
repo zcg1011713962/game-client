@@ -720,54 +720,109 @@ export default class GameUIManager extends cc.Component {
         }
 
         node.active = true;
+        this.roundViewLabel = this.ensureRoundViewLabel(node);
+        if (!this.roundViewLabel) {
+            return;
+        }
+
         const showTotal = maxRoundId > 0 && maxRoundId < 100000;
-        this.roundViewLabel.string = showTotal ? `第${roundId}/${maxRoundId}局` : `第${roundId}局`;
+        this.roundViewLabel.string = showTotal ? `局数: ${roundId}/${maxRoundId}` : `局数: ${roundId}`;
     }
 
     private getRoundViewNode(): cc.Node {
-        if (this.roundViewNode && cc.isValid(this.roundViewNode)) {
-            return this.roundViewNode;
-        }
-
-        const canvas = cc.find("Canvas");
-        if (!canvas || !cc.isValid(canvas)) {
+        const parent = this.getRoundViewParent();
+        if (!parent) {
             return null;
         }
 
+        if (this.roundViewNode && cc.isValid(this.roundViewNode)) {
+            if (this.roundViewNode.parent !== parent) {
+                this.roundViewNode.removeFromParent(false);
+                parent.addChild(this.roundViewNode);
+            }
+            this.roundViewNode.zIndex = 6000;
+            this.roundViewNode.setPosition(this.getRoundViewPosition(parent));
+            this.ensureRoundViewLabel(this.roundViewNode);
+            return this.roundViewNode;
+        }
+
         const node = new cc.Node("RoundView");
-        node.zIndex = 1200;
-        node.setContentSize(200, 150);
-        canvas.addChild(node);
-        node.setPosition(-420,750);
+        node.zIndex = 6000;
+        node.setContentSize(190, 72);
+        parent.addChild(node);
+        node.setPosition(this.getRoundViewPosition(parent));
 
         const bg = node.addComponent(cc.Graphics);
-        bg.fillColor = new cc.Color(28, 16, 8, 95);
-        bg.strokeColor = new cc.Color(246, 188, 72, 185);
+        bg.fillColor = new cc.Color(28, 16, 8, 135);
+        bg.strokeColor = new cc.Color(246, 188, 72, 210);
         bg.lineWidth = 2;
-        bg.roundRect(-80, -22, 160, 44, 8);
+        bg.roundRect(-95, -36, 190, 72, 10);
         bg.fill();
         bg.stroke();
 
-        const labelNode = new cc.Node("Label");
-        labelNode.setContentSize(200, 150);
-        node.addChild(labelNode);
-
-        const label = labelNode.addComponent(cc.Label);
-        label.fontSize = 22;
-        label.lineHeight = 28;
-        label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
-        label.verticalAlign = cc.Label.VerticalAlign.CENTER;
-        label.overflow = cc.Label.Overflow.SHRINK;
-        label.string = "";
-        labelNode.color = new cc.Color(255, 226, 126);
-
-        const outline = labelNode.addComponent(cc.LabelOutline);
-        outline.color = cc.Color.BLACK;
-        outline.width = 2;
-
+        const label = this.ensureRoundViewLabel(node);
         this.roundViewNode = node;
         this.roundViewLabel = label;
         return node;
+    }
+
+    private getRoundViewParent(): cc.Node {
+        if (this.tableNode && cc.isValid(this.tableNode)) {
+            return this.tableNode;
+        }
+
+        const table = cc.find("Canvas/MainLayout/Table");
+        if (table && cc.isValid(table)) {
+            return table;
+        }
+
+        const canvas = cc.find("Canvas");
+        if (canvas && cc.isValid(canvas)) {
+            return canvas;
+        }
+
+        return null;
+    }
+
+    private getRoundViewPosition(parent: cc.Node): cc.Vec2 {
+        if (parent && parent.name === "Table") {
+            return cc.v2(-390, 750);
+        }
+
+        return cc.v2(-390, 750);
+    }
+
+    private ensureRoundViewLabel(node: cc.Node): cc.Label {
+        let labelNode = node.getChildByName("Label");
+        if (!labelNode || !cc.isValid(labelNode)) {
+            labelNode = new cc.Node("Label");
+            node.addChild(labelNode);
+        }
+
+        labelNode.zIndex = 1;
+        labelNode.setPosition(0, 0);
+        labelNode.setContentSize(190, 72);
+        labelNode.color = new cc.Color(255, 226, 126);
+
+        let label = labelNode.getComponent(cc.Label);
+        if (!label) {
+            label = labelNode.addComponent(cc.Label);
+        }
+
+        label.fontSize = 30;
+        label.lineHeight = 36;
+        label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
+        label.verticalAlign = cc.Label.VerticalAlign.CENTER;
+        label.overflow = cc.Label.Overflow.SHRINK;
+
+        let outline = labelNode.getComponent(cc.LabelOutline);
+        if (!outline) {
+            outline = labelNode.addComponent(cc.LabelOutline);
+        }
+        outline.color = cc.Color.BLACK;
+        outline.width = 2;
+
+        return label;
     }
 
 
@@ -858,8 +913,9 @@ export default class GameUIManager extends cc.Component {
 
         this.createFinalSettleLabel(panel, "房间结算", 0, 232, 40, new cc.Color(255, 230, 160), cc.Label.HorizontalAlign.CENTER, 360);
         this.createFinalSettleLabel(panel, `房间 ${data.roomId || ""}  共 ${data.roundCount || data.roundId || 0} 局`, 0, 188, 24, new cc.Color(235, 207, 154), cc.Label.HorizontalAlign.CENTER, 420);
-        this.createFinalSettleLabel(panel, data.message || "已打够房卡局数，本房间已结束", 0, 160, 22, new cc.Color(255, 150, 120), cc.Label.HorizontalAlign.CENTER, 520);
-        this.createFinalSettleHeader(panel);
+        const scoreMode = data.scoreMode || data.roomType === 2;
+        this.createFinalSettleLabel(panel, data.message || (scoreMode ? "房间已结束，本局采用积分结算" : "已打够房卡局数，本房间已结束"), 0, 160, 22, new cc.Color(255, 150, 120), cc.Label.HorizontalAlign.CENTER, 520);
+        this.createFinalSettleHeader(panel, scoreMode);
 
         const players = (data.players || []).slice().sort((a: any, b: any) => {
             return (a.seatId || 0) - (b.seatId || 0);
@@ -886,9 +942,9 @@ export default class GameUIManager extends cc.Component {
             .start();
     }
 
-    private createFinalSettleHeader(parent: cc.Node) {
+    private createFinalSettleHeader(parent: cc.Node, scoreMode: boolean = false) {
         this.createFinalSettleLabel(parent, "玩家", -250, 130, 24, new cc.Color(255, 220, 145), cc.Label.HorizontalAlign.LEFT, 220);
-        this.createFinalSettleLabel(parent, "总输赢", 45, 130, 24, new cc.Color(255, 220, 145), cc.Label.HorizontalAlign.RIGHT, 160);
+        this.createFinalSettleLabel(parent, scoreMode ? "总积分" : "总输赢", 45, 130, 24, new cc.Color(255, 220, 145), cc.Label.HorizontalAlign.RIGHT, 160);
         this.createFinalSettleLabel(parent, "做庄", 240, 130, 24, new cc.Color(255, 220, 145), cc.Label.HorizontalAlign.CENTER, 120);
     }
 

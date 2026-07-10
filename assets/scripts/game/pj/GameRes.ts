@@ -5,6 +5,7 @@ export default class GameRes {
     private static _instance: GameRes = null;
 
     private gameBundle!: cc.AssetManager.Bundle;
+    private preloadPromise: Promise<void> = null;
 
     public chipPrefab!: cc.Prefab;
     public seatPrefab!: cc.Prefab;
@@ -40,6 +41,19 @@ export default class GameRes {
     private constructor() {}
 
     public async preload(): Promise<void> {
+        if (this.preloadPromise) {
+            return this.preloadPromise;
+        }
+
+        this.preloadPromise = this.doPreload().catch(e => {
+            this.preloadPromise = null;
+            throw e;
+        });
+
+        return this.preloadPromise;
+    }
+
+    private async doPreload(): Promise<void> {
         const t = Date.now();
 
         await this.loadGameBundle();

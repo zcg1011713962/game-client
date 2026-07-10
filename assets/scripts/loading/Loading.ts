@@ -7,6 +7,9 @@ import UserData from "../login/entity/UserData";
 import GameRes from "../game/pj/GameRes";
 import UIUtil from "../util/UIUtil";
 import UIColorUtil from "../util/UIColorUtil";
+import Http from "../util/Http";
+import Config from "../config/Config";
+import { ServerMsg } from "../login/entity/ServerMsg";
 
 @ccclass
 export default class Loading extends cc.Component {
@@ -111,10 +114,20 @@ export default class Loading extends cc.Component {
             await LoginRes.instance.preload();
             this.setTargetProgress(0.2, "登录资源加载完成...");
 
-            const user = UserData.get();
+            let user = UserData.get();
+            if (user) {
+                this.setTargetProgress(0.25, "登录校验中...");
+                user = await this.refreshGuestLogin(user);
+            }
+
+            const targetScene = user ? "hall" : "login";
 
             await HallRes.instance.preload();
             this.setTargetProgress(0.4, "大厅资源加载完成...");
+
+            if (user) {
+                this.preloadGameResInBackground();
+            }
 
             if (user) {
                 await this.preloadScene("hall");
@@ -123,8 +136,8 @@ export default class Loading extends cc.Component {
                 await this.preloadScene("login");
                 this.setTargetProgress(0.8, "登录场景准备完成...");
             }
-            await GameRes.instance.preload();
-            this.setTargetProgress(0.9, "游戏场景准备完成...");
+
+            this.setTargetProgress(0.9, "准备进入游戏...");
 
             await this.waitMinTime(startTime, 800);
 
@@ -132,11 +145,53 @@ export default class Loading extends cc.Component {
             this.setTargetProgress(1, "加载完成");
 
             await this.waitProgressComplete();
-            await this.jumpScene("login");
+            await this.jumpScene(targetScene, user);
+            if (!user) {
+                setTimeout(() => this.preloadGameResInBackground(), 300);
+            }
         } catch (e) {
             cc.error("Loading 加载失败:", e);
             this.setTip("加载失败，请检查网络后重试");
         }
+    }
+
+    private preloadGameResInBackground(): void {
+        GameRes.instance.preload().catch(e => {
+            cc.error("游戏资源后台加载失败:", e);
+        });
+    }
+
+    private async refreshGuestLogin(guest: any): Promise<any> {
+        const token = guest && guest.token ? guest.token : null;
+
+        try {
+            let res = await this.requestGuestLogin(token);
+
+            if (res && (res.code === 2001 || res.code === 401)) {
+                res = await this.requestGuestLogin(null);
+            }
+
+            if (res && res.code === 0 && res.data) {
+                UserData.save(res.data);
+                return res.data;
+            }
+
+            cc.warn("静默登录失败，进入登录页:", res);
+        } catch (e) {
+            cc.error("静默登录异常，进入登录页:", e);
+        }
+
+        return null;
+    }
+
+    private requestGuestLogin(token: string | null): Promise<ServerMsg<any>> {
+        return Http.postAsync<ServerMsg<any>>(
+            `${Config.API_URL}/login/guest`,
+            {
+                token: token,
+                deviceId: UserData.getOrCreateGuestDeviceId(),
+            }
+        );
     }
 
     private setTargetProgress(value: number, tip?: string): void {
