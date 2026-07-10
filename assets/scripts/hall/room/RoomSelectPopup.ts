@@ -71,10 +71,10 @@ export default class RoomSelectPopup extends cc.Component {
         }, this);
 
         // 创建房间
-        this.createCard.on(cc.Node.EventType.TOUCH_END, () => {
+        this.createCard.on(cc.Node.EventType.TOUCH_END, async () => {
             this.playClickAnim(this.createCard);
-             if(!HallUIManager.instance.createRoomPopupPrefabNode){
-                HallUIManager.instance.initCreateRoomPopupPrefabNode();
+              if(!HallUIManager.instance.createRoomPopupPrefabNode){
+                await HallUIManager.instance.initCreateRoomPopupPrefabNode();
             }
             const createRoomPopupNode = HallUIManager.instance.createRoomPopupPrefabNode.getComponent(CreateRoomPopup);
             createRoomPopupNode.show();    
@@ -82,12 +82,12 @@ export default class RoomSelectPopup extends cc.Component {
         }, this);
 
         // 加入房间
-        this.joinCard.on(cc.Node.EventType.TOUCH_END, () => {
+        this.joinCard.on(cc.Node.EventType.TOUCH_END, async () => {
             this.hide();
             this.playClickAnim(this.joinCard);
 
             if(!HallUIManager.instance.joinRoomPanelPrefabNode){
-                HallUIManager.instance.initJoinRoomPanelPrefabNode();
+                await HallUIManager.instance.initJoinRoomPanelPrefabNode();
             }
             const joinRoomPopupNode = HallUIManager.instance.joinRoomPanelPrefabNode.getComponent(JoinRoomPopup);
             joinRoomPopupNode.show();

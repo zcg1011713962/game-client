@@ -477,6 +477,7 @@ export default class ClientRoomManager {
 
         try {
             await GameRes.instance.preload();
+            await SceneUtil.preloadScene("game_1");
             console.log("进入游戏等待资源耗时:", Date.now() - t, "ms");
             await SceneUtil.loadScene("game_1");
             console.log("进入游戏总耗时:", Date.now() - t, "ms");

@@ -156,7 +156,9 @@ export default class Loading extends cc.Component {
     }
 
     private preloadGameResInBackground(): void {
-        GameRes.instance.preload().catch(e => {
+        GameRes.instance.preload().then(() => {
+            return SceneUtil.preloadScene("game_1");
+        }).catch(e => {
             cc.error("游戏资源后台加载失败:", e);
         });
     }

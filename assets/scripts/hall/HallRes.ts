@@ -39,29 +39,37 @@ export default class HallRes {
 
         await this.loadHallBundle();
 
-        // 不阻塞
-        this.loadHallBgmAudio();
-        this.loadHallClickAudio();
-
-        // 必须资源
+        // 首屏必须资源，只保留大厅一进入就能看到的内容
         await Promise.all([
             this.loadTopBarPrefabs(),
             this.loadGameCardPrefabs(),
-            this.loadRoomSelectPanelPrefabs(),
-            this.joinRoomPanelPrefabs(),
             this.loadHallBannerImg("banner_paijiu"),
             this.loadBottomIcons(),
-            this.createRoomPopupPrefabs(),
-            this.loadGameRecordItemPrefab(),
-            this.loadHallRecordItemPrefab(),
-            this.loadGameRecordPopupPrefab(),
-            this.loadHallRecordPopupPrefab(),
-            this.loadResultImg(),
         ]);
 
         const avatar = user != null ? user.avatar : "0";
         this.loadAvatarImg("avatar_" + avatar);
+        this.preloadLazyRes();
         console.log("初始化大厅资源耗时:", Date.now() - t, "ms");
+    }
+
+    private preloadLazyRes(): void {
+        setTimeout(() => {
+            Promise.all([
+                this.loadHallBgmAudio(),
+                this.loadHallClickAudio(),
+                this.loadRoomSelectPanelPrefabs(),
+                this.joinRoomPanelPrefabs(),
+                this.createRoomPopupPrefabs(),
+                this.loadGameRecordItemPrefab(),
+                this.loadHallRecordItemPrefab(),
+                this.loadGameRecordPopupPrefab(),
+                this.loadHallRecordPopupPrefab(),
+                this.loadResultImg(),
+            ]).catch(e => {
+                cc.error("大厅延迟资源加载失败:", e);
+            });
+        }, 1000);
     }
 
     private loadHallBundle(): Promise<cc.AssetManager.Bundle> {
@@ -139,7 +147,7 @@ export default class HallRes {
         });
     }
 
-    private async loadResultImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
+    public async loadResultImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
 
         if (Object.keys(this.resultImgMap).length > 0) {
             return this.resultImgMap;

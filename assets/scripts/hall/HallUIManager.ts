@@ -156,23 +156,39 @@ export default class HallUIManager extends cc.Component {
 
     
 
-    public onGameCardClick(id : number){
+    public async onGameCardClick(id : number){
         if(!this.roomSelectPanelPrefabNode){
-            this.initSelectPanelPrefabNode();
+            await this.initSelectPanelPrefabNode();
         }
-        this.roomSelectPanelShow();
+        await this.roomSelectPanelShow();
     }
 
     
 
-    private initSelectPanelPrefabNode(){
+    private async initSelectPanelPrefabNode(){
+        if (this.roomSelectPanelPrefabNode) {
+            return;
+        }
+
+        if (!HallRes.instance.roomSelectPanelPrefab) {
+            await HallRes.instance.loadRoomSelectPanelPrefabs();
+        }
+
         this.roomSelectPanelPrefabNode = cc.instantiate(HallRes.instance.roomSelectPanelPrefab);  
         if(this.roomSelectPanelNode){
             this.roomSelectPanelPrefabNode.parent = this.roomSelectPanelNode;
         }
     }
 
-    public initJoinRoomPanelPrefabNode(){
+    public async initJoinRoomPanelPrefabNode(){
+        if (this.joinRoomPanelPrefabNode) {
+            return;
+        }
+
+        if (!HallRes.instance.joinRoomPanelPrefab) {
+            await HallRes.instance.joinRoomPanelPrefabs();
+        }
+
         this.joinRoomPanelPrefabNode = cc.instantiate(HallRes.instance.joinRoomPanelPrefab);  
         if(this.joinRoomPanelNode){
             this.joinRoomPanelPrefabNode.parent = this.joinRoomPanelNode;
@@ -180,7 +196,15 @@ export default class HallUIManager extends cc.Component {
     }
 
 
-     public initCreateRoomPopupPrefabNode(){
+     public async initCreateRoomPopupPrefabNode(){
+        if (this.createRoomPopupPrefabNode) {
+            return;
+        }
+
+        if (!HallRes.instance.createRoomPopupPrefab) {
+            await HallRes.instance.createRoomPopupPrefabs();
+        }
+
         this.createRoomPopupPrefabNode = cc.instantiate(HallRes.instance.createRoomPopupPrefab);  
         if(this.createRoomPopupNode){
             this.createRoomPopupPrefabNode.parent = this.createRoomPopupNode;
@@ -203,17 +227,17 @@ export default class HallUIManager extends cc.Component {
     }
 
 
-     public roomSelectPanelShow(){
+     public async roomSelectPanelShow(){
         if(!this.roomSelectPanelPrefabNode){
-            this.initSelectPanelPrefabNode();
+            await this.initSelectPanelPrefabNode();
         }
         const roomSelectPopupNode = this.roomSelectPanelPrefabNode.getComponent(RoomSelectPopup);
         roomSelectPopupNode.show();
     }
 
-    public roomSelectPanelHide(){
+    public async roomSelectPanelHide(){
         if(!this.roomSelectPanelPrefabNode){
-            this.initSelectPanelPrefabNode();
+            await this.initSelectPanelPrefabNode();
         }
         const roomSelectPopupNode = this.roomSelectPanelPrefabNode.getComponent(RoomSelectPopup);
         roomSelectPopupNode.hide();
@@ -377,6 +401,15 @@ export default class HallUIManager extends cc.Component {
             } else {
                 HallRes.instance.gameRecordPopupPrefab = recordPopupPrefab;
             }
+        }
+
+        if (isHallRecord && !HallRes.instance.hallRecordItemPrefab) {
+            HallRes.instance.hallRecordItemPrefab = await HallRes.instance.loadPrefab("prefabs/HallRecordItem");
+        }
+
+        if (!isHallRecord && !HallRes.instance.gameRecordItemPrefab) {
+            HallRes.instance.gameRecordItemPrefab = await HallRes.instance.loadPrefab("prefabs/GameRecordItem");
+            await HallRes.instance.loadResultImg();
         }
 
         const oldNode = isHallRecord ? this.gameRecordPopupNode : this.hallRecordPopupNode;

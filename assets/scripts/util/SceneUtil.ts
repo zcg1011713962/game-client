@@ -17,6 +17,16 @@ export class SceneData {
 
 export class SceneUtil {
 
+    static async preloadScene(scene: string): Promise<void> {
+        if (scene === "game_1") {
+            await this.preloadBundleScene("bundle_game", "scene/game_1");
+        } else if (scene === "hall") {
+            await this.preloadNormalScene("hall");
+        } else if (scene === "login") {
+            await this.preloadNormalScene("login");
+        }
+    }
+
     static async loadScene(scene: string, data?: any): Promise<void> {
         SceneData.setData(data);
         const t = Date.now();
@@ -28,6 +38,20 @@ export class SceneUtil {
             await this.loadNormalScene("login");
         }
         console.log("加载场景耗时:", scene, Date.now() - t, "ms");
+    }
+
+    private static preloadNormalScene(sceneName: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            cc.director.preloadScene(sceneName, (err) => {
+                if (err) {
+                    cc.error("普通场景预加载失败:", sceneName, err);
+                    reject(err);
+                    return;
+                }
+
+                resolve();
+            });
+        });
     }
 
     private static loadNormalScene(sceneName: string): Promise<void> {
@@ -72,6 +96,28 @@ export class SceneUtil {
 
             });
 
+        });
+    }
+
+    private static preloadBundleScene(bundleName: string, scenePath: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            cc.assetManager.loadBundle(bundleName, (err, bundle) => {
+                if (err) {
+                    cc.error(`${bundleName} 加载失败`, err);
+                    reject(err);
+                    return;
+                }
+
+                bundle.loadScene(scenePath, (loadErr) => {
+                    if (loadErr) {
+                        cc.error(`${scenePath} 场景预加载失败`, loadErr);
+                        reject(loadErr);
+                        return;
+                    }
+
+                    resolve();
+                });
+            });
         });
     }
 }
