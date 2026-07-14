@@ -32,7 +32,7 @@ export default class GameUIManager extends cc.Component {
     private roundViewLabel!: cc.Label;
     private phaseTipText: string = "";
     private phaseTipEndLocalTime: number = 0;
-    private settleCoinSpriteFrame: cc.SpriteFrame = null;
+    private settleIconSpriteFrames: { [path: string]: cc.SpriteFrame } = {};
     private seats: { x: number, y: number, id: number }[] = [];
     private rooomTopBarComponent!: RooomTopBar;
     private readyButtonNode!: cc.Node;
@@ -81,7 +81,7 @@ export default class GameUIManager extends cc.Component {
         this.initChipSelectPanel();
         this.initGrabBankerPanel();
         this.initLookCardPanel();
-        this.loadSettleCoinSpriteFrame();
+        this.loadSettleIconSpriteFrames();
     }
 
     public initRoomTopBar() {
@@ -500,19 +500,21 @@ export default class GameUIManager extends cc.Component {
     }
 
 
-    // 加载结算飞金币图片，失败时会回退到 Graphics 绘制金币
-    private loadSettleCoinSpriteFrame() {
-        if (this.settleCoinSpriteFrame) {
-            return;
-        }
-
-        cc.resources.load("common/icon/coin", cc.SpriteFrame, (err, spriteFrame: cc.SpriteFrame) => {
-            if (err) {
-                cc.warn("结算金币图片加载失败，使用默认绘制金币", err);
+    // 加载结算飞行图标，房主模式用积分，匹配模式用金币；失败时会回退到 Graphics 绘制金币
+    private loadSettleIconSpriteFrames() {
+        ["common/icon/coin", "common/icon/score"].forEach(path => {
+            if (this.settleIconSpriteFrames[path]) {
                 return;
             }
 
-            this.settleCoinSpriteFrame = spriteFrame;
+            cc.resources.load(path, cc.SpriteFrame, (err, spriteFrame: cc.SpriteFrame) => {
+                if (err) {
+                    cc.warn("结算飞行图标加载失败，使用默认绘制金币", path, err);
+                    return;
+                }
+
+                this.settleIconSpriteFrames[path] = spriteFrame;
+            });
         });
     }
 
@@ -665,9 +667,11 @@ export default class GameUIManager extends cc.Component {
         node.setContentSize(34, 34);
         node.opacity = 0;
 
-        if (this.settleCoinSpriteFrame) {
+        const iconPath = ClientRoomManager.instance.isScoreRoom() ? "common/icon/score" : "common/icon/coin";
+        const spriteFrame = this.settleIconSpriteFrames[iconPath];
+        if (spriteFrame) {
             const sprite = node.addComponent(cc.Sprite);
-            sprite.spriteFrame = this.settleCoinSpriteFrame;
+            sprite.spriteFrame = spriteFrame;
             sprite.sizeMode = cc.Sprite.SizeMode.CUSTOM;
             return node;
         }

@@ -3,7 +3,7 @@ const {ccclass, property} = cc._decorator;
 import Http from "../util/Http";
 import { User } from "./entity/User";
 import { ServerMsg } from "./entity/ServerMsg";
-import {SceneUtil} from "../util/SceneUtil";
+import {SceneUtil, ShareRoomUtil} from "../util/SceneUtil";
 import UserData from "./entity/UserData";
 import ToastManager from "../common/ToastManager";
 import Config from "../config/Config";
@@ -36,7 +36,7 @@ export default class Login extends cc.Component {
     public async init() {
         const guest = UserData.get();
         // 有游客缓存，自动登录
-        if (guest) {
+        if (guest || ShareRoomUtil.hasSharedRoom()) {
             this.autoLogin(guest);
         }
     }

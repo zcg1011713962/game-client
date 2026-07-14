@@ -1526,7 +1526,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "btnRule",
+    "_name": "shareRule",
     "_objFlags": 0,
     "_parent": {
       "__id__": 1
@@ -1604,7 +1604,7 @@
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
     "_spriteFrame": {
-      "__uuid__": "44640ce7-e62f-43c2-8194-aad57c754051"
+      "__uuid__": "8f7440f4-73f4-4bf7-b530-b1e32abc5e62"
     },
     "_type": 0,
     "_sizeMode": 0,

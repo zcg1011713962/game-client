@@ -12,6 +12,13 @@ import UIColorUtil from "../../../util/UIColorUtil";
 
 @ccclass
 export default class SeatComponent extends cc.Component {
+    private static readonly COIN_ICON_PATH = "common/icon/coin";
+    private static readonly SCORE_ICON_PATH = "common/icon/score";
+    private static iconSpriteFrames: { [path: string]: cc.SpriteFrame } = {};
+    private static iconLoading: boolean = false;
+    private static iconLoaded: boolean = false;
+    private static iconLoadCallbacks: Function[] = [];
+
     // 普通座位
     private normalNode: cc.Node = null;
     // 高亮座位
@@ -24,6 +31,7 @@ export default class SeatComponent extends cc.Component {
     private avatarLoadToken: number = 0;
 
     onLoad() {
+        SeatComponent.preloadAmountIcons();
        
         this.normalNode = this.node.getChildByName("Normal");
         this.hoverNode = this.node.getChildByName("Hover");
@@ -40,6 +48,48 @@ export default class SeatComponent extends cc.Component {
 
     public init(seatData: SeatData){
         this.setData(seatData);
+    }
+
+    public static preloadAmountIcons(callback?: Function) {
+        if (SeatComponent.iconLoaded) {
+            if (callback) {
+                callback();
+            }
+            return;
+        }
+
+        if (callback) {
+            SeatComponent.iconLoadCallbacks.push(callback);
+        }
+
+        if (SeatComponent.iconLoading) {
+            return;
+        }
+
+        SeatComponent.iconLoading = true;
+        const iconPaths = [SeatComponent.COIN_ICON_PATH, SeatComponent.SCORE_ICON_PATH];
+        let finishCount = 0;
+
+        iconPaths.forEach(iconPath => {
+            cc.resources.load(iconPath, cc.SpriteFrame, (err, spriteFrame: cc.SpriteFrame) => {
+                if (err) {
+                    cc.warn("座位金额图标预加载失败", iconPath, err);
+                } else {
+                    SeatComponent.iconSpriteFrames[iconPath] = spriteFrame;
+                }
+
+                finishCount++;
+                if (finishCount >= iconPaths.length) {
+                    SeatComponent.iconLoading = false;
+                    SeatComponent.iconLoaded = iconPaths.every(path => !!SeatComponent.iconSpriteFrames[path]);
+                    const callbacks = SeatComponent.iconLoadCallbacks.slice();
+                    SeatComponent.iconLoadCallbacks.length = 0;
+                    if (SeatComponent.iconLoaded) {
+                        callbacks.forEach(cb => cb());
+                    }
+                }
+            });
+        });
     }
 
     /**
@@ -177,7 +227,6 @@ export default class SeatComponent extends cc.Component {
             const nicknameNode = name.getChildByName("nickname");
             GameUIManager.instance.setNickNameView(nicknameNode, bankerSeat === userInfo.seatId, CurrUserManager.getCurrentUserId() === userInfo.userId , userInfo.nickname);
 
-
             this.updateSetGold(userInfo.gold);
         }
         // 预制体显示
@@ -186,12 +235,47 @@ export default class SeatComponent extends cc.Component {
 
     public updateSetGold(gold: number){
         if(this.setOut){
-             const info = this.setOut.getChildByName("Info");
-            // 金币展示
+            this.updateSeatAmountIcon();
+            const info = this.setOut.getChildByName("Info");
+            // 金额展示
             const coinValNode = info.getChildByName("CoinVal");
             
             UIUtil.setLabel(coinValNode, String(gold) , UIColorUtil.GOLD, UIColorUtil.TITLE, 1)
         }
+    }
+
+    private updateSeatAmountIcon() {
+        if (!this.setOut) {
+            return;
+        }
+
+        const info = this.setOut.getChildByName("Info");
+        if (!info) {
+            return;
+        }
+
+        const iconNode = info.getChildByName("CoinIcoin");
+        if (!iconNode) {
+            return;
+        }
+
+        const sprite = iconNode.getComponent(cc.Sprite);
+        if (!sprite) {
+            return;
+        }
+
+        const iconPath = ClientRoomManager.instance.isScoreRoom() ? SeatComponent.SCORE_ICON_PATH : SeatComponent.COIN_ICON_PATH;
+        const spriteFrame = SeatComponent.iconSpriteFrames[iconPath];
+        if (spriteFrame) {
+            sprite.spriteFrame = spriteFrame;
+            return;
+        }
+
+        SeatComponent.preloadAmountIcons(() => {
+            if (cc.isValid(this.node) && cc.isValid(iconNode)) {
+                this.updateSeatAmountIcon();
+            }
+        });
     }
 
     

@@ -1,4 +1,4 @@
-const { ccclass, property } = cc._decorator;
+const { ccclass } = cc._decorator;
 import UserData from "../../login/entity/UserData";
 import ClientRoomManager from "../pj/room/ClientRoomManager";
 import { UserState } from "../pj/user/UserInfo";
@@ -6,6 +6,7 @@ import ToastManager from "../../common/ToastManager";
 import WsClient from "../pj/net/WsClient";
 import { Cmd } from "../pj/enum/Cmd";
 import HallUIManager from "../../hall/HallUIManager";
+import { ShareRoomUtil } from "../../util/SceneUtil";
 
 export interface RoomBarData {
     roomId: number;
@@ -18,7 +19,7 @@ export class RooomTopBar extends cc.Component {
 
     private btnBack: cc.Node = null;
 
-    private btnRule: cc.Node = null;
+    private shareRule: cc.Node = null;
 
     private btnRecord: cc.Node = null;
 
@@ -35,7 +36,7 @@ export class RooomTopBar extends cc.Component {
 
     onLoad() {
         this.btnBack = this.node.getChildByName("btnBack");
-        this.btnRule = this.node.getChildByName("btnRule");
+        this.shareRule = this.node.getChildByName("shareRule");
         this.btnRecord = this.node.getChildByName("btnRecord");
         this.btnMore = this.node.getChildByName("btnMore");
        
@@ -44,7 +45,7 @@ export class RooomTopBar extends cc.Component {
         this.baseScoreLabel = cc.find("BaseScoreGroup/ScoreLabel", this.node);
             
         this.bindBtn(this.btnBack, this.onBackClick);
-        this.bindBtn(this.btnRule, this.onRuleClick);
+        this.bindBtn(this.shareRule, this.onShareRuleClick);
         this.bindBtn(this.btnRecord, this.onRecordClick);
 
     }
@@ -105,8 +106,60 @@ export class RooomTopBar extends cc.Component {
         }
     }
 
-    private onRuleClick() {
-        cc.log("打开规则");
+    private async onShareRuleClick() {
+        const roomId = this.roomId || ClientRoomManager.instance.getRoomId();
+        if (!roomId || roomId <= 0) {
+            ToastManager.show("房间号不存在");
+            return;
+        }
+
+        try {
+            const data = await this.createInvite(roomId);
+            const invite = data && data.invite ? String(data.invite) : "";
+            if (!ShareRoomUtil.isValidInviteCode(invite)) {
+                cc.log("服务端返回的邀请码无效:", data);
+                ToastManager.show("生成邀请链接失败");
+                return;
+            }
+
+            const url = ShareRoomUtil.createShareUrl(invite);
+            cc.log("房间分享链接:", url);
+            await ShareRoomUtil.copyText(url);
+            ToastManager.show("房间链接已复制");
+        } catch (e) {
+             cc.error("生成邀请链接失败:", e);
+            ToastManager.show("生成邀请链接失败");
+        }
+    }
+
+    private createInvite(roomId: number): Promise<any> {
+        return new Promise((resolve, reject) => {
+            let finished = false;
+            let onResult: Function = null;
+            const timeout = setTimeout(() => {
+                if (finished) {
+                    return;
+                }
+
+                finished = true;
+                cc.systemEvent.off(Cmd.CREATE_INVITE_RESULT, onResult);
+                reject("create invite timeout");
+            }, 5000);
+
+            onResult = (data: any) => {
+                if (finished) {
+                    return;
+                }
+
+                finished = true;
+                clearTimeout(timeout);
+                cc.systemEvent.off(Cmd.CREATE_INVITE_RESULT, onResult);
+                resolve(data);
+            };
+
+            cc.systemEvent.on(Cmd.CREATE_INVITE_RESULT, onResult);
+            WsClient.instance.send(Cmd.CREATE_INVITE, {roomId: roomId});
+        });
     }
 
     private onRecordClick() {
@@ -135,6 +188,9 @@ export class RooomTopBar extends cc.Component {
         }
         label.string = text;
         label.node.color = fontColor;
+    }
 
+    public setRoundInfo(currentRound: number, maxRound: number): void {
+        // 兼容旧接口：局数显示已迁移到 GameUIManager 的 RoundView。
     }
 }

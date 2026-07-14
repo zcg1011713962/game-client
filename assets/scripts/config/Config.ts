@@ -3,11 +3,12 @@ export default class Config {
     public static PROTOCOL = "http";
     public static WS_PROTOCOL = "ws";
 
-    //public static HOST = "192.168.5.23";
-    public static HOST = "47.120.62.233";
+    public static HOST = "192.168.5.6";
+    //public static HOST = "47.120.62.233";
 
     public static API_PORT = 18080;
     public static WS_PORT = 19001;
+    public static SHARE_URL = "http://localhost:7456/";
 
     public static API_PATH = "/api";
     public static WS_PATH = "/ws";

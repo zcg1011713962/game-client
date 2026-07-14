@@ -13,6 +13,7 @@ import ToastManager from "../common/ToastManager";
 import HallTopBar from "./top/HallTopBar";
 import Shop from "../shop/Shop";
 import GameRes from "../game/pj/GameRes";
+import { ShareRoomUtil } from "../util/SceneUtil";
 
 const {ccclass, property} = cc._decorator;
 
@@ -90,7 +91,12 @@ export default class HallUIManager extends cc.Component {
         }
         let t2 = Date.now();
         await WsClient.instance.connectAsync(Config.WS_URL, guest.token);
-        WsClient.instance.send(Cmd.ROOM_INFO, "")
+        const sharedInvite = ShareRoomUtil.consumePendingInvite();
+        if (sharedInvite) {
+            WsClient.instance.send(Cmd.ENTER_ROOM, { invite: sharedInvite });
+        } else {
+            WsClient.instance.send(Cmd.ROOM_INFO, "")
+        }
         console.log("连接socket耗时:", Date.now() - t2, "ms");
     }
 

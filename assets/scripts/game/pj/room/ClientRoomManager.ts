@@ -448,6 +448,15 @@ export default class ClientRoomManager {
         return true;
     }
 
+    private getGameUI(): GameUIManager | null {
+        const gameUI = GameUIManager.instance;
+        if (!gameUI || !cc.isValid(gameUI.node)) {
+            return null;
+        }
+
+        return gameUI;
+    }
+
     // 进房回包
     public applyEnterRoom(data: RoomSnapshot) {
         console.log("进房回报包", data);
@@ -456,11 +465,13 @@ export default class ClientRoomManager {
         // 1. 先缓存房间数据
         this.roomSnapshot = data;
 
-        if (this.syncingRoomInfo || (this.gameReady && this.roomId === data.roomId)) {
+        if (this.gameReady && (this.syncingRoomInfo || this.roomId === data.roomId)) {
             this.syncingRoomInfo = false;
             this.renderRoom(data);
             return;
         }
+
+        this.syncingRoomInfo = false;
 
         // 2. 切换到游戏场景
         this.loadGameScene();
@@ -508,7 +519,12 @@ export default class ClientRoomManager {
         if(this.myUserId === data.userId){
              this.updateMySeatId(seatId);
         }
-        GameUIManager.instance.clearTable();
+        const gameUI = this.getGameUI();
+        if (!gameUI) {
+            return;
+        }
+
+        gameUI.clearTable();
         this.refreshAllSeatView();
         
     }
@@ -605,8 +621,13 @@ export default class ClientRoomManager {
         if(this.myUserId === data.userId){
              this.updateMySeatId(seatId);
         }
-        GameUIManager.instance.clearTable();
-        GameUIManager.instance.showReady(ReadyBtnState.HIDE);
+        const gameUI = this.getGameUI();
+        if (!gameUI) {
+            return;
+        }
+
+        gameUI.clearTable();
+        gameUI.showReady(ReadyBtnState.HIDE);
         this.refreshAllSeatView(); 
     }
 
@@ -675,18 +696,23 @@ export default class ClientRoomManager {
         console.log("游戏开始", "roundId:", data.roundId);
         this.invalidateTimelineTasks();
         const version = this.timelineVersion;
-        GameUIManager.instance.clearTable();
-        GameUIManager.instance.showReady(ReadyBtnState.HIDE);
-
         this.roundId = data.roundId;
         this.maxRoundId = data.maxRoundId || this.maxRoundId || 0;
         this.animatedBetKeys.clear();
-        GameUIManager.instance.updateRoundView(this.roundId, this.maxRoundId);
 
         this.players.clear();
         data.players.forEach(p => {
             this.players.set(p.userId, p);
         });
+
+        const gameUI = this.getGameUI();
+        if (!gameUI) {
+            return;
+        }
+
+        gameUI.clearTable();
+        gameUI.showReady(ReadyBtnState.HIDE);
+        gameUI.updateRoundView(this.roundId, this.maxRoundId);
 
         const serverOffset = data.serverTime - Date.now();
         const getServerNow = () => Date.now() + serverOffset;
@@ -702,8 +728,13 @@ export default class ClientRoomManager {
                 await PaiJiuUtil.wait(this as any, waitAnimSeconds);
             }
             if (this.isCurrentTimeline(version, data.roundId) && getServerNow() < data.roundAnimEndTime) {
+                const currentGameUI = this.getGameUI();
+                if (!currentGameUI) {
+                    return;
+                }
+
                 this.sentRoundIds.add(data.roundId);
-                await GameUIManager.instance.showRoundStartAnim(
+                await currentGameUI.showRoundStartAnim(
                     this.roundId,
                     data.serverTime,
                     data.roundAnimEndTime
@@ -1104,7 +1135,7 @@ export default class ClientRoomManager {
         GameUIManager.instance.showRoomFinalSettle(data);
     }
 
-    private isScoreRoom(): boolean {
+    public isScoreRoom(): boolean {
         return this.roomType === 2;
     }
 
@@ -1240,11 +1271,19 @@ export default class ClientRoomManager {
         }else{
              console.log("投注面板隐藏", this.mySeatId, this.bankerSeat);
         }
+        if (!GameUIManager.instance) {
+            return;
+        }
+
         GameUIManager.instance.setBetPanelVisible(canBet);
         this.refreshBankerBetStatus();
     }
 
     private refreshBankerBetStatus() {
+        if (!GameUIManager.instance) {
+            return;
+        }
+
         if (this.roomState !== RoomState.BET) {
             GameUIManager.instance.hideBankerBetStatus();
             return;

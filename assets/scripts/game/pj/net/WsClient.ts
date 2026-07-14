@@ -20,6 +20,7 @@ export default class WsClient {
     private seq: number = 1;
     private token: string = "";
     private url: string = "";
+    private pendingRequests: { [seq: number]: { resolve: Function, reject: Function } } = {};
 
     private constructor() {}
 
@@ -127,6 +128,32 @@ export default class WsClient {
         return seq;
     }
 
+    public request(cmd: string, data: any = {}, timeoutMs: number = 5000): Promise<any> {
+        return new Promise((resolve, reject) => {
+            const seq = this.sendWithSeq(cmd, data);
+            if (!seq) {
+                reject("send failed");
+                return;
+            }
+
+            const timer = setTimeout(() => {
+                delete this.pendingRequests[seq];
+                reject("request timeout");
+            }, timeoutMs);
+
+            this.pendingRequests[seq] = {
+                resolve: (data: any) => {
+                    clearTimeout(timer);
+                    resolve(data);
+                },
+                reject: (err: any) => {
+                    clearTimeout(timer);
+                    reject(err);
+                }
+            };
+        });
+    }
+
     private handleMessage(text: string) {
         let msg: any = null;
 
@@ -142,6 +169,17 @@ export default class WsClient {
              console.log("收到消息:", msg.cmd);
         }
        
+        const pending = this.pendingRequests[msg.seq];
+        if (pending) {
+            delete this.pendingRequests[msg.seq];
+            if (msg.code === 0) {
+                pending.resolve(msg.data);
+            } else {
+                pending.reject(msg.msg || msg.code);
+            }
+            return;
+        }
+
         if (msg.code !== 0) {
             console.error("服务端错误:", msg.cmd, msg.code, msg.msg);
             if (msg.cmd === Cmd.READY && msg.code === 1019) {
@@ -162,6 +200,9 @@ export default class WsClient {
                 break;
             case Cmd.ROOM_INFO_RESULT:
                 ClientRoomManager.instance.applyRoomInfo(msg.data);
+                break;
+            case Cmd.CREATE_INVITE_RESULT:
+                cc.systemEvent.emit(Cmd.CREATE_INVITE_RESULT, msg.data);
                 break;
             case Cmd.PLAYER_ENTER:
                 ClientRoomManager.instance.applyPlayerEnter(msg.data);

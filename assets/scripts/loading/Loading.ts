@@ -2,7 +2,7 @@ const { ccclass } = cc._decorator;
 
 import LoginRes from "../login/LoginRes";
 import HallRes from "../hall/HallRes";
-import { SceneUtil } from "../util/SceneUtil";
+import { SceneUtil, ShareRoomUtil } from "../util/SceneUtil";
 import UserData from "../login/entity/UserData";
 import GameRes from "../game/pj/GameRes";
 import UIUtil from "../util/UIUtil";
@@ -114,10 +114,18 @@ export default class Loading extends cc.Component {
             await LoginRes.instance.preload();
             this.setTargetProgress(0.2, "登录资源加载完成...");
 
+            const sharedInvite = ShareRoomUtil.getInviteFromUrl();
+            if (sharedInvite) {
+                ShareRoomUtil.setPendingInvite(sharedInvite);
+            }
+
             let user = UserData.get();
             if (user) {
                 this.setTargetProgress(0.25, "登录校验中...");
                 user = await this.refreshGuestLogin(user);
+            } else if (sharedInvite) {
+                this.setTargetProgress(0.25, "游客登录中...");
+                user = await this.refreshGuestLogin(null);
             }
 
             const targetScene = user ? "hall" : "login";
