@@ -9,6 +9,7 @@ export default class Config {
     public static API_PORT = 18080;
     public static WS_PORT = 19001;
     public static SHARE_URL = "http://localhost:7456/";
+    //public static SHARE_URL = "http://47.120.62.233:8888/";
 
     public static API_PATH = "/api";
     public static WS_PATH = "/ws";

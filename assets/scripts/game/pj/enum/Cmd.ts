@@ -5,6 +5,7 @@ export enum Cmd {
     // 登录
     LOGIN = "LOGIN",
     LOGIN_RESULT = "LOGIN_RESULT",
+    FORCE_LOGOUT = "FORCE_LOGOUT",
 
     // 心跳
     PING = "PING",

@@ -35,6 +35,7 @@ export default class HallUIManager extends cc.Component {
    
     
     private topBar!: cc.Node;
+    private bottomBar!: cc.Node;
     public gameCardNode!: cc.Node;
     public joinRoomPanelNode!: cc.Node;
     public createRoomPopupNode!:cc.Node;
@@ -59,17 +60,10 @@ export default class HallUIManager extends cc.Component {
         this.gameCardContainerNode = this.gameCardNode.getChildByName("View");
         this.bannerSprite = this.node.getChildByName("Banner").getChildByName("BannerImg").getComponent(cc.Sprite);
       
-        const bottomBar = this.node.getChildByName("BottomBar");
-        this.btnActivitySprite = bottomBar.getChildByName("BtnActivity").getComponent(cc.Sprite);
-        this.btnRankSprite = bottomBar.getChildByName("BtnRank").getComponent(cc.Sprite);
-        this.btnRecordSprite = bottomBar.getChildByName("BtnRecord").getComponent(cc.Sprite);
-        this.btnShopSprite = bottomBar.getChildByName("BtnShop").getComponent(cc.Sprite);
+        this.initBottomBar();
         // 动态加载图片
         this.bannerSprite.spriteFrame = HallRes.instance.bannerSpriteFrame;
-        this.btnActivitySprite.spriteFrame = HallRes.instance.bottomIconMap["activity"];
-        this.btnRankSprite.spriteFrame = HallRes.instance.bottomIconMap["rank"];
-        this.btnRecordSprite.spriteFrame = HallRes.instance.bottomIconMap["record"];
-        this.btnShopSprite.spriteFrame = HallRes.instance.bottomIconMap["shop"];
+        this.refreshBottomBarIcons();
         // 监听座位点击
         cc.systemEvent.on("GameCard_CLICK", this.onGameCardClick, this);
         // 保存单例引用
@@ -90,8 +84,8 @@ export default class HallUIManager extends cc.Component {
             return;
         }
         let t2 = Date.now();
-        await WsClient.instance.connectAsync(Config.WS_URL, guest.token);
-        const sharedInvite = ShareRoomUtil.consumePendingInvite();
+        await WsClient.instance.connectAsync(Config.WS_URL, guest.token, false);
+        const sharedInvite = ShareRoomUtil.peekPendingInvite();
         if (sharedInvite) {
             WsClient.instance.send(Cmd.ENTER_ROOM, { invite: sharedInvite });
         } else {
@@ -105,6 +99,56 @@ export default class HallUIManager extends cc.Component {
         
         const node = cc.instantiate(HallRes.instance.topBarPrefab);
         node.parent = this.topBar;
+    }
+
+    private initBottomBar(): void {
+        const oldBottomBar = this.node.getChildByName("BottomBar");
+        if (oldBottomBar) {
+            oldBottomBar.removeFromParent();
+            oldBottomBar.destroy();
+        }
+
+        if (!HallRes.instance.bottomBarPrefab) {
+            cc.error("BottomBar prefab未预加载");
+            return;
+        }
+
+        this.bottomBar = cc.instantiate(HallRes.instance.bottomBarPrefab);
+        this.bottomBar.parent = this.node;
+
+        this.btnActivitySprite = this.getBottomButtonSprite("BtnActivity");
+        this.btnRankSprite = this.getBottomButtonSprite("BtnRank");
+        this.btnRecordSprite = this.getBottomButtonSprite("BtnRecord");
+        this.btnShopSprite = this.getBottomButtonSprite("BtnShop");
+    }
+
+    private getBottomButtonSprite(name: string): cc.Sprite {
+        const node = this.bottomBar ? this.bottomBar.getChildByName(name) : null;
+        if (!node) {
+            cc.error(`BottomBar 找不到节点: ${name}`);
+            return null;
+        }
+        const sprite = node.getComponent(cc.Sprite);
+        if (!sprite) {
+            cc.error(`BottomBar 节点缺少 cc.Sprite: ${name}`);
+            return null;
+        }
+        return sprite;
+    }
+
+    private refreshBottomBarIcons(): void {
+        if (this.btnActivitySprite) {
+            this.btnActivitySprite.spriteFrame = HallRes.instance.bottomIconMap["activity"];
+        }
+        if (this.btnRankSprite) {
+            this.btnRankSprite.spriteFrame = HallRes.instance.bottomIconMap["rank"];
+        }
+        if (this.btnRecordSprite) {
+            this.btnRecordSprite.spriteFrame = HallRes.instance.bottomIconMap["record"];
+        }
+        if (this.btnShopSprite) {
+            this.btnShopSprite.spriteFrame = HallRes.instance.bottomIconMap["shop"];
+        }
     }
 
     public initGameCard(){

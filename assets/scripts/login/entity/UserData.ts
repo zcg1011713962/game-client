@@ -42,20 +42,96 @@ export default class UserData {
     }
 
     /**
-     * 获取本机游客设备标识。只生成一次，用来保证一台设备尽量对应一个游客账号。
+     * 获取游客设备标识。优先使用可重复计算的设备短码，让同一台设备的不同浏览器尽量命中同一个游客账号。
      */
     static getOrCreateGuestDeviceId(): string {
         try {
-            let deviceId = cc.sys.localStorage.getItem(this.GUEST_DEVICE_KEY);
-            if (!deviceId) {
-                deviceId = this.createGuestDeviceId();
+            const deviceId = this.createStableGuestDeviceId();
+            if (deviceId) {
                 cc.sys.localStorage.setItem(this.GUEST_DEVICE_KEY, deviceId);
+                return deviceId;
             }
-            return deviceId;
+
+            let cachedDeviceId = cc.sys.localStorage.getItem(this.GUEST_DEVICE_KEY);
+            if (!cachedDeviceId) {
+                cachedDeviceId = this.createGuestDeviceId();
+                cc.sys.localStorage.setItem(this.GUEST_DEVICE_KEY, cachedDeviceId);
+            }
+            return cachedDeviceId;
         } catch (e) {
             cc.error("读取游客设备标识失败", e);
             return this.createGuestDeviceId();
         }
+    }
+
+    private static createStableGuestDeviceId(): string {
+        if (!cc.sys.isBrowser || typeof window === "undefined") {
+            return "";
+        }
+
+        const nav: any = window.navigator || {};
+        const screenInfo: any = window.screen || {};
+        const width = Number(screenInfo.width || 0);
+        const height = Number(screenInfo.height || 0);
+        const minSide = Math.min(width, height);
+        const maxSide = Math.max(width, height);
+        const timezone = (() => {
+            try {
+                const intl = (window as any).Intl;
+                return intl ? intl.DateTimeFormat().resolvedOptions().timeZone || "" : "";
+            } catch (e) {
+                return "";
+            }
+        })();
+        const os = this.getBrowserIndependentOS(nav);
+
+        const raw = [
+            os,
+            minSide,
+            maxSide,
+            screenInfo.colorDepth || "",
+            window.devicePixelRatio || "",
+            timezone,
+            new Date().getTimezoneOffset()
+        ].join("|");
+
+        return `guest_${this.hashToBase36(raw)}`;
+    }
+
+    private static getBrowserIndependentOS(nav: any): string {
+        const ua = String(nav.userAgent || "").toLowerCase();
+        const platform = String(nav.platform || "").toLowerCase();
+        const source = `${ua}|${platform}`;
+
+        if (source.indexOf("windows") >= 0 || source.indexOf("win32") >= 0 || source.indexOf("win64") >= 0) {
+            return "windows";
+        }
+        if (source.indexOf("android") >= 0) {
+            return "android";
+        }
+        if (source.indexOf("iphone") >= 0 || source.indexOf("ipad") >= 0 || source.indexOf("ipod") >= 0) {
+            return "ios";
+        }
+        if (source.indexOf("mac") >= 0) {
+            return "mac";
+        }
+        if (source.indexOf("linux") >= 0) {
+            return "linux";
+        }
+        return platform || "unknown";
+    }
+
+    private static hashToBase36(raw: string): string {
+        let h1 = 0xdeadbeef;
+        let h2 = 0x41c6ce57;
+        for (let i = 0; i < raw.length; i++) {
+            const ch = raw.charCodeAt(i);
+            h1 = Math.imul(h1 ^ ch, 2654435761);
+            h2 = Math.imul(h2 ^ ch, 1597334677);
+        }
+        h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+        h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+        return `${(h1 >>> 0).toString(36)}${(h2 >>> 0).toString(36)}`;
     }
 
     private static createGuestDeviceId(): string {

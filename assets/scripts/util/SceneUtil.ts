@@ -67,30 +67,24 @@ export class ShareRoomUtil {
         this.pendingInviteCode = inviteCode || "";
     }
 
+    static peekPendingInvite(): string {
+        return this.pendingInviteCode || this.getInviteFromUrl();
+    }
+
+    static clearPendingInvite(): void {
+        this.pendingInviteCode = "";
+        this.consumedUrlInvite = true;
+        this.clearInviteFromUrl();
+    }
+
     static hasSharedRoom(): boolean {
         return !!this.getInviteFromUrl() || !!this.pendingInviteCode;
-    }
-
-    static getRoomIdFromUrl(): number {
-        // 兼容旧编译缓存里的调用；旧 ?roomId=xxx 分享链接不再允许自动进房。
-        return 0;
-    }
-
-    static setPendingRoomId(_roomId: number): void {
-        // 兼容旧编译缓存里的调用；旧 roomId 分享入口已经下线。
-    }
-
-    static consumePendingRoomId(): number {
-        // 兼容旧编译缓存里的调用；返回 0 表示没有可自动进入的旧房间链接。
-        return 0;
     }
 
     static consumePendingInvite(): string {
         if (this.pendingInviteCode) {
             const inviteCode = this.pendingInviteCode;
-            this.pendingInviteCode = "";
-            this.consumedUrlInvite = true;
-            this.clearInviteFromUrl();
+            this.clearPendingInvite();
             return inviteCode;
         }
 
@@ -100,8 +94,7 @@ export class ShareRoomUtil {
 
         const inviteCode = this.getInviteFromUrl();
         if (inviteCode) {
-            this.consumedUrlInvite = true;
-            this.clearInviteFromUrl();
+            this.clearPendingInvite();
             return inviteCode;
         }
 

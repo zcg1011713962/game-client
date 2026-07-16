@@ -2,7 +2,7 @@ const { ccclass } = cc._decorator;
 import ClientRoomManager from "../room/ClientRoomManager";
 import {Cmd} from "../enum/Cmd";
 import ToastManager from "../../../common/ToastManager";
-import { SceneUtil } from "../../../util/SceneUtil";
+import { ShareRoomUtil } from "../../../util/SceneUtil";
 @ccclass
 export default class WsClient {
     
@@ -21,10 +21,11 @@ export default class WsClient {
     private token: string = "";
     private url: string = "";
     private pendingRequests: { [seq: number]: { resolve: Function, reject: Function } } = {};
+    private forceClosed: boolean = false;
 
     private constructor() {}
 
-    public connectAsync(baseUrl: string, token: string): Promise<void> {
+    public connectAsync(baseUrl: string, token: string, autoSyncRoomInfo: boolean = true): Promise<void> {
         return new Promise((resolve, reject) => {
             if (this.ws && this.ws.readyState === WebSocket.OPEN){
                 resolve();
@@ -34,11 +35,14 @@ export default class WsClient {
             this.url = `${baseUrl}?token=${encodeURIComponent(token)}`;
             this.ws = new WebSocket(this.url);
             this.token = token;
+            this.forceClosed = false;
 
             this.ws.onopen = () => {
                 console.log("WebSocket连接成功");
                 this.startHeartbeat();
-                ClientRoomManager.instance.syncRoomInfo();
+                if (autoSyncRoomInfo) {
+                    ClientRoomManager.instance.syncRoomInfo();
+                }
                 resolve(); // 👉 通知外部可以发消息了
             };
 
@@ -53,6 +57,9 @@ export default class WsClient {
             this.ws.onclose = () => {
                 console.log("WebSocket断开连接");
                 this.stopHeartbeat();
+                if (this.forceClosed) {
+                    return;
+                }
                 this.reconnect();
             };
         });
@@ -60,6 +67,9 @@ export default class WsClient {
 
 
     private reconnect() {
+        if (this.forceClosed) {
+            return;
+        }
         console.log("reconnect", this.url)
         if (!this.url) return;
 
@@ -85,6 +95,9 @@ export default class WsClient {
 
         this.ws.onclose = () => {
             this.stopHeartbeat();
+            if (this.forceClosed) {
+                return;
+            }
             setTimeout(() => {
                 this.reconnect();
             }, 3000);
@@ -168,6 +181,18 @@ export default class WsClient {
         if(Cmd.PONG !== msg.cmd){
              console.log("收到消息:", msg.cmd);
         }
+
+        if (msg.cmd === Cmd.FORCE_LOGOUT) {
+            this.forceClosed = true;
+            this.stopHeartbeat();
+            ToastManager.showPersistent(msg.msg || "账号已在其他窗口登录");
+            if (this.ws) {
+                this.ws.onclose = null;
+                this.ws.close();
+                this.ws = null;
+            }
+            return;
+        }
        
         const pending = this.pendingRequests[msg.seq];
         if (pending) {
@@ -186,6 +211,8 @@ export default class WsClient {
                 if (!ClientRoomManager.instance.showLatestRoomFinalSettle()) {
                     ClientRoomManager.instance.syncRoomInfo();
                 }
+            } else if(msg.cmd === Cmd.ENTER_ROOM){
+                ToastManager.show(msg.msg || "邀请链接已失效");
             } else if(msg.code === 2002){
                 ToastManager.show("网络中断")
             }else{
@@ -196,6 +223,7 @@ export default class WsClient {
 
         switch (msg.cmd) {
             case Cmd.ENTER_ROOM_RESULT:
+                ShareRoomUtil.clearPendingInvite();
                 ClientRoomManager.instance.applyEnterRoom(msg.data);
                 break;
             case Cmd.ROOM_INFO_RESULT:
@@ -297,6 +325,7 @@ export default class WsClient {
     }
 
     public close() {
+        this.forceClosed = true;
         this.stopHeartbeat();
 
         if (this.ws) {

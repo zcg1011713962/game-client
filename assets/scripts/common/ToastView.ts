@@ -37,4 +37,32 @@ export default class ToastView extends cc.Component {
 
        
     }
+
+    public showPersistent(msg: string, success: boolean = false) {
+        if (!this.msgLabelNode) {
+            return;
+        }
+
+        if (success) {
+            UIUtil.setLabel(this.msgLabelNode, msg, UIColorUtil.TOAST_SUCCESS, UIColorUtil.TOAST_OUTLINE, 2);
+        } else {
+            UIUtil.setLabel(this.msgLabelNode, msg, UIColorUtil.TOAST_ERROR, UIColorUtil.TOAST_OUTLINE, 2);
+        }
+
+        this.node.stopAllActions();
+        cc.Tween.stopAllByTarget(this.node);
+        this.node.opacity = 255;
+        this.node.scale = 1;
+        this.node.off(cc.Node.EventType.TOUCH_END, this.close, this);
+        this.node.on(cc.Node.EventType.TOUCH_END, this.close, this);
+    }
+
+    private close() {
+        this.node.off(cc.Node.EventType.TOUCH_END, this.close, this);
+        this.node.destroy();
+    }
+
+    protected onDestroy(): void {
+        this.node.off(cc.Node.EventType.TOUCH_END, this.close, this);
+    }
 }

@@ -13,6 +13,7 @@ export default class HallRes {
     public roomSelectPanelPrefab: cc.Prefab = null;
     public joinRoomPanelPrefab: cc.Prefab = null;
     public topBarPrefab: cc.Prefab = null;
+    public bottomBarPrefab: cc.Prefab = null;
     public createRoomPopupPrefab: cc.Prefab = null;
     public gameRecordPopupPrefab!: cc.Prefab;
     public hallRecordPopupPrefab!: cc.Prefab;
@@ -42,6 +43,7 @@ export default class HallRes {
         // 首屏必须资源，只保留大厅一进入就能看到的内容
         await Promise.all([
             this.loadTopBarPrefabs(),
+            this.loadBottomBarPrefabs(),
             this.loadGameCardPrefabs(),
             this.loadHallBannerImg("banner_paijiu"),
             this.loadBottomIcons(),
@@ -233,6 +235,25 @@ export default class HallRes {
                 this.topBarPrefab = prefab;
 
                 //cc.log("顶部预制体加载完成");
+                resolve(prefab);
+            });
+        });
+    }
+
+    public async loadBottomBarPrefabs(): Promise<cc.Prefab> {
+        if (this.bottomBarPrefab) return this.bottomBarPrefab;
+
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+            bundle.load("prefabs/BottomBar", cc.Prefab, (err, prefab: cc.Prefab) => {
+                if (err) {
+                    cc.error("BottomBar prefab加载失败:", err);
+                    reject(err);
+                    return;
+                }
+
+                this.bottomBarPrefab = prefab;
                 resolve(prefab);
             });
         });
