@@ -562,8 +562,13 @@ export default class ClientRoomManager {
         this.roomScoreMap.clear();
         this.invalidateTimelineTasks();
 
+        const hallUI = HallUIManager.instance;
+        if (hallUI && cc.isValid(hallUI.node)) {
+            return;
+        }
+
         const currentScene = cc.director.getScene();
-        if (currentScene && currentScene.name === "hall") {
+        if (currentScene && currentScene.name && currentScene.name.indexOf("hall") >= 0) {
             return;
         }
 

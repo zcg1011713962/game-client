@@ -7,6 +7,8 @@ export interface SettleRecordQueryReq {
 
 export interface SettleRecordVO {
 
+    gameId?: number;
+
     roomId?: number;
 
     roundId?: number;

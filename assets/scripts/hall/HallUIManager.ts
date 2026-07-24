@@ -24,11 +24,6 @@ export default class HallUIManager extends cc.Component {
     private roomSelectPanelPrefabNode!: cc.Node;
     public joinRoomPanelPrefabNode!: cc.Node;
     public createRoomPopupPrefabNode!: cc.Node;
-    public bannerSprite!: cc.Sprite;
-    public btnActivitySprite!: cc.Sprite;
-    public btnRankSprite!: cc.Sprite;
-    public btnRecordSprite!: cc.Sprite;
-    public btnShopSprite!: cc.Sprite;
     public recordPopupNode!: cc.Node;
     public hallRecordPopupNode!: cc.Node;
     public gameRecordPopupNode!: cc.Node;
@@ -58,12 +53,8 @@ export default class HallUIManager extends cc.Component {
         this.createRoomPopupNode = this.node.getChildByName("CreateRoomPopupPanel");
         this.roomSelectPanelNode = this.node.getChildByName("RoomSelectPanel");
         this.gameCardContainerNode = this.gameCardNode.getChildByName("View");
-        this.bannerSprite = this.node.getChildByName("Banner").getChildByName("BannerImg").getComponent(cc.Sprite);
       
         this.initBottomBar();
-        // 动态加载图片
-        this.bannerSprite.spriteFrame = HallRes.instance.bannerSpriteFrame;
-        this.refreshBottomBarIcons();
         // 监听座位点击
         cc.systemEvent.on("GameCard_CLICK", this.onGameCardClick, this);
         // 保存单例引用
@@ -85,6 +76,10 @@ export default class HallUIManager extends cc.Component {
         }
         let t2 = Date.now();
         await WsClient.instance.connectAsync(Config.WS_URL, guest.token, false);
+        if (this.destroyed || !cc.isValid(this.node)) {
+            return;
+        }
+
         const sharedInvite = ShareRoomUtil.peekPendingInvite();
         if (sharedInvite) {
             WsClient.instance.send(Cmd.ENTER_ROOM, { invite: sharedInvite });
@@ -115,40 +110,6 @@ export default class HallUIManager extends cc.Component {
 
         this.bottomBar = cc.instantiate(HallRes.instance.bottomBarPrefab);
         this.bottomBar.parent = this.node;
-
-        this.btnActivitySprite = this.getBottomButtonSprite("BtnActivity");
-        this.btnRankSprite = this.getBottomButtonSprite("BtnRank");
-        this.btnRecordSprite = this.getBottomButtonSprite("BtnRecord");
-        this.btnShopSprite = this.getBottomButtonSprite("BtnShop");
-    }
-
-    private getBottomButtonSprite(name: string): cc.Sprite {
-        const node = this.bottomBar ? this.bottomBar.getChildByName(name) : null;
-        if (!node) {
-            cc.error(`BottomBar 找不到节点: ${name}`);
-            return null;
-        }
-        const sprite = node.getComponent(cc.Sprite);
-        if (!sprite) {
-            cc.error(`BottomBar 节点缺少 cc.Sprite: ${name}`);
-            return null;
-        }
-        return sprite;
-    }
-
-    private refreshBottomBarIcons(): void {
-        if (this.btnActivitySprite) {
-            this.btnActivitySprite.spriteFrame = HallRes.instance.bottomIconMap["activity"];
-        }
-        if (this.btnRankSprite) {
-            this.btnRankSprite.spriteFrame = HallRes.instance.bottomIconMap["rank"];
-        }
-        if (this.btnRecordSprite) {
-            this.btnRecordSprite.spriteFrame = HallRes.instance.bottomIconMap["record"];
-        }
-        if (this.btnShopSprite) {
-            this.btnShopSprite.spriteFrame = HallRes.instance.bottomIconMap["shop"];
-        }
     }
 
     public initGameCard(){
@@ -457,6 +418,10 @@ export default class HallUIManager extends cc.Component {
             HallRes.instance.hallRecordItemPrefab = await HallRes.instance.loadPrefab("prefabs/HallRecordItem");
         }
 
+        if (isHallRecord && Object.keys(HallRes.instance.recordImgMap).length === 0) {
+            await HallRes.instance.loadRecordImg();
+        }
+
         if (!isHallRecord && !HallRes.instance.gameRecordItemPrefab) {
             HallRes.instance.gameRecordItemPrefab = await HallRes.instance.loadPrefab("prefabs/GameRecordItem");
             await HallRes.instance.loadResultImg();
@@ -500,6 +465,8 @@ export default class HallUIManager extends cc.Component {
         }
 
         this.destroyed = true;
+
+        cc.systemEvent.off("GameCard_CLICK", this.onGameCardClick, this);
 
         cc.audioEngine.stopMusic();
 

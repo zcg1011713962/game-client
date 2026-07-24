@@ -21,7 +21,8 @@ export default class RecordApi {
     public static queryRecord(
         pageNo: number,
         pageSize: number,
-        roomId: number | null
+        roomId: number | null,
+        gameId: number | null = null
     ): Promise<ApiResult<PageResult<RecordItemDTO>>> {
 
         const guest = UserData.get();
@@ -33,7 +34,8 @@ export default class RecordApi {
             {
                 "pageNo": pageNo,
                 "pageSize": pageSize,
-                "roomId": roomId
+                "roomId": roomId,
+                "gameId": gameId
             },
             {
                 token: guest ? guest.token : ""

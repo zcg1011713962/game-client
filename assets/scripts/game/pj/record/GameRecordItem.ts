@@ -11,6 +11,7 @@ export interface RecordCardDTO {
 }
 
 export interface RecordItemDTO {
+    gameId?: number;
     roomId?: number;
     roundId?: number;
     roundCount?: number;

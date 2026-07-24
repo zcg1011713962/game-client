@@ -5,7 +5,6 @@ export default class HallRes {
 
     private hallBundle: cc.AssetManager.Bundle = null;
     public avatarMap: { [key: string]: cc.SpriteFrame } = {}; // 预加载头像图片资源
-    public bottomIconMap: { [key: string]: cc.SpriteFrame } = {}; // 预加载底部ICON资源
     public hallBgmAudio: cc.AudioClip = null;
     public hallClickAudio: cc.AudioClip = null;
     public gameCardPrefab: cc.Prefab = null;
@@ -23,6 +22,7 @@ export default class HallRes {
     public bg1Map: { [key: string]: cc.SpriteFrame } = {};
     public gameIconMap: { [key: string]: cc.SpriteFrame } = {};
     public resultImgMap: { [key: string]: cc.SpriteFrame } = {};
+    public recordImgMap: { [key: string]: cc.SpriteFrame } = {};
 
     public static get instance(): HallRes {
         if (!this._instance) {
@@ -45,8 +45,6 @@ export default class HallRes {
             this.loadTopBarPrefabs(),
             this.loadBottomBarPrefabs(),
             this.loadGameCardPrefabs(),
-            this.loadHallBannerImg("banner_paijiu"),
-            this.loadBottomIcons(),
         ]);
 
         const avatar = user != null ? user.avatar : "0";
@@ -68,6 +66,7 @@ export default class HallRes {
                 this.loadGameRecordPopupPrefab(),
                 this.loadHallRecordPopupPrefab(),
                 this.loadResultImg(),
+                this.loadRecordImg(),
             ]).catch(e => {
                 cc.error("大厅延迟资源加载失败:", e);
             });
@@ -177,6 +176,31 @@ export default class HallRes {
 
         });
     }
+
+    public async loadRecordImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
+        if (Object.keys(this.recordImgMap).length > 0) {
+            return this.recordImgMap;
+        }
+
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+            bundle.loadDir("hall/record", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
+                if (err) {
+                    cc.error("大厅战绩图片加载失败", err);
+                    reject(err);
+                    return;
+                }
+
+                assets.forEach(sp => {
+                    this.recordImgMap[sp.name] = sp;
+                });
+
+                resolve(this.recordImgMap);
+            });
+        });
+    }
+
     public async loadHallBgmAudio(): Promise<void> {
         if (this.hallBgmAudio) return;
 
@@ -412,50 +436,7 @@ export default class HallRes {
     }
 
 
-    public async loadHallBannerImg(name: string): Promise<cc.SpriteFrame> {
-        if (this.bannerSpriteFrame) return this.bannerSpriteFrame;
-
-        const bundle = await this.loadHallBundle();
-
-        return new Promise((resolve, reject) => {
-            bundle.load(`hall/banner/${name}`, cc.SpriteFrame, (err, sp: cc.SpriteFrame) => {
-                if (err) {
-                    cc.error("banner加载失败:", name, err);
-                    reject(err);
-                    return;
-                }
-
-                this.bannerSpriteFrame = sp;
-                resolve(sp);
-            });
-        });
-    }
 
 
-    public async loadBottomIcons(): Promise<void> {
-        const bundle = await this.loadHallBundle();
-
-        return new Promise((resolve, reject) => {
-
-            bundle.loadDir(
-                "hall/bottom",
-                cc.SpriteFrame,
-                (err, assets: cc.SpriteFrame[]) => {
-
-                    if (err) {
-                        cc.error("loadBottomIcons");
-                        reject(err);
-                        return;
-                    }
-
-                    assets.forEach((sf) => {
-                        this.bottomIconMap[sf.name] = sf;
-                    });
-                    resolve();
-                }
-            );
-
-        });
-    }
 
 }
