@@ -271,7 +271,7 @@ export default class GameRes {
     }
 
       /** 加载所有牌图片 */
-    private async loadCardImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
+    public async loadCardImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
 
         if (Object.keys(this.cardImgMap).length > 0) {
             return this.cardImgMap;

@@ -4,6 +4,8 @@ import HallRecordItem from "./HallRecordItem";
 import HallUIManager from "../../../hall/HallUIManager";
 import HallRes from "../../../hall/HallRes";
 import ToastManager from "../../../common/ToastManager";
+import GameRes from "../GameRes";
+import HallRecordDetailPopup from "./HallRecordDetailPopup";
 
 const { ccclass } = cc._decorator;
 
@@ -17,6 +19,7 @@ export default class HallRecordPopup extends cc.Component {
     private emptyLabel: cc.Label = null;
     private tabNodes: cc.Node[] = [];
     private tabLabels: cc.Label[] = [];
+    private detailNode: cc.Node = null;
 
     private pageNo: number = 1;
     private pageSize: number = 20;
@@ -24,12 +27,17 @@ export default class HallRecordPopup extends cc.Component {
     private hasMore: boolean = true;
     private selectedTabIndex: number = 0;
     private requestVersion: number = 0;
+    private destroyed: boolean = false;
 
     protected onLoad(): void {
         this.buildView();
     }
 
     public async loadFirstPage(_roomId: number | null) {
+        if (!this.isAlive()) {
+            return;
+        }
+
         this.pageNo = 1;
         this.hasMore = true;
         await this.loadRecord(true);
@@ -196,7 +204,15 @@ export default class HallRecordPopup extends cc.Component {
     }
 
     private hide() {
-        HallUIManager.instance.hideRecord();
+        const manager = HallUIManager.instance;
+        if (manager && cc.isValid(manager.node)) {
+            manager.hideRecord();
+            return;
+        }
+
+        if (this.node && cc.isValid(this.node)) {
+            this.node.active = false;
+        }
     }
 
     private onScrollEnded() {
@@ -213,7 +229,7 @@ export default class HallRecordPopup extends cc.Component {
     }
 
     private async loadMore() {
-        if (this.loading || !this.hasMore) {
+        if (!this.isAlive() || this.loading || !this.hasMore) {
             return;
         }
 
@@ -222,7 +238,7 @@ export default class HallRecordPopup extends cc.Component {
     }
 
     private async loadRecord(refresh: boolean) {
-        if (this.loading) {
+        if (!this.isAlive() || this.loading) {
             return;
         }
 
@@ -236,11 +252,12 @@ export default class HallRecordPopup extends cc.Component {
                 null,
                 HallRecordPopup.TAB_GAME_IDS[this.selectedTabIndex]
             );
-            const records: RecordItemDTO[] = res.data.records || [];
 
-            if (version !== this.requestVersion) {
+            if (!this.isAlive() || version !== this.requestVersion) {
                 return;
             }
+
+            const records: RecordItemDTO[] = res.data.records || [];
 
             this.hasMore = res.data.total > this.pageNo * this.pageSize;
 
@@ -250,7 +267,7 @@ export default class HallRecordPopup extends cc.Component {
                 this.append(records);
             }
         } catch (e) {
-            if (version !== this.requestVersion) {
+            if (!this.isAlive() || version !== this.requestVersion) {
                 return;
             }
 
@@ -261,30 +278,34 @@ export default class HallRecordPopup extends cc.Component {
                 this.pageNo--;
             }
         } finally {
-            if (version === this.requestVersion) {
+            if (this.isAlive() && version === this.requestVersion) {
                 this.loading = false;
             }
         }
     }
 
     private refresh(list: RecordItemDTO[]) {
-        if (!this.content) {
+        if (!this.isAlive() || !this.content || !cc.isValid(this.content)) {
             return;
         }
 
         this.content.removeAllChildren();
-        this.emptyLabel.node.active = !list || list.length === 0;
+        if (this.emptyLabel && cc.isValid(this.emptyLabel.node)) {
+            this.emptyLabel.node.active = !list || list.length === 0;
+        }
 
         if (!list || list.length === 0) {
             return;
         }
 
         this.createItems(list);
-        this.scrollView.scrollToTop(0);
+        if (this.scrollView && cc.isValid(this.scrollView.node)) {
+            this.scrollView.scrollToTop(0);
+        }
     }
 
     private append(list: RecordItemDTO[]) {
-        if (!this.content || !list || list.length === 0) {
+        if (!this.isAlive() || !this.content || !cc.isValid(this.content) || !list || list.length === 0) {
             return;
         }
 
@@ -292,13 +313,24 @@ export default class HallRecordPopup extends cc.Component {
     }
 
     private createItems(list: RecordItemDTO[]) {
+        if (!this.isAlive() || !this.content || !cc.isValid(this.content)) {
+            return;
+        }
+
         list.forEach(data => {
+            if (!this.isAlive() || !this.content || !cc.isValid(this.content)) {
+                return;
+            }
+
             const itemNode = cc.instantiate(HallRes.instance.hallRecordItemPrefab);
             this.content.addChild(itemNode);
 
             const item = itemNode.getComponent("HallRecordItem") as HallRecordItem;
             if (item) {
                 item.updateView(data);
+                item.setClickHandler((record) => {
+                    this.openDetail(record);
+                });
             }
         });
 
@@ -306,6 +338,92 @@ export default class HallRecordPopup extends cc.Component {
         if (layout) {
             layout.updateLayout();
         }
+    }
+
+    private isAlive(): boolean {
+        return !this.destroyed && !!this.node && cc.isValid(this.node);
+    }
+
+    private async openDetail(summary: RecordItemDTO): Promise<void> {
+        if (!summary || !summary.roomId) {
+            ToastManager.show("房间记录异常");
+            return;
+        }
+
+        try {
+            cc.log("打开牌九房间详情: 开始加载牌图", summary.roomId);
+            await GameRes.instance.loadCardImg();
+            if (!cc.isValid(this.node)) {
+                return;
+            }
+
+            cc.log("打开牌九房间详情: 开始请求房间记录", summary.roomId);
+            const res = await RecordApi.queryRecord(1, 100, Number(summary.roomId), summary.gameId || 1);
+            if (!cc.isValid(this.node)) {
+                return;
+            }
+
+            if (!res || res.code !== 0 || !res.data) {
+                throw new Error(`房间详情接口返回异常: ${res ? JSON.stringify(res) : "null"}`);
+            }
+
+            const records: RecordItemDTO[] = (res.data.records || []).slice();
+            records.sort((a, b) => Number(a.roundId || 0) - Number(b.roundId || 0));
+
+            cc.log("打开牌九房间详情: 开始创建预制体", summary.roomId, records.length);
+            await this.showDetailByPrefab(summary, records);
+        } catch (e) {
+            cc.error("打开牌九房间详情失败:", e);
+            ToastManager.show("获取房间详情失败");
+        }
+    }
+
+    private async showDetailByPrefab(summary: RecordItemDTO, records: RecordItemDTO[]): Promise<void> {
+        cc.log("打开牌九房间详情: 加载详情弹窗预制体");
+        const popupPrefab = await HallRes.instance.loadHallRecordDetailPopupPrefab();
+        if (!cc.isValid(this.node)) {
+            return;
+        }
+
+        cc.log("打开牌九房间详情: 加载详情条目预制体");
+        const itemPrefab = await HallRes.instance.loadHallRecordDetailItemPrefab();
+        if (!cc.isValid(this.node)) {
+            return;
+        }
+
+        if (!popupPrefab || !itemPrefab) {
+            throw new Error("HallRecordDetailPopup 或 HallRecordDetailItem 预制体加载失败");
+        }
+
+        this.closeDetail();
+
+        cc.log("打开牌九房间详情: 实例化详情弹窗预制体");
+        const detail = cc.instantiate(popupPrefab);
+        detail.parent = this.node;
+        detail.setPosition(0, 0);
+        detail.zIndex = 50;
+        this.detailNode = detail;
+
+        cc.log("打开牌九房间详情: 获取详情弹窗脚本");
+        let detailPopup = detail.getComponent(HallRecordDetailPopup);
+        if (!detailPopup) {
+            cc.log("打开牌九房间详情: 详情弹窗未挂脚本，运行时自动添加");
+            detailPopup = detail.addComponent(HallRecordDetailPopup);
+        }
+
+        cc.log("打开牌九房间详情: 初始化详情弹窗");
+        detailPopup.init(summary, records, () => {
+            this.closeDetail();
+        }, itemPrefab);
+        cc.log("打开牌九房间详情: 完成");
+    }
+
+    private closeDetail(): void {
+        if (!this.destroyed && this.detailNode && cc.isValid(this.detailNode)) {
+            this.detailNode.destroy();
+        }
+
+        this.detailNode = null;
     }
 
     private createSpriteNode(name: string, spriteFrame: cc.SpriteFrame, width: number, height: number): cc.Node {
@@ -339,8 +457,17 @@ export default class HallRecordPopup extends cc.Component {
     }
 
     protected onDestroy(): void {
-        if (this.scrollView) {
+        this.destroyed = true;
+        this.requestVersion++;
+        this.loading = false;
+        this.closeDetail();
+
+        if (this.scrollView && this.scrollView.node && cc.isValid(this.scrollView.node)) {
             this.scrollView.node.off("scroll-ended", this.onScrollEnded, this);
         }
+
+        this.scrollView = null;
+        this.content = null;
+        this.emptyLabel = null;
     }
 }

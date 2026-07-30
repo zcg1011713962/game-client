@@ -13,6 +13,8 @@ export default class HallRecordItem extends cc.Component {
     private resultLabel: cc.Label = null;
     private amountLabel: cc.Label = null;
     private arrowLabel: cc.Label = null;
+    private recordData: RecordItemDTO = null;
+    private clickHandler: (data: RecordItemDTO) => void = null;
 
     protected onLoad(): void {
         this.buildView();
@@ -24,6 +26,7 @@ export default class HallRecordItem extends cc.Component {
             this.buildView();
         }
 
+        this.recordData = data;
         const amount = Number(data.winAmount || 0);
 
         this.gameNameLabel.string = "牌九";
@@ -33,6 +36,10 @@ export default class HallRecordItem extends cc.Component {
         this.amountLabel.string = this.formatAmount(amount);
 
         this.updateAmountStyle(amount);
+    }
+
+    public setClickHandler(handler: (data: RecordItemDTO) => void): void {
+        this.clickHandler = handler;
     }
 
     private buildView(): void {
@@ -95,6 +102,10 @@ export default class HallRecordItem extends cc.Component {
 
     private onTouchEnd(): void {
         this.resetBg();
+
+        if (this.clickHandler && this.recordData) {
+            this.clickHandler(this.recordData);
+        }
     }
 
     private onTouchCancel(): void {

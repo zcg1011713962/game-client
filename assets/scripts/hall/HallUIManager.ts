@@ -398,6 +398,7 @@ export default class HallUIManager extends cc.Component {
     }
 
     public async showRecord(parent: cc.Node, roomId :number | null) {
+        const valid = () => !this.destroyed && cc.isValid(this.node) && cc.isValid(parent);
         const isHallRecord = roomId == null;
         let recordPopupPrefab = isHallRecord
             ? HallRes.instance.hallRecordPopupPrefab
@@ -407,6 +408,10 @@ export default class HallUIManager extends cc.Component {
             recordPopupPrefab = await HallRes.instance.loadPrefab(
                 isHallRecord ? "prefabs/HallRecordPopup" : "prefabs/GameRecordPopup"
             );
+            if (!valid()) {
+                return;
+            }
+
             if (isHallRecord) {
                 HallRes.instance.hallRecordPopupPrefab = recordPopupPrefab;
             } else {
@@ -416,15 +421,24 @@ export default class HallUIManager extends cc.Component {
 
         if (isHallRecord && !HallRes.instance.hallRecordItemPrefab) {
             HallRes.instance.hallRecordItemPrefab = await HallRes.instance.loadPrefab("prefabs/HallRecordItem");
+            if (!valid()) {
+                return;
+            }
         }
 
         if (isHallRecord && Object.keys(HallRes.instance.recordImgMap).length === 0) {
             await HallRes.instance.loadRecordImg();
+            if (!valid()) {
+                return;
+            }
         }
 
         if (!isHallRecord && !HallRes.instance.gameRecordItemPrefab) {
             HallRes.instance.gameRecordItemPrefab = await HallRes.instance.loadPrefab("prefabs/GameRecordItem");
             await HallRes.instance.loadResultImg();
+            if (!valid()) {
+                return;
+            }
         }
 
         const oldNode = isHallRecord ? this.gameRecordPopupNode : this.hallRecordPopupNode;
@@ -434,6 +448,10 @@ export default class HallUIManager extends cc.Component {
 
         let popupNode = isHallRecord ? this.hallRecordPopupNode : this.gameRecordPopupNode;
         if (!popupNode) {
+            if (!valid()) {
+                return;
+            }
+
             popupNode = cc.instantiate(recordPopupPrefab);
             parent.addChild(popupNode);
             if (isHallRecord) {
@@ -449,7 +467,9 @@ export default class HallUIManager extends cc.Component {
         const recordPopup = popupNode.getComponent(
             isHallRecord ? "HallRecordPopup" : "GameRecordPopup"
         ) as any;
-        recordPopup.loadFirstPage(roomId);
+        if (recordPopup && cc.isValid(popupNode)) {
+            recordPopup.loadFirstPage(roomId);
+        }
     }
     
     public hideRecord(){

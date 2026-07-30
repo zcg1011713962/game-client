@@ -18,11 +18,14 @@ export default class HallRes {
     public hallRecordPopupPrefab!: cc.Prefab;
     public gameRecordItemPrefab!: cc.Prefab;
     public hallRecordItemPrefab!: cc.Prefab;
+    public hallRecordDetailPopupPrefab!: cc.Prefab;
+    public hallRecordDetailItemPrefab!: cc.Prefab;
 
     public bg1Map: { [key: string]: cc.SpriteFrame } = {};
     public gameIconMap: { [key: string]: cc.SpriteFrame } = {};
     public resultImgMap: { [key: string]: cc.SpriteFrame } = {};
     public recordImgMap: { [key: string]: cc.SpriteFrame } = {};
+    public recordDetailImgMap: { [key: string]: cc.SpriteFrame } = {};
 
     public static get instance(): HallRes {
         if (!this._instance) {
@@ -117,6 +120,20 @@ export default class HallRes {
         this.hallRecordPopupPrefab = await this.loadPrefab("prefabs/HallRecordPopup");
     }
 
+    public async loadHallRecordDetailPopupPrefab(): Promise<cc.Prefab> {
+        if (this.hallRecordDetailPopupPrefab) return this.hallRecordDetailPopupPrefab;
+
+        this.hallRecordDetailPopupPrefab = await this.loadPrefab("prefabs/HallRecordDetailPopup");
+        return this.hallRecordDetailPopupPrefab;
+    }
+
+    public async loadHallRecordDetailItemPrefab(): Promise<cc.Prefab> {
+        if (this.hallRecordDetailItemPrefab) return this.hallRecordDetailItemPrefab;
+
+        this.hallRecordDetailItemPrefab = await this.loadPrefab("prefabs/HallRecordDetailItem");
+        return this.hallRecordDetailItemPrefab;
+    }
+
     public async loadAvatarImg(name: string): Promise<cc.SpriteFrame> {
 
         // 已缓存
@@ -197,6 +214,30 @@ export default class HallRes {
                 });
 
                 resolve(this.recordImgMap);
+            });
+        });
+    }
+
+    public async loadRecordDetailImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
+        if (Object.keys(this.recordDetailImgMap).length > 0) {
+            return this.recordDetailImgMap;
+        }
+
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+            bundle.loadDir("hall/record/detail", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
+                if (err) {
+                    cc.error("大厅战绩详情图片加载失败", err);
+                    reject(err);
+                    return;
+                }
+
+                assets.forEach(sp => {
+                    this.recordDetailImgMap[sp.name] = sp;
+                });
+
+                resolve(this.recordDetailImgMap);
             });
         });
     }

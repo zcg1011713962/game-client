@@ -5,7 +5,7 @@ import { UserState } from "../pj/user/UserInfo";
 import ToastManager from "../../common/ToastManager";
 import WsClient from "../pj/net/WsClient";
 import { Cmd } from "../pj/enum/Cmd";
-import HallUIManager from "../../hall/HallUIManager";
+import HallRes from "../../hall/HallRes";
 import { ShareRoomUtil } from "../../util/SceneUtil";
 
 export interface RoomBarData {
@@ -32,6 +32,10 @@ export class RooomTopBar extends cc.Component {
     private baseScoreLabel: cc.Node = null;
 
     private roomId: number = null;
+
+    private hallRecordPopupNode: cc.Node = null;
+
+    private openingRecord: boolean = false;
 
 
     onLoad() {
@@ -162,9 +166,61 @@ export class RooomTopBar extends cc.Component {
         });
     }
 
-    private onRecordClick() {
-        cc.log("打开战绩");
-        HallUIManager.instance.showRecord(cc.find("Canvas"), this.roomId);
+    private async onRecordClick() {
+        cc.log("打开大厅战绩");
+
+        const canvas = cc.find("Canvas");
+        if (!canvas) {
+            ToastManager.show("打开战绩失败");
+            return;
+        }
+
+        if (this.hallRecordPopupNode && cc.isValid(this.hallRecordPopupNode)) {
+            this.hallRecordPopupNode.active = true;
+            const popup = this.hallRecordPopupNode.getComponent("HallRecordPopup") as any;
+            if (popup) {
+                popup.loadFirstPage(null);
+            }
+            return;
+        }
+
+        if (this.openingRecord) {
+            return;
+        }
+
+        this.openingRecord = true;
+        try {
+            const res = HallRes.instance;
+            if (!res.hallRecordPopupPrefab) {
+                res.hallRecordPopupPrefab = await res.loadPrefab("prefabs/HallRecordPopup");
+            }
+
+            if (!res.hallRecordItemPrefab) {
+                res.hallRecordItemPrefab = await res.loadPrefab("prefabs/HallRecordItem");
+            }
+
+            if (Object.keys(res.recordImgMap).length === 0) {
+                await res.loadRecordImg();
+            }
+
+            if (!cc.isValid(this.node) || !cc.isValid(canvas)) {
+                return;
+            }
+
+            const popupNode = cc.instantiate(res.hallRecordPopupPrefab);
+            canvas.addChild(popupNode);
+            this.hallRecordPopupNode = popupNode;
+
+            const popup = popupNode.getComponent("HallRecordPopup") as any;
+            if (popup) {
+                popup.loadFirstPage(null);
+            }
+        } catch (e) {
+            cc.error("打开大厅战绩失败:", e);
+            ToastManager.show("打开战绩失败");
+        } finally {
+            this.openingRecord = false;
+        }
     }
 
     private setText(

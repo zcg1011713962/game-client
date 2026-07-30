@@ -21,6 +21,8 @@ export default class GameRecordPopup extends cc.Component {
 
     private loading: boolean = false;
     private hasMore: boolean = true;
+    private destroyed: boolean = false;
+    private requestVersion: number = 0;
 
     protected onLoad(): void {
         this.mask = this.node.getChildByName("Mask");
@@ -45,6 +47,10 @@ export default class GameRecordPopup extends cc.Component {
     }
 
     public async loadFirstPage(roomId: number | null) {
+        if (!this.isAlive()) {
+            return;
+        }
+
         this.pageNo = 1;
         this.hasMore = true;
         this.roomId = roomId;
@@ -79,7 +85,7 @@ export default class GameRecordPopup extends cc.Component {
     }
 
     public async loadMore() {
-        if (this.loading || !this.hasMore) {
+        if (!this.isAlive() || this.loading || !this.hasMore) {
             return;
         }
 
@@ -88,11 +94,12 @@ export default class GameRecordPopup extends cc.Component {
     }
 
     private async loadRecord(refresh: boolean) {
-        if (this.loading) {
+        if (!this.isAlive() || this.loading) {
             return;
         }
 
         this.loading = true;
+        const version = this.requestVersion;
 
         try {
             const res = await RecordApi.queryRecord(
@@ -100,8 +107,11 @@ export default class GameRecordPopup extends cc.Component {
                 this.pageSize,
                 this.roomId
             );
-            const records: RecordItemDTO[] = res.data.records || [];
+            if (!this.isAlive() || version !== this.requestVersion) {
+                return;
+            }
 
+            const records: RecordItemDTO[] = res.data.records || [];
             this.hasMore = res.data.total > this.pageNo * this.pageSize;
 
             if (refresh) {
@@ -110,6 +120,10 @@ export default class GameRecordPopup extends cc.Component {
                 this.append(records);
             }
         } catch (e) {
+            if (!this.isAlive() || version !== this.requestVersion) {
+                return;
+            }
+
             cc.error(e);
             ToastManager.show("获取战绩失败");
 
@@ -117,12 +131,14 @@ export default class GameRecordPopup extends cc.Component {
                 this.pageNo--;
             }
         } finally {
-            this.loading = false;
+            if (this.isAlive() && version === this.requestVersion) {
+                this.loading = false;
+            }
         }
     }
 
     private refresh(list: RecordItemDTO[]) {
-        if (!this.content) {
+        if (!this.isAlive() || !this.content || !cc.isValid(this.content)) {
             return;
         }
 
@@ -136,7 +152,7 @@ export default class GameRecordPopup extends cc.Component {
     }
 
     private append(list: RecordItemDTO[]) {
-        if (!this.content || !list || list.length === 0) {
+        if (!this.isAlive() || !this.content || !cc.isValid(this.content) || !list || list.length === 0) {
             return;
         }
 
@@ -145,6 +161,10 @@ export default class GameRecordPopup extends cc.Component {
 
     private createItems(list: RecordItemDTO[]) {
         list.forEach(data => {
+            if (!this.isAlive() || !this.content || !cc.isValid(this.content)) {
+                return;
+            }
+
             const itemNode = cc.instantiate(HallRes.instance.gameRecordItemPrefab);
             this.content.addChild(itemNode);
 
@@ -159,6 +179,10 @@ export default class GameRecordPopup extends cc.Component {
         if (layout) {
             layout.updateLayout();
         }
+    }
+
+    private isAlive(): boolean {
+        return !this.destroyed && !!this.node && cc.isValid(this.node);
     }
 
     private initTitleStyle() {
@@ -274,5 +298,27 @@ export default class GameRecordPopup extends cc.Component {
         }
 
         return typeName.indexOf("对子") === 0 ? "对子" : typeName;
+    }
+
+    protected onDestroy(): void {
+        this.destroyed = true;
+        this.requestVersion++;
+        this.loading = false;
+        this.hideBankerDetail();
+
+        if (this.scrollView && cc.isValid(this.scrollView.node)) {
+            this.scrollView.node.off("scroll-ended", this.onScrollEnded, this);
+        }
+
+        if (this.btnClose && cc.isValid(this.btnClose)) {
+            this.btnClose.off(cc.Node.EventType.TOUCH_END, this.hide, this);
+        }
+
+        if (this.mask && cc.isValid(this.mask)) {
+            this.mask.off(cc.Node.EventType.TOUCH_START, this.onMaskTouch, this);
+            this.mask.off(cc.Node.EventType.TOUCH_MOVE, this.onMaskTouch, this);
+            this.mask.off(cc.Node.EventType.TOUCH_END, this.onMaskTouchEnd, this);
+            this.mask.off(cc.Node.EventType.TOUCH_CANCEL, this.onMaskTouch, this);
+        }
     }
 }

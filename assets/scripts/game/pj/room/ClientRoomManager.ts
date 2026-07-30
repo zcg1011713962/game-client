@@ -487,8 +487,12 @@ export default class ClientRoomManager {
         const t = Date.now();
 
         try {
+            console.log("进入游戏: 开始预加载游戏资源");
             await GameRes.instance.preload();
+            console.log("进入游戏: 游戏资源预加载完成", Date.now() - t, "ms");
+            console.log("进入游戏: 开始预加载游戏场景");
             await SceneUtil.preloadScene("game_1");
+            console.log("进入游戏: 游戏场景预加载完成", Date.now() - t, "ms");
             console.log("进入游戏等待资源耗时:", Date.now() - t, "ms");
             await SceneUtil.loadScene("game_1");
             console.log("进入游戏总耗时:", Date.now() - t, "ms");
