@@ -1,18 +1,77 @@
+export enum AppEnv {
+    Test = "test",
+    Prod = "prod",
+}
+
+interface EnvConfig {
+    protocol: string;
+    wsProtocol: string;
+    host: string;
+    apiPort: number;
+    wsPort: number;
+    shareUrl: string;
+}
+
 export default class Config {
+    public static readonly CURRENT_ENV: AppEnv = AppEnv.Test;
 
-    public static PROTOCOL = "http";
-    public static WS_PROTOCOL = "ws";
+    private static readonly API_PATH = "/api";
+    private static readonly WS_PATH = "/ws";
 
-    public static HOST = "192.168.5.11";
-    //public static HOST = "47.120.62.233";
+    private static readonly ENV_CONFIG: { [key in AppEnv]: EnvConfig } = {
+        [AppEnv.Test]: {
+            protocol: "http",
+            wsProtocol: "ws",
+            host: "192.168.5.11",
+            apiPort: 18080,
+            wsPort: 19001,
+            shareUrl: "http://192.168.5.11:7456/",
+        },
+        [AppEnv.Prod]: {
+            protocol: "http",
+            wsProtocol: "ws",
+            host: "47.120.62.233",
+            apiPort: 18080,
+            wsPort: 19001,
+            shareUrl: "http://47.120.62.233:8888/",
+        },
+    };
 
-    public static API_PORT = 18080;
-    public static WS_PORT = 19001;
-    public static SHARE_URL = "http://localhost:7456/";
-    //public static SHARE_URL = "http://47.120.62.233:8888/";
+    private static get env(): EnvConfig {
+        return this.ENV_CONFIG[this.CURRENT_ENV];
+    }
 
-    public static API_PATH = "/api";
-    public static WS_PATH = "/ws";
+    public static get IS_TEST(): boolean {
+        return this.CURRENT_ENV === AppEnv.Test;
+    }
+
+    public static get IS_PROD(): boolean {
+        return this.CURRENT_ENV === AppEnv.Prod;
+    }
+
+    public static get PROTOCOL(): string {
+        return this.env.protocol;
+    }
+
+    public static get WS_PROTOCOL(): string {
+        return this.env.wsProtocol;
+    }
+
+    public static get HOST(): string {
+        return this.env.host;
+    }
+
+    public static get API_PORT(): number {
+        return this.env.apiPort;
+    }
+
+    public static get WS_PORT(): number {
+        return this.env.wsPort;
+    }
+
+    public static get SHARE_URL(): string {
+        return this.env.shareUrl;
+    }
 
     public static get API_URL(): string {
         return `${this.PROTOCOL}://${this.HOST}:${this.API_PORT}${this.API_PATH}`;

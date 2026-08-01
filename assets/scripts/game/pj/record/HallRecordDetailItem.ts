@@ -1,5 +1,5 @@
 import GameRes from "../GameRes";
-import { RecordItemDTO } from "./GameRecordItem";
+import { RecordItemDTO } from "./RecordTypes";
 
 const { ccclass, property } = cc._decorator;
 

@@ -11,16 +11,22 @@ export default class HallTopBar extends cc.Component {
     private playerInfoNode: cc.Node = null;
     private coinBoxNode: cc.Node = null;
     private roomCardBoxNode: cc.Node = null;
+    private emailNode: cc.Node = null;
 
     protected onLoad(): void {
         this.playerInfoNode = this.node.getChildByName("PlayerInfo");
         this.coinBoxNode = this.node.getChildByName("CoinBox");
         this.roomCardBoxNode = this.node.getChildByName("RoomCardBox");
+        this.emailNode = this.node.getChildByName("Email");
         const addCoinNode = this.coinBoxNode.getChildByName("Add");
         const addCardNode = this.roomCardBoxNode.getChildByName("Add");
 
         addCoinNode.on(cc.Node.EventType.TOUCH_END, this.shopShow, this);
         addCardNode.on(cc.Node.EventType.TOUCH_END, this.shopShow, this);
+        if (this.emailNode) {
+            this.emailNode.on(cc.Node.EventType.TOUCH_END, this.mailShow, this);
+        }
+        cc.systemEvent.on("MAIL_ASSET_CHANGE", this.refresh, this);
         this.refresh();
     }
 
@@ -47,6 +53,18 @@ export default class HallTopBar extends cc.Component {
 
     private shopShow(){
         HallUIManager.instance.showShop();
+    }
+
+    private mailShow(): void {
+        HallUIManager.instance.showMail(cc.find("Canvas"));
+    }
+
+    protected onDestroy(): void {
+        cc.systemEvent.off("MAIL_ASSET_CHANGE", this.refresh, this);
+
+        if (this.emailNode) {
+            this.emailNode.off(cc.Node.EventType.TOUCH_END, this.mailShow, this);
+        }
     }
 
 }

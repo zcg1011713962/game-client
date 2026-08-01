@@ -1,5 +1,5 @@
 import HallRes from "../../../hall/HallRes";
-import { RecordItemDTO } from "./GameRecordItem";
+import { RecordItemDTO } from "./RecordTypes";
 
 const { ccclass } = cc._decorator;
 

@@ -2,7 +2,7 @@ import { PageResult } from "../../../common/entity/PageResult";
 import Config from "../../../config/Config";
 import UserData from "../../../login/entity/UserData";
 import Http from "../../../util/Http";
-import { RecordItemDTO } from "./GameRecordItem";
+import { RecordItemDTO } from "./RecordTypes";
 export interface ApiResult<T> {
 
     cmd: string;

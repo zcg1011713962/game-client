@@ -1,6 +1,6 @@
 import HallRes from "../../../hall/HallRes";
 import HallRecordDetailItem from "./HallRecordDetailItem";
-import { RecordItemDTO } from "./GameRecordItem";
+import { RecordItemDTO } from "./RecordTypes";
 
 const { ccclass, property } = cc._decorator;
 

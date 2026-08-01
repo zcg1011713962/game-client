@@ -1,5 +1,5 @@
 import RecordApi from "./RecordApi";
-import { RecordItemDTO } from "./GameRecordItem";
+import { RecordItemDTO } from "./RecordTypes";
 import HallRecordItem from "./HallRecordItem";
 import HallUIManager from "../../../hall/HallUIManager";
 import HallRes from "../../../hall/HallRes";
@@ -47,6 +47,7 @@ export default class HallRecordPopup extends cc.Component {
         this.node.removeAllChildren();
         this.node.setPosition(0, 0);
         this.node.setContentSize(1080, 1920);
+        this.addBlockInput(this.node);
 
         this.createBg();
         this.createHeader();
@@ -58,6 +59,15 @@ export default class HallRecordPopup extends cc.Component {
     private createBg(): void {
         const bg = this.createSpriteNode("RecordBg", HallRes.instance.recordImgMap["record_bg"], 1080, 1920);
         bg.parent = this.node;
+        this.addBlockInput(bg);
+    }
+
+    private addBlockInput(node: cc.Node): void {
+        if (!node || node.getComponent(cc.BlockInputEvents)) {
+            return;
+        }
+
+        node.addComponent(cc.BlockInputEvents);
     }
 
     private createHeader(): void {

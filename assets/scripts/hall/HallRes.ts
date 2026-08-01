@@ -14,18 +14,18 @@ export default class HallRes {
     public topBarPrefab: cc.Prefab = null;
     public bottomBarPrefab: cc.Prefab = null;
     public createRoomPopupPrefab: cc.Prefab = null;
-    public gameRecordPopupPrefab!: cc.Prefab;
     public hallRecordPopupPrefab!: cc.Prefab;
-    public gameRecordItemPrefab!: cc.Prefab;
     public hallRecordItemPrefab!: cc.Prefab;
     public hallRecordDetailPopupPrefab!: cc.Prefab;
     public hallRecordDetailItemPrefab!: cc.Prefab;
+    public mailPopupPrefab!: cc.Prefab;
+    public mailItemPrefab!: cc.Prefab;
 
     public bg1Map: { [key: string]: cc.SpriteFrame } = {};
     public gameIconMap: { [key: string]: cc.SpriteFrame } = {};
-    public resultImgMap: { [key: string]: cc.SpriteFrame } = {};
     public recordImgMap: { [key: string]: cc.SpriteFrame } = {};
     public recordDetailImgMap: { [key: string]: cc.SpriteFrame } = {};
+    public mailImgMap: { [key: string]: cc.SpriteFrame } = {};
 
     public static get instance(): HallRes {
         if (!this._instance) {
@@ -64,12 +64,12 @@ export default class HallRes {
                 this.loadRoomSelectPanelPrefabs(),
                 this.joinRoomPanelPrefabs(),
                 this.createRoomPopupPrefabs(),
-                this.loadGameRecordItemPrefab(),
                 this.loadHallRecordItemPrefab(),
-                this.loadGameRecordPopupPrefab(),
                 this.loadHallRecordPopupPrefab(),
-                this.loadResultImg(),
                 this.loadRecordImg(),
+                this.loadMailPopupPrefab(),
+                this.loadMailItemPrefab(),
+                this.loadMailImg(),
             ]).catch(e => {
                 cc.error("大厅延迟资源加载失败:", e);
             });
@@ -96,22 +96,10 @@ export default class HallRes {
         });
     }
 
-    private async loadGameRecordItemPrefab(): Promise<void> {
-        if (this.gameRecordItemPrefab) return;
-
-        this.gameRecordItemPrefab = await this.loadPrefab("prefabs/GameRecordItem");
-    }
-
     private async loadHallRecordItemPrefab(): Promise<void> {
         if (this.hallRecordItemPrefab) return;
 
         this.hallRecordItemPrefab = await this.loadPrefab("prefabs/HallRecordItem");
-    }
-
-    private async loadGameRecordPopupPrefab(): Promise<void> {
-        if (this.gameRecordPopupPrefab) return;
-
-        this.gameRecordPopupPrefab = await this.loadPrefab("prefabs/GameRecordPopup");
     }
 
     private async loadHallRecordPopupPrefab(): Promise<void> {
@@ -132,6 +120,20 @@ export default class HallRes {
 
         this.hallRecordDetailItemPrefab = await this.loadPrefab("prefabs/HallRecordDetailItem");
         return this.hallRecordDetailItemPrefab;
+    }
+
+    public async loadMailPopupPrefab(): Promise<cc.Prefab> {
+        if (this.mailPopupPrefab) return this.mailPopupPrefab;
+
+        this.mailPopupPrefab = await this.loadPrefab("prefabs/MailPopup");
+        return this.mailPopupPrefab;
+    }
+
+    public async loadMailItemPrefab(): Promise<cc.Prefab> {
+        if (this.mailItemPrefab) return this.mailItemPrefab;
+
+        this.mailItemPrefab = await this.loadPrefab("prefabs/MailItem");
+        return this.mailItemPrefab;
     }
 
     public async loadAvatarImg(name: string): Promise<cc.SpriteFrame> {
@@ -159,35 +161,6 @@ export default class HallRes {
                 //cc.log(`头像加载完成: ${name}`);
 
                 resolve(sp);
-
-            });
-
-        });
-    }
-
-    public async loadResultImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
-
-        if (Object.keys(this.resultImgMap).length > 0) {
-            return this.resultImgMap;
-        }
-
-        const bundle = await this.loadHallBundle();
-
-        return new Promise((resolve, reject) => {
-
-            bundle.loadDir("record/result", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
-
-                if (err) {
-                    cc.error("输赢图片加载失败", err);
-                    reject(err);
-                    return;
-                }
-
-                assets.forEach(sp => {
-                    this.resultImgMap[sp.name] = sp;
-                });
-
-                resolve(this.resultImgMap);
 
             });
 
@@ -238,6 +211,30 @@ export default class HallRes {
                 });
 
                 resolve(this.recordDetailImgMap);
+            });
+        });
+    }
+
+    public async loadMailImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
+        if (Object.keys(this.mailImgMap).length > 0) {
+            return this.mailImgMap;
+        }
+
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+            bundle.loadDir("hall/mail", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
+                if (err) {
+                    cc.error("邮件图片加载失败", err);
+                    reject(err);
+                    return;
+                }
+
+                assets.forEach(sp => {
+                    this.mailImgMap[sp.name] = sp;
+                });
+
+                resolve(this.mailImgMap);
             });
         });
     }

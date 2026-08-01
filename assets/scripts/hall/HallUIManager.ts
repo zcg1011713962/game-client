@@ -14,6 +14,7 @@ import HallTopBar from "./top/HallTopBar";
 import Shop from "../shop/Shop";
 import GameRes from "../game/pj/GameRes";
 import { ShareRoomUtil } from "../util/SceneUtil";
+import MailPopup from "./mail/MailPopup";
 
 const {ccclass, property} = cc._decorator;
 
@@ -26,7 +27,7 @@ export default class HallUIManager extends cc.Component {
     public createRoomPopupPrefabNode!: cc.Node;
     public recordPopupNode!: cc.Node;
     public hallRecordPopupNode!: cc.Node;
-    public gameRecordPopupNode!: cc.Node;
+    public mailPopupNode!: cc.Node;
    
     
     private topBar!: cc.Node;
@@ -397,56 +398,34 @@ export default class HallUIManager extends cc.Component {
         }
     }
 
-    public async showRecord(parent: cc.Node, roomId :number | null) {
+    public async showRecord(parent: cc.Node, _roomId :number | null) {
         const valid = () => !this.destroyed && cc.isValid(this.node) && cc.isValid(parent);
-        const isHallRecord = roomId == null;
-        let recordPopupPrefab = isHallRecord
-            ? HallRes.instance.hallRecordPopupPrefab
-            : HallRes.instance.gameRecordPopupPrefab;
+        let recordPopupPrefab = HallRes.instance.hallRecordPopupPrefab;
 
         if (!recordPopupPrefab) {
-            recordPopupPrefab = await HallRes.instance.loadPrefab(
-                isHallRecord ? "prefabs/HallRecordPopup" : "prefabs/GameRecordPopup"
-            );
+            recordPopupPrefab = await HallRes.instance.loadPrefab("prefabs/HallRecordPopup");
             if (!valid()) {
                 return;
             }
 
-            if (isHallRecord) {
-                HallRes.instance.hallRecordPopupPrefab = recordPopupPrefab;
-            } else {
-                HallRes.instance.gameRecordPopupPrefab = recordPopupPrefab;
-            }
+            HallRes.instance.hallRecordPopupPrefab = recordPopupPrefab;
         }
 
-        if (isHallRecord && !HallRes.instance.hallRecordItemPrefab) {
+        if (!HallRes.instance.hallRecordItemPrefab) {
             HallRes.instance.hallRecordItemPrefab = await HallRes.instance.loadPrefab("prefabs/HallRecordItem");
             if (!valid()) {
                 return;
             }
         }
 
-        if (isHallRecord && Object.keys(HallRes.instance.recordImgMap).length === 0) {
+        if (Object.keys(HallRes.instance.recordImgMap).length === 0) {
             await HallRes.instance.loadRecordImg();
             if (!valid()) {
                 return;
             }
         }
 
-        if (!isHallRecord && !HallRes.instance.gameRecordItemPrefab) {
-            HallRes.instance.gameRecordItemPrefab = await HallRes.instance.loadPrefab("prefabs/GameRecordItem");
-            await HallRes.instance.loadResultImg();
-            if (!valid()) {
-                return;
-            }
-        }
-
-        const oldNode = isHallRecord ? this.gameRecordPopupNode : this.hallRecordPopupNode;
-        if (oldNode) {
-            oldNode.active = false;
-        }
-
-        let popupNode = isHallRecord ? this.hallRecordPopupNode : this.gameRecordPopupNode;
+        let popupNode = this.hallRecordPopupNode;
         if (!popupNode) {
             if (!valid()) {
                 return;
@@ -454,27 +433,69 @@ export default class HallUIManager extends cc.Component {
 
             popupNode = cc.instantiate(recordPopupPrefab);
             parent.addChild(popupNode);
-            if (isHallRecord) {
-                this.hallRecordPopupNode = popupNode;
-            } else {
-                this.gameRecordPopupNode = popupNode;
-            }
+            this.hallRecordPopupNode = popupNode;
         } else {
             popupNode.active = true;
         }
 
         this.recordPopupNode = popupNode;
-        const recordPopup = popupNode.getComponent(
-            isHallRecord ? "HallRecordPopup" : "GameRecordPopup"
-        ) as any;
+        const recordPopup = popupNode.getComponent("HallRecordPopup") as any;
         if (recordPopup && cc.isValid(popupNode)) {
-            recordPopup.loadFirstPage(roomId);
+            recordPopup.loadFirstPage(null);
         }
     }
     
     public hideRecord(){
         if (this.recordPopupNode) {
             this.recordPopupNode.active = false;
+        }
+    }
+
+    public async showMail(parent: cc.Node) {
+        const valid = () => !this.destroyed && cc.isValid(this.node) && cc.isValid(parent);
+
+        if (!HallRes.instance.mailPopupPrefab) {
+            HallRes.instance.mailPopupPrefab = await HallRes.instance.loadMailPopupPrefab();
+            if (!valid()) {
+                return;
+            }
+        }
+
+        if (!HallRes.instance.mailItemPrefab) {
+            HallRes.instance.mailItemPrefab = await HallRes.instance.loadMailItemPrefab();
+            if (!valid()) {
+                return;
+            }
+        }
+
+        if (Object.keys(HallRes.instance.mailImgMap).length === 0) {
+            await HallRes.instance.loadMailImg();
+            if (!valid()) {
+                return;
+            }
+        }
+
+        let popupNode = this.mailPopupNode;
+        if (!popupNode || !cc.isValid(popupNode)) {
+            popupNode = cc.instantiate(HallRes.instance.mailPopupPrefab);
+            parent.addChild(popupNode);
+            this.mailPopupNode = popupNode;
+        } else {
+            popupNode.active = true;
+        }
+
+        let popup = popupNode.getComponent(MailPopup);
+        if (!popup) {
+            popup = popupNode.addComponent(MailPopup);
+        }
+        if (popup && cc.isValid(popupNode)) {
+            popup.loadFirstPage();
+        }
+    }
+
+    public hideMail(): void {
+        if (this.mailPopupNode && cc.isValid(this.mailPopupNode)) {
+            this.mailPopupNode.active = false;
         }
     }
 
