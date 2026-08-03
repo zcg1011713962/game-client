@@ -20,6 +20,7 @@ export default class HallRes {
     public hallRecordDetailItemPrefab!: cc.Prefab;
     public mailPopupPrefab!: cc.Prefab;
     public mailItemPrefab!: cc.Prefab;
+    public mailDetailPopupPrefab!: cc.Prefab;
 
     public bg1Map: { [key: string]: cc.SpriteFrame } = {};
     public gameIconMap: { [key: string]: cc.SpriteFrame } = {};
@@ -69,6 +70,7 @@ export default class HallRes {
                 this.loadRecordImg(),
                 this.loadMailPopupPrefab(),
                 this.loadMailItemPrefab(),
+                this.loadMailDetailPopupPrefab(),
                 this.loadMailImg(),
             ]).catch(e => {
                 cc.error("大厅延迟资源加载失败:", e);
@@ -134,6 +136,13 @@ export default class HallRes {
 
         this.mailItemPrefab = await this.loadPrefab("prefabs/MailItem");
         return this.mailItemPrefab;
+    }
+
+    public async loadMailDetailPopupPrefab(): Promise<cc.Prefab> {
+        if (this.mailDetailPopupPrefab) return this.mailDetailPopupPrefab;
+
+        this.mailDetailPopupPrefab = await this.loadPrefab("prefabs/MailDetailPopup");
+        return this.mailDetailPopupPrefab;
     }
 
     public async loadAvatarImg(name: string): Promise<cc.SpriteFrame> {

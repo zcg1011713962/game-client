@@ -1,7 +1,8 @@
 import ToastManager from "../../common/ToastManager";
 import UserData from "../../login/entity/UserData";
 import HallRes from "../HallRes";
-import MailApi, { MailReceiveResultVO, MailVO } from "./MailApi";
+import MailApi, { MailAttachmentVO, MailReceiveResultVO, MailVO } from "./MailApi";
+import MailDetailPopup from "./MailDetailPopup";
 import MailItem from "./MailItem";
 
 const { ccclass } = cc._decorator;
@@ -14,9 +15,12 @@ export default class MailPopup extends cc.Component {
     private content: cc.Node = null;
     private scrollView: cc.ScrollView = null;
     private emptyLabel: cc.Label = null;
+    private footerTipNode: cc.Node = null;
+    private footerTipLabel: cc.Label = null;
     private unreadCountLabel: cc.Label = null;
     private badgeCountLabel: cc.Label = null;
     private redBadge: cc.Node = null;
+    private detailNode: cc.Node = null;
     private pageNo: number = 1;
     private pageSize: number = 20;
     private loading: boolean = false;
@@ -47,7 +51,9 @@ export default class MailPopup extends cc.Component {
         this.btnDeleteRead = this.btnDeleteRead || this.findChildDeep(this.node, "BtnDeleteRead");
         this.scrollView = this.scrollView || this.findScrollView("ScrollView");
         this.content = this.content || this.findChildDeep(this.node, "Content") || (this.scrollView ? this.scrollView.content : null);
-        this.emptyLabel = this.emptyLabel || this.findLabel("EmptyLabel");
+        this.emptyLabel = this.emptyLabel || this.ensureLabel("EmptyLabel");
+        this.footerTipNode = this.footerTipNode || this.findChildDeep(this.node, "FooterTip");
+        this.footerTipLabel = this.footerTipLabel || this.ensureFooterTipLabel();
         this.unreadCountLabel = this.unreadCountLabel || this.findLabel("UnreadCountLabel");
         this.badgeCountLabel = this.badgeCountLabel || this.findLabel("CountLabel");
         this.redBadge = this.redBadge || this.findChildDeep(this.node, "RedBadge");
@@ -80,7 +86,13 @@ export default class MailPopup extends cc.Component {
         this.setLabelStyle("BtnReceiveAll/Label", 32, 38, cc.color(255, 246, 230));
         this.setLabelStyle("BtnDeleteRead/Label", 30, 36, cc.color(220, 220, 228));
         this.setLabelStyle("EmptyLabel", 34, 40, cc.color(190, 194, 204));
-        this.setLabelStyle("FooterTip", 26, 32, cc.color(150, 150, 160));
+        this.setLabelBaseStyle(this.footerTipLabel, 26, 32, cc.color(150, 150, 160));
+        this.setLabel(this.emptyLabel, "暂无邮件", cc.color(190, 194, 204));
+        this.setLabel(this.footerTipLabel, "邮件最多保存30天，请及时领取附件", cc.color(150, 150, 160));
+        if (this.emptyLabel) {
+            this.emptyLabel.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
+            this.emptyLabel.verticalAlign = cc.Label.VerticalAlign.CENTER;
+        }
     }
 
     private setLabelStyle(pathOrName: string, fontSize: number, lineHeight: number, color: cc.Color): void {
@@ -114,6 +126,7 @@ export default class MailPopup extends cc.Component {
         this.setSprite("RedBadge", "mail_red_dot");
         this.setSprite("BtnReceiveAll", "mail_btn_receive_all");
         this.setSprite("BtnDeleteRead", "mail_btn_delete_read");
+        this.setSprite("FooterTip", "mail_footer_tip_bg");
     }
 
     private async loadList(): Promise<void> {
@@ -144,7 +157,14 @@ export default class MailPopup extends cc.Component {
 
         this.content.removeAllChildren();
         if (this.emptyLabel) {
+            this.emptyLabel.string = "暂无邮件";
             this.emptyLabel.node.active = this.records.length === 0;
+        }
+        if (this.footerTipNode) {
+            this.footerTipNode.active = true;
+        }
+        if (this.footerTipLabel) {
+            this.footerTipLabel.string = "邮件最多保存30天，请及时领取附件";
         }
 
         this.records.forEach(record => {
@@ -200,11 +220,43 @@ export default class MailPopup extends cc.Component {
                 return;
             }
 
-            ToastManager.show("邮件已读");
-            await this.loadFirstPage();
+            this.openDetail(res.data || data);
+            await this.refreshUnreadCount();
         } catch (e) {
             cc.error("读取邮件失败:", e);
             ToastManager.show("读取邮件失败");
+        }
+    }
+
+    private async openDetail(data: MailVO): Promise<void> {
+        if (!data || !this.isAlive()) return;
+
+        try {
+            await HallRes.instance.loadMailImg();
+            const prefab = await HallRes.instance.loadMailDetailPopupPrefab();
+            if (!this.isAlive()) return;
+
+            if (this.detailNode && cc.isValid(this.detailNode)) {
+                this.detailNode.destroy();
+            }
+
+            this.detailNode = cc.instantiate(prefab);
+            const parent = this.node.parent || cc.find("Canvas") || this.node;
+            parent.addChild(this.detailNode);
+            this.detailNode.setPosition(0, 0);
+            this.detailNode.zIndex = this.node.zIndex + 10;
+
+            let popup = this.detailNode.getComponent(MailDetailPopup);
+            if (!popup) {
+                popup = this.detailNode.addComponent(MailDetailPopup);
+            }
+
+            popup.init(data, () => {
+                this.loadFirstPage();
+            });
+        } catch (e) {
+            cc.error("打开邮件详情失败:", e);
+            ToastManager.show("打开邮件详情失败");
         }
     }
 
@@ -215,6 +267,12 @@ export default class MailPopup extends cc.Component {
 
             if (!res || res.code !== 0) {
                 ToastManager.show(res && res.msg ? res.msg : "领取失败");
+                return;
+            }
+
+            if (!res.data || !res.data.attachments || res.data.attachments.length === 0) {
+                ToastManager.show("没有可领取的奖励");
+                await this.loadFirstPage();
                 return;
             }
 
@@ -275,17 +333,24 @@ export default class MailPopup extends cc.Component {
 
     private formatReceiveTip(data: MailReceiveResultVO): string {
         if (!data || !data.attachments || data.attachments.length === 0) {
-            return "领取成功";
+            return "没有可领取的奖励";
         }
 
-        const totalGold = data.attachments
-            .filter(item => Number(item.itemType) === 1)
+        const parts: string[] = [];
+        const gold = this.sumAttachment(data.attachments, 1);
+        const roomCard = this.sumAttachment(data.attachments, 2);
+        const diamond = this.sumAttachment(data.attachments, 3);
+
+        if (gold > 0) parts.push(`金币+${gold}`);
+        if (roomCard > 0) parts.push(`房卡+${roomCard}`);
+        if (diamond > 0) parts.push(`钻石+${diamond}`);
+        return parts.length > 0 ? `领取${parts.join(" ")}` : "没有可领取的奖励";
+    }
+
+    private sumAttachment(list: MailAttachmentVO[], itemType: number): number {
+        return list
+            .filter(item => Number(item.itemType) === itemType)
             .reduce((sum, item) => sum + Number(item.itemCount || 0), 0);
-        if (totalGold > 0) {
-            return `领取金币 +${totalGold}`;
-        }
-
-        return "领取成功";
     }
 
     private hide(): void {
@@ -318,9 +383,68 @@ export default class MailPopup extends cc.Component {
         }
     }
 
+    private setLabelBaseStyle(label: cc.Label, fontSize: number, lineHeight: number, color: cc.Color): void {
+        if (!label) return;
+
+        label.fontSize = fontSize;
+        label.lineHeight = lineHeight;
+        label.node.color = color;
+    }
+
     private findLabel(name: string): cc.Label {
         const node = this.findChildDeep(this.node, name);
         return node ? node.getComponent(cc.Label) : null;
+    }
+
+    private ensureLabel(name: string): cc.Label {
+        const node = this.findChildDeep(this.node, name);
+        if (!node) return null;
+
+        const label = node.getComponent(cc.Label) || node.addComponent(cc.Label);
+        if (node.width <= 0 || node.height <= 0) {
+            node.setContentSize(500, 60);
+        }
+        return label;
+    }
+
+    private ensureFooterTipLabel(): cc.Label {
+        const root = this.footerTipNode || this.findChildDeep(this.node, "FooterTip");
+        if (!root) return null;
+
+        this.ensureFooterTipIcon(root);
+
+        let labelNode = root.getChildByName("Label");
+        if (!labelNode) {
+            labelNode = new cc.Node("Label");
+            root.addChild(labelNode);
+        }
+
+        labelNode.setPosition(30, 0);
+        labelNode.setContentSize(root.width > 0 ? root.width - 100 : 600, root.height > 0 ? root.height : 50);
+
+        const label = labelNode.getComponent(cc.Label) || labelNode.addComponent(cc.Label);
+        label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
+        label.verticalAlign = cc.Label.VerticalAlign.CENTER;
+        return label;
+    }
+
+    private ensureFooterTipIcon(root: cc.Node): void {
+        let iconNode = root.getChildByName("IconTip");
+        if (!iconNode) {
+            iconNode = new cc.Node("IconTip");
+            root.addChild(iconNode);
+        }
+
+        iconNode.setPosition(-(root.width > 0 ? root.width / 2 - 44 : 300), 0);
+        iconNode.setContentSize(32, 32);
+
+        const label = iconNode.getComponent(cc.Label) || iconNode.addComponent(cc.Label);
+        label.string = "!";
+        label.fontSize = 28;
+        label.lineHeight = 32;
+        label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
+        label.verticalAlign = cc.Label.VerticalAlign.CENTER;
+        label.node.color = cc.color(255, 74, 74);
     }
 
     private findScrollView(name: string): cc.ScrollView {
@@ -345,5 +469,8 @@ export default class MailPopup extends cc.Component {
     protected onDestroy(): void {
         this.destroyed = true;
         this.unscheduleAllCallbacks();
+        if (this.detailNode && cc.isValid(this.detailNode)) {
+            this.detailNode.destroy();
+        }
     }
 }
