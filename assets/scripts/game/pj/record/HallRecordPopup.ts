@@ -91,7 +91,7 @@ export default class HallRecordPopup extends cc.Component {
 
         const back = this.createSpriteNode("BtnBack", HallRes.instance.recordImgMap["record_back"], 118, 88);
         back.parent = this.node;
-        back.setPosition(-420, 840);
+        back.setPosition(-400, 840);
         back.on(cc.Node.EventType.TOUCH_END, this.hide, this);
     }
 

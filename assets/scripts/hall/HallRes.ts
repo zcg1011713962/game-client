@@ -24,6 +24,7 @@ export default class HallRes {
 
     public bg1Map: { [key: string]: cc.SpriteFrame } = {};
     public gameIconMap: { [key: string]: cc.SpriteFrame } = {};
+    public topImgMap: { [key: string]: cc.SpriteFrame } = {};
     public recordImgMap: { [key: string]: cc.SpriteFrame } = {};
     public recordDetailImgMap: { [key: string]: cc.SpriteFrame } = {};
     public mailImgMap: { [key: string]: cc.SpriteFrame } = {};
@@ -47,6 +48,7 @@ export default class HallRes {
         // 首屏必须资源，只保留大厅一进入就能看到的内容
         await Promise.all([
             this.loadTopBarPrefabs(),
+            this.loadTopImg(),
             this.loadBottomBarPrefabs(),
             this.loadGameCardPrefabs(),
         ]);
@@ -196,6 +198,30 @@ export default class HallRes {
                 });
 
                 resolve(this.recordImgMap);
+            });
+        });
+    }
+
+    public async loadTopImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
+        if (Object.keys(this.topImgMap).length > 0) {
+            return this.topImgMap;
+        }
+
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+            bundle.loadDir("hall/top", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
+                if (err) {
+                    cc.error("大厅顶部图片加载失败", err);
+                    reject(err);
+                    return;
+                }
+
+                assets.forEach(sp => {
+                    this.topImgMap[sp.name] = sp;
+                });
+
+                resolve(this.topImgMap);
             });
         });
     }

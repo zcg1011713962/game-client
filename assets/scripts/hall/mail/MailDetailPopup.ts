@@ -148,8 +148,12 @@ export default class MailDetailPopup extends cc.Component {
 
         const countLabel = countLabelNode.getComponent(cc.Label) || countLabelNode.addComponent(cc.Label);
         countLabel.string = `x${Number(data.itemCount || 0)}`;
-        countLabel.fontSize = 30;
-        countLabel.lineHeight = 38;
+        if (countLabel.fontSize <= 0) {
+            countLabel.fontSize = 30;
+        }
+        if (countLabel.lineHeight <= 0) {
+            countLabel.lineHeight = 38;
+        }
         countLabel.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
         countLabel.node.color = cc.color(220, 220, 228);
     }

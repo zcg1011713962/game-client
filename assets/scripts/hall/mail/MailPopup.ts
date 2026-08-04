@@ -64,6 +64,7 @@ export default class MailPopup extends cc.Component {
             this.scrollView.horizontal = false;
             this.scrollView.vertical = true;
         }
+        this.setupContentLayout();
     }
 
     private bindEvents(): void {
@@ -82,7 +83,7 @@ export default class MailPopup extends cc.Component {
         this.setLabelStyle("TitleLabel", 64, 72, cc.color(255, 244, 222));
         this.setLabelStyle("TextLabel", 30, 36, cc.color(220, 220, 228));
         this.setLabelStyle("UnreadCountLabel", 42, 48, cc.color(255, 95, 95));
-        this.setLabelStyle("CountLabel", 28, 32, cc.color(255, 255, 255));
+        this.setLabelColor("CountLabel", cc.color(255, 255, 255));
         this.setLabelStyle("BtnReceiveAll/Label", 32, 38, cc.color(255, 246, 230));
         this.setLabelStyle("BtnDeleteRead/Label", 30, 36, cc.color(220, 220, 228));
         this.setLabelStyle("EmptyLabel", 34, 40, cc.color(190, 194, 204));
@@ -106,6 +107,18 @@ export default class MailPopup extends cc.Component {
 
         label.fontSize = fontSize;
         label.lineHeight = lineHeight;
+        label.node.color = color;
+    }
+
+    private setLabelColor(pathOrName: string, color: cc.Color): void {
+        const node = pathOrName.indexOf("/") >= 0
+            ? cc.find(pathOrName, this.node)
+            : this.findChildDeep(this.node, pathOrName);
+        if (!node) return;
+
+        const label = node.getComponent(cc.Label);
+        if (!label) return;
+
         label.node.color = color;
     }
 
@@ -169,6 +182,7 @@ export default class MailPopup extends cc.Component {
 
         this.records.forEach(record => {
             const node = cc.instantiate(HallRes.instance.mailItemPrefab);
+            node.setContentSize(node.width || 980, node.height || 190);
             this.content.addChild(node);
 
             let item = node.getComponent(MailItem);
@@ -184,6 +198,7 @@ export default class MailPopup extends cc.Component {
 
         const layout = this.content.getComponent(cc.Layout);
         if (layout) {
+            this.resizeContentHeight();
             layout.updateLayout();
         }
 
@@ -220,8 +235,12 @@ export default class MailPopup extends cc.Component {
                 return;
             }
 
-            this.openDetail(res.data || data);
+            const readMail = res.data || data;
+            this.markMailReadInList(readMail);
+            this.refreshList();
+            this.openDetail(readMail);
             await this.refreshUnreadCount();
+            cc.systemEvent.emit("MAIL_ASSET_CHANGE");
         } catch (e) {
             cc.error("读取邮件失败:", e);
             ToastManager.show("读取邮件失败");
@@ -257,6 +276,23 @@ export default class MailPopup extends cc.Component {
         } catch (e) {
             cc.error("打开邮件详情失败:", e);
             ToastManager.show("打开邮件详情失败");
+        }
+    }
+
+    private markMailReadInList(data: MailVO): void {
+        if (!data || !data.mailId) return;
+
+        for (let i = 0; i < this.records.length; i++) {
+            if (Number(this.records[i].mailId) !== Number(data.mailId)) {
+                continue;
+            }
+
+            this.records[i] = {
+                ...this.records[i],
+                ...data,
+                readStatus: 1,
+            };
+            return;
         }
     }
 
@@ -389,6 +425,32 @@ export default class MailPopup extends cc.Component {
         label.fontSize = fontSize;
         label.lineHeight = lineHeight;
         label.node.color = color;
+    }
+
+    private setupContentLayout(): void {
+        if (!this.content) return;
+
+        const layout = this.content.getComponent(cc.Layout) || this.content.addComponent(cc.Layout);
+        layout.type = cc.Layout.Type.VERTICAL;
+        layout.resizeMode = cc.Layout.ResizeMode.CONTAINER;
+        layout.verticalDirection = cc.Layout.VerticalDirection.TOP_TO_BOTTOM;
+        layout.paddingTop = 0;
+        layout.paddingBottom = 20;
+        layout.spacingY = 18;
+    }
+
+    private resizeContentHeight(): void {
+        if (!this.content) return;
+
+        const itemHeight = 190;
+        const spacingY = 18;
+        const paddingBottom = 20;
+        const viewHeight = this.scrollView && this.scrollView.node ? this.scrollView.node.height : 1120;
+        const listHeight = this.records.length <= 0
+            ? viewHeight
+            : this.records.length * itemHeight + Math.max(0, this.records.length - 1) * spacingY + paddingBottom;
+
+        this.content.setContentSize(this.content.width || 990, Math.max(viewHeight, listHeight));
     }
 
     private findLabel(name: string): cc.Label {

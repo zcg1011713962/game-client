@@ -2,6 +2,8 @@ import UserData from "../../login/entity/UserData";
 import UIColorUtil from "../../util/UIColorUtil";
 import UIUtil from "../../util/UIUtil";
 import HallUIManager from "../HallUIManager";
+import HallRes from "../HallRes";
+import MailApi from "../mail/MailApi";
 
 const { ccclass } = cc._decorator;
 
@@ -12,6 +14,8 @@ export default class HallTopBar extends cc.Component {
     private coinBoxNode: cc.Node = null;
     private roomCardBoxNode: cc.Node = null;
     private emailNode: cc.Node = null;
+    private destroyed: boolean = false;
+    private unreadRefreshSeq: number = 0;
 
     protected onLoad(): void {
         this.playerInfoNode = this.node.getChildByName("PlayerInfo");
@@ -48,7 +52,7 @@ export default class HallTopBar extends cc.Component {
         UIUtil.setLabel(coinValNode, String(user.gold), UIColorUtil.GOLD, UIColorUtil.TITLE, 1);
         UIUtil.setLabel(roomCardValNode, String(user.roomCard), UIColorUtil.GOLD, UIColorUtil.TITLE, 1);
 
-
+        this.refreshMailRedPoint();
     }
 
     private shopShow(){
@@ -59,7 +63,58 @@ export default class HallTopBar extends cc.Component {
         HallUIManager.instance.showMail(cc.find("Canvas"));
     }
 
+    private async refreshMailRedPoint(): Promise<void> {
+        if (!this.emailNode) {
+            return;
+        }
+
+        const seq = ++this.unreadRefreshSeq;
+        try {
+            await HallRes.instance.loadTopImg();
+            if (!this.isAlive(seq)) {
+                return;
+            }
+
+            const res = await MailApi.unreadCount();
+            if (!this.isAlive(seq)) {
+                return;
+            }
+
+            const count = res && res.code === 0 ? Number(res.data || 0) : 0;
+            this.updateMailIcon(count > 0);
+        } catch (e) {
+            cc.warn("刷新大厅邮件红点失败:", e);
+            this.updateMailIcon(false);
+        }
+    }
+
+    private updateMailIcon(hasUnread: boolean): void {
+        if (!this.emailNode || !cc.isValid(this.emailNode)) {
+            return;
+        }
+
+        const sprite = this.emailNode.getComponent(cc.Sprite);
+        if (!sprite) {
+            return;
+        }
+
+        const frameName = hasUnread ? "email_red_point" : "email";
+        const spriteFrame = HallRes.instance.topImgMap[frameName];
+        if (!spriteFrame) {
+            return;
+        }
+
+        sprite.spriteFrame = spriteFrame;
+        sprite.sizeMode = cc.Sprite.SizeMode.CUSTOM;
+    }
+
+    private isAlive(seq: number): boolean {
+        return !this.destroyed && seq === this.unreadRefreshSeq && cc.isValid(this.node);
+    }
+
     protected onDestroy(): void {
+        this.destroyed = true;
+        this.unreadRefreshSeq++;
         cc.systemEvent.off("MAIL_ASSET_CHANGE", this.refresh, this);
 
         if (this.emailNode) {
