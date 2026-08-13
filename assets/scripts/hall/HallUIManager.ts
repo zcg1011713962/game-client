@@ -15,11 +15,14 @@ import Shop from "../shop/Shop";
 import GameRes from "../game/pj/GameRes";
 import { ShareRoomUtil } from "../util/SceneUtil";
 import MailPopup from "./mail/MailPopup";
+import HallMainManager from "./HallMainManager";
 
 const {ccclass, property} = cc._decorator;
 
 @ccclass
 export default class HallUIManager extends cc.Component {
+    private static readonly HIDE_GAME_CARD: boolean = true;
+
     private gameCardPos : { x : number, y : number, id:  number, name: string }[] = [];
     private gameCardContainerNode!: cc.Node;
     private roomSelectPanelPrefabNode!: cc.Node;
@@ -32,6 +35,7 @@ export default class HallUIManager extends cc.Component {
     
     private topBar!: cc.Node;
     private bottomBar!: cc.Node;
+    private hallMain!: cc.Node;
     public gameCardNode!: cc.Node;
     public joinRoomPanelNode!: cc.Node;
     public createRoomPopupNode!:cc.Node;
@@ -49,11 +53,14 @@ export default class HallUIManager extends cc.Component {
     async onLoad() {
         this.canvas = this.node;
         this.topBar = this.node.getChildByName("TopBar");
+        this.hallMain = this.node.getChildByName("HallMain");
         this.gameCardNode = this.node.getChildByName("GameCard");
         this.joinRoomPanelNode = this.node.getChildByName("JoinRoomPanel");
         this.createRoomPopupNode = this.node.getChildByName("CreateRoomPopupPanel");
         this.roomSelectPanelNode = this.node.getChildByName("RoomSelectPanel");
-        this.gameCardContainerNode = this.gameCardNode.getChildByName("View");
+        if (this.gameCardNode) {
+            this.gameCardContainerNode = this.gameCardNode.getChildByName("View");
+        }
       
         this.initBottomBar();
         // 监听座位点击
@@ -66,7 +73,12 @@ export default class HallUIManager extends cc.Component {
     public async init(){
         let t1 = Date.now();
         this.initTopBar();
-        this.initGameCard();
+        await this.initHallMain();
+        if (HallUIManager.HIDE_GAME_CARD) {
+            this.gameCardHide();
+        } else {
+            this.initGameCard();
+        }
         this.playGameBgm();
         
         console.log("HallUIManager init:", Date.now() - t1, "ms");
@@ -95,6 +107,50 @@ export default class HallUIManager extends cc.Component {
         
         const node = cc.instantiate(HallRes.instance.topBarPrefab);
         node.parent = this.topBar;
+    }
+
+    private async initHallMain(): Promise<void> {
+        if (Object.keys(HallRes.instance.centerImgMap).length === 0) {
+            await HallRes.instance.loadCenterImg();
+            if (this.destroyed || !cc.isValid(this.node)) {
+                return;
+            }
+        }
+
+        if (!HallRes.instance.hallGameCardPrefab) {
+            await HallRes.instance.loadHallGameCardPrefab();
+            if (this.destroyed || !cc.isValid(this.node)) {
+                return;
+            }
+        }
+
+        if (!this.hallMain || !cc.isValid(this.hallMain) || this.hallMain.childrenCount === 0) {
+            const prefab = await HallRes.instance.loadPrefab("prefabs/HallMain");
+            if (this.destroyed || !cc.isValid(this.node)) {
+                return;
+            }
+            const oldHallMain = this.hallMain;
+            const oldPosition = oldHallMain && cc.isValid(oldHallMain) ? oldHallMain.getPosition() : cc.v2(0, -80);
+            const oldIndex = oldHallMain && cc.isValid(oldHallMain) ? oldHallMain.getSiblingIndex() : -1;
+
+            this.hallMain = cc.instantiate(prefab);
+            this.hallMain.parent = this.node;
+            this.hallMain.setPosition(oldPosition);
+            if (oldIndex >= 0) {
+                this.hallMain.setSiblingIndex(oldIndex);
+            }
+
+            if (oldHallMain && cc.isValid(oldHallMain)) {
+                oldHallMain.removeFromParent();
+                oldHallMain.destroy();
+            }
+        }
+
+        let manager = this.hallMain.getComponent(HallMainManager);
+        if (!manager) {
+            manager = this.hallMain.addComponent(HallMainManager);
+        }
+        manager.init(() => this.onClickCard(RoomCardType.MATCH));
     }
 
     private initBottomBar(): void {
@@ -227,7 +283,7 @@ export default class HallUIManager extends cc.Component {
     public gameCardShow(){
         const gameCardNode = this.gameCardNode;
         if(gameCardNode){
-            gameCardNode.active = true;
+            gameCardNode.active = !HallUIManager.HIDE_GAME_CARD;
         }
     }
 

@@ -1,0 +1,38 @@
+{
+  "ver": "2.3.7",
+  "uuid": "f236810c-a2e8-4abb-9d82-73be13d45b1f",
+  "importer": "texture",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "genMipmaps": false,
+  "packable": true,
+  "width": 220,
+  "height": 150,
+  "platformSettings": {},
+  "subMetas": {
+    "hall_center_logo": {
+      "ver": "1.0.6",
+      "uuid": "311673b4-42c0-4a42-8c07-4a34ae148731",
+      "importer": "sprite-frame",
+      "rawTextureUuid": "f236810c-a2e8-4abb-9d82-73be13d45b1f",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 0,
+      "offsetY": -1.5,
+      "trimX": 14,
+      "trimY": 12,
+      "width": 192,
+      "height": 129,
+      "rawWidth": 220,
+      "rawHeight": 150,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}

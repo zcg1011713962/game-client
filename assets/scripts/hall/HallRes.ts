@@ -13,6 +13,7 @@ export default class HallRes {
     public joinRoomPanelPrefab: cc.Prefab = null;
     public topBarPrefab: cc.Prefab = null;
     public bottomBarPrefab: cc.Prefab = null;
+    public hallGameCardPrefab: cc.Prefab = null;
     public createRoomPopupPrefab: cc.Prefab = null;
     public hallRecordPopupPrefab!: cc.Prefab;
     public hallRecordItemPrefab!: cc.Prefab;
@@ -25,6 +26,7 @@ export default class HallRes {
     public bg1Map: { [key: string]: cc.SpriteFrame } = {};
     public gameIconMap: { [key: string]: cc.SpriteFrame } = {};
     public topImgMap: { [key: string]: cc.SpriteFrame } = {};
+    public centerImgMap: { [key: string]: cc.SpriteFrame } = {};
     public recordImgMap: { [key: string]: cc.SpriteFrame } = {};
     public recordDetailImgMap: { [key: string]: cc.SpriteFrame } = {};
     public mailImgMap: { [key: string]: cc.SpriteFrame } = {};
@@ -49,7 +51,9 @@ export default class HallRes {
         await Promise.all([
             this.loadTopBarPrefabs(),
             this.loadTopImg(),
+            this.loadCenterImg(),
             this.loadBottomBarPrefabs(),
+            this.loadHallGameCardPrefab(),
             this.loadGameCardPrefabs(),
         ]);
 
@@ -226,6 +230,30 @@ export default class HallRes {
         });
     }
 
+    public async loadCenterImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
+        if (Object.keys(this.centerImgMap).length > 0) {
+            return this.centerImgMap;
+        }
+
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+            bundle.loadDir("hall/center", cc.SpriteFrame, (err, assets: cc.SpriteFrame[]) => {
+                if (err) {
+                    cc.error("大厅中心图片加载失败", err);
+                    reject(err);
+                    return;
+                }
+
+                assets.forEach(sp => {
+                    this.centerImgMap[sp.name] = sp;
+                });
+
+                resolve(this.centerImgMap);
+            });
+        });
+    }
+
     public async loadRecordDetailImg(): Promise<{ [key: string]: cc.SpriteFrame }> {
         if (Object.keys(this.recordDetailImgMap).length > 0) {
             return this.recordDetailImgMap;
@@ -372,6 +400,25 @@ export default class HallRes {
                 this.gameCardPrefab = prefab;
 
                 //cc.log("游戏卡片预制体加载完成");
+                resolve(prefab);
+            });
+        });
+    }
+
+    public async loadHallGameCardPrefab(): Promise<cc.Prefab> {
+        if (this.hallGameCardPrefab) return this.hallGameCardPrefab;
+
+        const bundle = await this.loadHallBundle();
+
+        return new Promise((resolve, reject) => {
+            bundle.load("prefabs/HallGameCard", cc.Prefab, (err, prefab: cc.Prefab) => {
+                if (err) {
+                    cc.error("HallGameCard prefab加载失败:", err);
+                    reject(err);
+                    return;
+                }
+
+                this.hallGameCardPrefab = prefab;
                 resolve(prefab);
             });
         });

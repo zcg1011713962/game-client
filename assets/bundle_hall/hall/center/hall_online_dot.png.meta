@@ -1,0 +1,38 @@
+{
+  "ver": "2.3.7",
+  "uuid": "ab75e210-4d9b-4f39-bda5-3ae1a7a6aad2",
+  "importer": "texture",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "genMipmaps": false,
+  "packable": true,
+  "width": 20,
+  "height": 20,
+  "platformSettings": {},
+  "subMetas": {
+    "hall_online_dot": {
+      "ver": "1.0.6",
+      "uuid": "feeca7b9-2075-429b-af44-22d81f92db50",
+      "importer": "sprite-frame",
+      "rawTextureUuid": "ab75e210-4d9b-4f39-bda5-3ae1a7a6aad2",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 0,
+      "offsetY": 1,
+      "trimX": 5,
+      "trimY": 4,
+      "width": 10,
+      "height": 10,
+      "rawWidth": 20,
+      "rawHeight": 20,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}

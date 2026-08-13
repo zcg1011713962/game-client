@@ -1,0 +1,38 @@
+{
+  "ver": "2.3.7",
+  "uuid": "c3495727-3da2-4c45-882f-c614c7a045e4",
+  "importer": "texture",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "genMipmaps": false,
+  "packable": true,
+  "width": 250,
+  "height": 443,
+  "platformSettings": {},
+  "subMetas": {
+    "hall_game_card_bg": {
+      "ver": "1.0.6",
+      "uuid": "1b2a0fbf-abe7-423e-a6f0-00e7b4240db2",
+      "importer": "sprite-frame",
+      "rawTextureUuid": "c3495727-3da2-4c45-882f-c614c7a045e4",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 0.5,
+      "offsetY": 0,
+      "trimX": 6,
+      "trimY": 1,
+      "width": 239,
+      "height": 441,
+      "rawWidth": 250,
+      "rawHeight": 443,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}

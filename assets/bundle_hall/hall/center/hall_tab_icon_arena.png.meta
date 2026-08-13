@@ -1,0 +1,38 @@
+{
+  "ver": "2.3.7",
+  "uuid": "53f13bc5-460c-4545-9b04-de0dac5a785b",
+  "importer": "texture",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "genMipmaps": false,
+  "packable": true,
+  "width": 44,
+  "height": 44,
+  "platformSettings": {},
+  "subMetas": {
+    "hall_tab_icon_arena": {
+      "ver": "1.0.6",
+      "uuid": "5763b704-2ace-4dcc-89b1-1558faab4190",
+      "importer": "sprite-frame",
+      "rawTextureUuid": "53f13bc5-460c-4545-9b04-de0dac5a785b",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 0,
+      "offsetY": 0.5,
+      "trimX": 9,
+      "trimY": 10,
+      "width": 26,
+      "height": 23,
+      "rawWidth": 44,
+      "rawHeight": 44,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}
