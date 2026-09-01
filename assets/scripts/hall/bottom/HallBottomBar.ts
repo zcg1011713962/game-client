@@ -1,5 +1,4 @@
 import HallUIManager from "../HallUIManager";
-import { RoomCardType } from "../room/RoomSelectPopup";
 
 const { ccclass, property } = cc._decorator;
 
@@ -40,7 +39,7 @@ export default class HallBottomBar extends cc.Component {
    }
 
    private onCenterClick() {
-      HallUIManager.instance.onClickCard(RoomCardType.MATCH);
+      HallUIManager.instance.startMatchWithPopup();
    }
 
    protected onDestroy(): void {

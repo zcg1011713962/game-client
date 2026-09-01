@@ -4,39 +4,34 @@ import WsClient from "../game/pj/net/WsClient";
 import UserData from "../login/entity/UserData";
 import Config from "../config/Config";
 import { Cmd } from "../game/pj/enum/Cmd";
-import CameCardComponentManager from "./CameCardComponentManager";
-import GameCardComponent from "./GameCardComponent";
 import ShopRes from "../shop/ShopRes";
 import Http from "../util/Http";
 import { ServerMsg } from "../login/entity/ServerMsg";
 import ToastManager from "../common/ToastManager";
 import HallTopBar from "./top/HallTopBar";
 import Shop from "../shop/Shop";
-import GameRes from "../game/pj/GameRes";
 import { ShareRoomUtil } from "../util/SceneUtil";
 import MailPopup from "./mail/MailPopup";
 import HallMainManager from "./HallMainManager";
+import MatchPopup from "./match/MatchPopup";
+import { HallGameCardData } from "./HallGameCard";
 
-const {ccclass, property} = cc._decorator;
+const {ccclass} = cc._decorator;
 
 @ccclass
 export default class HallUIManager extends cc.Component {
-    private static readonly HIDE_GAME_CARD: boolean = true;
-
-    private gameCardPos : { x : number, y : number, id:  number, name: string }[] = [];
-    private gameCardContainerNode!: cc.Node;
     private roomSelectPanelPrefabNode!: cc.Node;
     public joinRoomPanelPrefabNode!: cc.Node;
     public createRoomPopupPrefabNode!: cc.Node;
     public recordPopupNode!: cc.Node;
     public hallRecordPopupNode!: cc.Node;
     public mailPopupNode!: cc.Node;
+    public matchPopupNode!: cc.Node;
    
     
     private topBar!: cc.Node;
     private bottomBar!: cc.Node;
     private hallMain!: cc.Node;
-    public gameCardNode!: cc.Node;
     public joinRoomPanelNode!: cc.Node;
     public createRoomPopupNode!:cc.Node;
     public roomSelectPanelNode: cc.Node | null = null;
@@ -44,6 +39,7 @@ export default class HallUIManager extends cc.Component {
     private shopNode: cc.Node |null = null;
     private destroyed: boolean = false;
     private isPlayingBgm: boolean = false;
+    private isMatching: boolean = false;
     private static _instance: HallUIManager = null;
     
     public static get instance(): HallUIManager {
@@ -54,17 +50,11 @@ export default class HallUIManager extends cc.Component {
         this.canvas = this.node;
         this.topBar = this.node.getChildByName("TopBar");
         this.hallMain = this.node.getChildByName("HallMain");
-        this.gameCardNode = this.node.getChildByName("GameCard");
         this.joinRoomPanelNode = this.node.getChildByName("JoinRoomPanel");
         this.createRoomPopupNode = this.node.getChildByName("CreateRoomPopupPanel");
         this.roomSelectPanelNode = this.node.getChildByName("RoomSelectPanel");
-        if (this.gameCardNode) {
-            this.gameCardContainerNode = this.gameCardNode.getChildByName("View");
-        }
       
         this.initBottomBar();
-        // 监听座位点击
-        cc.systemEvent.on("GameCard_CLICK", this.onGameCardClick, this);
         // 保存单例引用
         HallUIManager._instance = this;
         this.init();
@@ -74,11 +64,6 @@ export default class HallUIManager extends cc.Component {
         let t1 = Date.now();
         this.initTopBar();
         await this.initHallMain();
-        if (HallUIManager.HIDE_GAME_CARD) {
-            this.gameCardHide();
-        } else {
-            this.initGameCard();
-        }
         this.playGameBgm();
         
         console.log("HallUIManager init:", Date.now() - t1, "ms");
@@ -150,7 +135,7 @@ export default class HallUIManager extends cc.Component {
         if (!manager) {
             manager = this.hallMain.addComponent(HallMainManager);
         }
-        manager.init(() => this.onClickCard(RoomCardType.MATCH));
+        manager.init(game => this.startMatchWithPopup(game));
     }
 
     private initBottomBar(): void {
@@ -168,70 +153,6 @@ export default class HallUIManager extends cc.Component {
         this.bottomBar = cc.instantiate(HallRes.instance.bottomBarPrefab);
         this.bottomBar.parent = this.node;
     }
-
-    public initGameCard(){
-        this.intGameCardPos();
-        this.initData();
-        this.initGameCardLayout();
-    }
-
-
-     public intGameCardPos(){
-        this.gameCardPos = [];
-        // 设置座位坐标
-        this.gameCardPos.push({ x : -278, y : 50, id:  1 , name: "牌九"});
-    }
-
-    private initData() {
-        const gameCardComponentDataList = CameCardComponentManager.getInstance().gameCardComponentDataList;
-        if(gameCardComponentDataList.length > 0){
-            return;
-        }
-        for (let i = 0; i < this.gameCardPos.length; i++) {
-            CameCardComponentManager.getInstance().gameCardComponentDataList.push({
-                id: this.gameCardPos[i].id,
-                x: this.gameCardPos[i].x,
-                y: this.gameCardPos[i].y,
-                name: this.gameCardPos[i].name,
-            });
-        }
-    }
-
-    private initGameCardLayout() {
-        if (!HallRes.instance.gameCardPrefab || !this.gameCardContainerNode) {
-            cc.error("GameCardManager未初始化完成");
-            return;
-        }
-
-        this.gameCardContainerNode.removeAllChildren();
-
-        const manager = CameCardComponentManager.getInstance();
-        manager.gameCardComponentList.length = 0;
-
-        manager.gameCardComponentDataList.forEach(data => {
-            const node = cc.instantiate(HallRes.instance.gameCardPrefab);
-            node.parent = this.gameCardContainerNode;
-            node.setPosition(data.x, data.y);
-
-            const comp = node.getComponent(GameCardComponent);
-            comp.init(data);
-
-            manager.gameCardComponentList.push(comp);
-        });
-
-        console.log("GameCardLayout OK");
-    }                   
-
-    
-
-    public async onGameCardClick(id : number){
-        if(!this.roomSelectPanelPrefabNode){
-            await this.initSelectPanelPrefabNode();
-        }
-        await this.roomSelectPanelShow();
-    }
-
-    
 
     private async initSelectPanelPrefabNode(){
         if (this.roomSelectPanelPrefabNode) {
@@ -280,21 +201,6 @@ export default class HallUIManager extends cc.Component {
     }
 
 
-    public gameCardShow(){
-        const gameCardNode = this.gameCardNode;
-        if(gameCardNode){
-            gameCardNode.active = !HallUIManager.HIDE_GAME_CARD;
-        }
-    }
-
-    public gameCardHide(){
-        const gameCardNode = this.gameCardNode;
-        if(gameCardNode){
-            gameCardNode.active = false;
-        }
-    }
-
-
      public async roomSelectPanelShow(){
         if(!this.roomSelectPanelPrefabNode){
             await this.initSelectPanelPrefabNode();
@@ -313,34 +219,6 @@ export default class HallUIManager extends cc.Component {
 
 
  
-
-    public setCardIconNameView(labelNode: cc.Node, name : string) {
-        const label = labelNode.getComponent(cc.Label);
-        let outline = labelNode.getComponent(cc.LabelOutline);
-        if (!outline) {
-                outline = labelNode.addComponent(cc.LabelOutline);
-                // 黑色描边
-                outline.color = cc.Color.BLACK;
-                // 宽度
-                outline.width = 5;
-        }
-        label.string = name;
-        label.node.color = new cc.Color(255, 215, 0); // 金色
-    }
-
-    public setGameOnlineCountView(labelNode: cc.Node, count : number) {
-        const label = labelNode.getComponent(cc.Label);
-        let outline = labelNode.getComponent(cc.LabelOutline);
-        if (!outline) {
-                outline = labelNode.addComponent(cc.LabelOutline);
-                // 黑色描边
-                outline.color = cc.Color.BLACK;
-                // 宽度
-                outline.width = 5;
-        }
-        label.string = String(count);
-        label.node.color = new cc.Color(255, 215, 0); // 金色
-    }
 
     public async showShop(){
         let shopPrefab = ShopRes.instance.shopPrefab;
@@ -500,6 +378,81 @@ export default class HallUIManager extends cc.Component {
             recordPopup.loadFirstPage(null);
         }
     }
+
+    public async startMatchWithPopup(game?: HallGameCardData): Promise<void> {
+        if (this.isMatching) {
+            return;
+        }
+
+        this.isMatching = true;
+        try {
+            await this.showMatchPopup(this.canvas);
+        } catch (e) {
+            this.isMatching = false;
+            cc.error("打开匹配弹窗失败", e);
+            ToastManager.show("打开匹配界面失败");
+            return;
+        }
+
+        if (this.destroyed || !cc.isValid(this.node)) {
+            return;
+        }
+
+        this.onClickCard(RoomCardType.MATCH, {
+            gameId: game ? game.id : 1,
+            gameCode: game ? game.gameCode : "",
+        });
+    }
+
+    public async showMatchPopup(parent: cc.Node): Promise<void> {
+        const valid = () => !this.destroyed && cc.isValid(this.node) && cc.isValid(parent);
+
+        if (!HallRes.instance.matchPopupPrefab) {
+            HallRes.instance.matchPopupPrefab = await HallRes.instance.loadMatchPopupPrefab();
+            if (!valid()) {
+                return;
+            }
+        }
+
+        if (Object.keys(HallRes.instance.matchImgMap).length === 0) {
+            await HallRes.instance.loadMatchImg();
+            if (!valid()) {
+                return;
+            }
+        }
+
+        let popupNode = this.matchPopupNode;
+        if (!popupNode || !cc.isValid(popupNode)) {
+            popupNode = cc.instantiate(HallRes.instance.matchPopupPrefab);
+            parent.addChild(popupNode);
+            this.matchPopupNode = popupNode;
+        } else {
+            popupNode.active = true;
+            popupNode.setSiblingIndex(parent.childrenCount - 1);
+        }
+
+        let popup = popupNode.getComponent(MatchPopup);
+        if (!popup) {
+            popup = popupNode.addComponent(MatchPopup);
+        }
+
+        popup.show(() => {
+            this.isMatching = false;
+            ToastManager.show("已取消匹配");
+        });
+    }
+
+    public hideMatchPopup(): void {
+        if (this.matchPopupNode && cc.isValid(this.matchPopupNode)) {
+            const popup = this.matchPopupNode.getComponent(MatchPopup);
+            if (popup) {
+                popup.hide();
+            } else {
+                this.matchPopupNode.active = false;
+            }
+        }
+        this.isMatching = false;
+    }
     
     public hideRecord(){
         if (this.recordPopupNode) {
@@ -562,8 +515,6 @@ export default class HallUIManager extends cc.Component {
         }
 
         this.destroyed = true;
-
-        cc.systemEvent.off("GameCard_CLICK", this.onGameCardClick, this);
 
         cc.audioEngine.stopMusic();
 

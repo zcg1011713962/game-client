@@ -67,7 +67,6 @@ export default class RoomSelectPopup extends cc.Component {
         // 点击Mask关闭
         this.mask.on(cc.Node.EventType.TOUCH_END, () => {
             this.hide();
-            HallUIManager.instance.gameCardShow();
         }, this);
 
         // 创建房间
@@ -96,7 +95,8 @@ export default class RoomSelectPopup extends cc.Component {
         // 自由匹配
         this.matchCard.on(cc.Node.EventType.TOUCH_END, () => {
            this.playClickAnim(this.matchCard);
-           HallUIManager.instance.onClickCard(RoomCardType.MATCH);
+           this.hide();
+           HallUIManager.instance.startMatchWithPopup();
         }, this);
 
     }
@@ -108,7 +108,6 @@ export default class RoomSelectPopup extends cc.Component {
      * 显示弹窗
      */
     show() {
-        HallUIManager.instance.gameCardHide();
         this.node.active = true;
 
         // 遮罩渐变

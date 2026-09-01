@@ -6,6 +6,7 @@ const { ccclass } = cc._decorator;
 export interface HallGameCardData {
     id: number;
     gameCode?: string;
+    gameType?: number;
     title: string;
     desc: string;
     online: string;

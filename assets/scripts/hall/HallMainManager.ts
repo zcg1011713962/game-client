@@ -5,16 +5,23 @@ import ToastManager from "../common/ToastManager";
 
 const { ccclass } = cc._decorator;
 
+enum HallGameCategory {
+    Recommend = "recommend",
+    Competitive = "competitive",
+    All = "all",
+}
+
 @ccclass
 export default class HallMainManager extends cc.Component {
-    private gameCards: HallGameCardData[] = [
-        { id: 1, gameCode: "paijiu", title: "竞技牌九", desc: "经典牌九 · 策略对决", online: "856 在线", tag: "new", cover: "hall_game_cover_paijiu", enabled: true, matchEnabled: true, roomEnabled: true },
-        { id: 2, title: "敬请期待", desc: "COMING SOON", online: "", tag: "", cover: "hall_game_cover_coming", enabled: false },
+    private allGameCards: HallGameCardData[] = [
+        { id: 1, gameCode: "paijiu", gameType: 2, title: "竞技牌九", desc: "经典牌九 · 策略对决", online: "856 在线", tag: "new", cover: "hall_game_cover_paijiu", enabled: true, matchEnabled: true, roomEnabled: true },
+        { id: 2, gameType: 1, title: "敬请期待", desc: "COMING SOON", online: "", tag: "", cover: "hall_game_cover_coming", enabled: false },
     ];
     private bannerConfig: HallBannerConfig = null;
-    private enterMatchHandler: () => void = null;
+    private enterMatchHandler: (game: HallGameCardData) => void = null;
+    private selectedCategory: HallGameCategory = HallGameCategory.Recommend;
 
-    public init(enterMatchHandler: () => void): void {
+    public init(enterMatchHandler: (game: HallGameCardData) => void): void {
         this.enterMatchHandler = enterMatchHandler;
         this.refreshLocalView();
         this.loadRemoteConfig();
@@ -53,9 +60,10 @@ export default class HallMainManager extends cc.Component {
             return;
         }
 
-        this.gameCards = games.map(item => ({
+        this.allGameCards = games.map(item => ({
             id: item.gameId,
             gameCode: item.gameCode,
+            gameType: this.normalizeGameType(item),
             title: item.title || item.gameName || "敬请期待",
             desc: item.subtitle || "",
             online: this.formatOnline(item.onlineCount),
@@ -99,15 +107,15 @@ export default class HallMainManager extends cc.Component {
     }
 
     private refreshTabs(): void {
-        this.refreshTab("TabBar/TabRecommend", true);
-        this.refreshTab("TabBar/TabArena", false);
-        this.refreshTab("TabBar/TabAll", false);
+        this.refreshTab("TabBar/TabRecommend", this.selectedCategory === HallGameCategory.Recommend);
+        this.refreshTab("TabBar/TabArena", this.selectedCategory === HallGameCategory.Competitive);
+        this.refreshTab("TabBar/TabAll", this.selectedCategory === HallGameCategory.All);
 
         this.setLabelColor("TabBar/BtnViewAll/Label", new cc.Color(235, 240, 255));
 
-        this.bindTouch("TabBar/TabRecommend", () => ToastManager.show("当前已是推荐"));
-        this.bindTouch("TabBar/TabArena", () => ToastManager.show("竞技分类暂未开放"));
-        this.bindTouch("TabBar/TabAll", () => ToastManager.show("全部分类暂未开放"));
+        this.bindTouch("TabBar/TabRecommend", () => this.selectCategory(HallGameCategory.Recommend));
+        this.bindTouch("TabBar/TabArena", () => this.selectCategory(HallGameCategory.Competitive));
+        this.bindTouch("TabBar/TabAll", () => this.selectCategory(HallGameCategory.All));
         this.bindTouch("TabBar/BtnViewAll", () => ToastManager.show("更多游戏敬请期待"));
     }
 
@@ -123,21 +131,44 @@ export default class HallMainManager extends cc.Component {
         }
 
         content.removeAllChildren();
-        this.gameCards.forEach(data => {
+        this.getVisibleGameCards().forEach(data => {
             const node = cc.instantiate(HallRes.instance.hallGameCardPrefab);
             node.parent = content;
             const comp = node.getComponent(HallGameCard) || node.addComponent(HallGameCard);
-            comp.init(data, clickedData => this.enterGame(clickedData.gameCode, clickedData.id));
+            comp.init(data, clickedData => this.enterGame(clickedData));
         });
+    }
+
+    private selectCategory(category: HallGameCategory): void {
+        if (this.selectedCategory === category) {
+            return;
+        }
+
+        this.selectedCategory = category;
+        this.refreshTabs();
+        this.refreshGameList();
+    }
+
+    private getVisibleGameCards(): HallGameCardData[] {
+        if (this.selectedCategory === HallGameCategory.All) {
+            return this.allGameCards;
+        }
+
+        if (this.selectedCategory === HallGameCategory.Competitive) {
+            return this.allGameCards.filter(item => item.gameType === 2);
+        }
+
+        const recommendCards = this.allGameCards.filter(item => item.enabled || !!item.tag);
+        return recommendCards.length > 0 ? recommendCards : this.allGameCards;
     }
 
     private findGameListContent(): cc.Node {
         return this.find("GameList/View/Content") || this.find("GameList/Content");
     }
 
-    private enterPaijiuMatch(): void {
+    private enterMatch(game: HallGameCardData): void {
         if (this.enterMatchHandler) {
-            this.enterMatchHandler();
+            this.enterMatchHandler(game);
         }
     }
 
@@ -147,16 +178,23 @@ export default class HallMainManager extends cc.Component {
             return;
         }
 
-        this.enterGame(null, this.bannerConfig ? this.bannerConfig.gameId : 1);
-    }
-
-    private enterGame(gameCode: string, gameId: number): void {
-        if (gameCode === "paijiu" || gameId === 1) {
-            this.enterPaijiuMatch();
+        const gameId = this.bannerConfig ? this.bannerConfig.gameId : 1;
+        const game = this.allGameCards.filter(item => item.id === gameId)[0];
+        if (!game) {
+            ToastManager.show("敬请期待");
             return;
         }
 
-        ToastManager.show("敬请期待");
+        this.enterGame(game);
+    }
+
+    private enterGame(game: HallGameCardData): void {
+        if (!game || !game.enabled || game.matchEnabled === false) {
+            ToastManager.show("敬请期待");
+            return;
+        }
+
+        this.enterMatch(game);
     }
 
     private formatOnline(count: number): string {
@@ -168,6 +206,13 @@ export default class HallMainManager extends cc.Component {
             return tag;
         }
         return "";
+    }
+
+    private normalizeGameType(item: HallGameEntryConfig): number {
+        if (item.gameType != null) {
+            return Number(item.gameType);
+        }
+        return item.matchEnabled === true ? 2 : 1;
     }
 
     private setSprite(path: string, assetName: string): void {

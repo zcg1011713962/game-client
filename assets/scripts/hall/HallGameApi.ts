@@ -18,6 +18,7 @@ export interface HallGameEntryConfig {
     gameId: number;
     gameCode: string;
     gameName: string;
+    gameType: number;
     title: string;
     subtitle: string;
     tag: string;
