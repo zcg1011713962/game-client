@@ -1,5 +1,4 @@
 import CountDownManager from "../../common/CountDownManager";
-import SettleManager from "../../common/SettleManager";
 
 export default class GameRes {
     private static _instance: GameRes = null;
@@ -16,14 +15,12 @@ export default class GameRes {
     public lookCardPanelPrefab!: cc.Prefab;
     
     public roomTopBarPrefab!: cc.Prefab;
-    public settlePrefab!: cc.Prefab;
     public warnAudio!: cc.AudioClip;
     public gameBgmAudio!: cc.AudioClip;
     public clickAudio!: cc.AudioClip;
     public shuffingAudio!: cc.AudioClip;
     public betAudio!: cc.AudioClip;
     public clockCountdownPrefab!: cc.Prefab;
-    public roundStartPrefab!: cc.Prefab;
     public readyButtonPrefab!: cc.Prefab;
    
 
@@ -68,7 +65,6 @@ export default class GameRes {
             this.loadChipSelectPanelPrefab(),
             this.loadGrabBankerPopupPrefab(),
             this.loadLookCardPanelPrefab(),
-            this.loadRoundStartPrefab(),
             this.loadReadyBtnPrefab(),
             this.loadCardImg(),
         ]);
@@ -85,13 +81,11 @@ export default class GameRes {
 
         try {
             await Promise.all([
-                this.loadSettlePrefab(),
                 this.loadGameBgmAudio(),
                 this.loadClickAudio(),
                 this.loadBetAudio(),
             ]);
 
-            SettleManager.init(this.settlePrefab);
 
             console.log("游戏延迟资源耗时:", Date.now() - t, "ms");
         } catch (e) {
@@ -211,12 +205,6 @@ export default class GameRes {
     
 
 
-    private async loadSettlePrefab(): Promise<void> {
-        if (this.settlePrefab) return;
-
-        this.settlePrefab = await this.loadPrefab("prefabs/SettlePopup");
-        //cc.log("结算预制体加载完成");
-    }
 
     private async loadSeatPrefabs(): Promise<void> {
         if (this.seatPrefab) return;
@@ -238,12 +226,6 @@ export default class GameRes {
         //cc.log("时钟预制体加载完成");
     }
 
-    private async loadRoundStartPrefab(): Promise<void> {
-        if (this.roundStartPrefab) return;
-
-        this.roundStartPrefab = await this.loadPrefab("prefabs/RoundStartPrefab");
-        //cc.log("轮次预制体加载完成");
-    }
 
     
 

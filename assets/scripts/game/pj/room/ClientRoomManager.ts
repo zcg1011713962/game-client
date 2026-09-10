@@ -7,7 +7,6 @@ import SeatComponentManager from "../seat/SeatComponentManager";
 import WsClient from "../net/WsClient";
 import {Cmd} from "../enum/Cmd";
 import {DelayTaskUtil} from "../util/DelayTaskUtil";
-import SettleManager from "../../../common/SettleManager";
 import UserData from "../../../login/entity/UserData";
 import CountDownManager from "../../../common/CountDownManager";
 import { SceneUtil } from "../../../util/SceneUtil";
@@ -45,8 +44,6 @@ export interface RoomSnapshot {
     openedCardUsers?: number[];
 
     serverTime?: number;
-    roundAnimStartTime?: number;
-    roundAnimEndTime?: number;
     grabStartTime?: number;
     grabEndTime?: number;
     bankerAnimStartTime?: number;
@@ -228,7 +225,6 @@ export default class ClientRoomManager {
     private betServerOffset: number = 0;
     private betEndTime: number = 0;
 
-    private sentRoundIds: Set<number> = new Set();
     private timelineVersion: number = 0;
     private animatedBetKeys: Set<string> = new Set();
     private roomFinalSettled: boolean = false;
@@ -283,9 +279,6 @@ export default class ClientRoomManager {
 
     private recoverRoomByState(data: RoomSnapshot) {
         switch (this.roomState) {
-            case RoomState.READY:
-                this.recoverRoundStart(data);
-                break;
             case RoomState.GRAB_BANKER:
                 this.recoverGrabBankerCountdown(data);
                 break;
@@ -311,32 +304,6 @@ export default class ClientRoomManager {
         }
     }
 
-    private async recoverRoundStart(data: RoomSnapshot) {
-        if (!data.roundAnimStartTime || !data.roundAnimEndTime || !data.serverTime) {
-            return;
-        }
-
-        const nowServer = this.getSnapshotServerNow(data);
-        if (nowServer >= data.roundAnimEndTime) {
-            return;
-        }
-
-        if (this.sentRoundIds.has(data.roundId)) {
-            return;
-        }
-
-        const version = this.timelineVersion;
-        this.sentRoundIds.add(data.roundId);
-        await GameUIManager.instance.showRoundStartAnim(
-            this.roundId,
-            data.serverTime,
-            data.roundAnimEndTime
-        );
-
-        if (!this.isCurrentTimeline(version, data.roundId)) {
-            return;
-        }
-    }
 
     private recoverGrabBankerCountdown(data?: RoomSnapshot) {
         const endTime = data && data.grabEndTime ? data.grabEndTime : this.grabBankerEndTime;
@@ -693,18 +660,15 @@ export default class ClientRoomManager {
 
 
     // 游戏开始
-    public async applyGameStart(data: {
+    public applyGameStart(data: {
         roomId: number,
         roundId: number,
         maxRoundId?: number,
         players: PlayerDTO[],
         serverTime: number,
-        roundAnimStartTime: number,
-        roundAnimEndTime: number,
     }) {
         console.log("游戏开始", "roundId:", data.roundId);
         this.invalidateTimelineTasks();
-        const version = this.timelineVersion;
         this.roundId = data.roundId;
         this.maxRoundId = data.maxRoundId || this.maxRoundId || 0;
         this.animatedBetKeys.clear();
@@ -722,37 +686,6 @@ export default class ClientRoomManager {
         gameUI.clearTable();
         gameUI.showReady(ReadyBtnState.HIDE);
         gameUI.updateRoundView(this.roundId, this.maxRoundId);
-
-        const serverOffset = data.serverTime - Date.now();
-        const getServerNow = () => Date.now() + serverOffset;
-        const nowServer = getServerNow();
-
-        // 第X局动画：过期不播
-        if (nowServer < data.roundAnimEndTime) {
-            const waitAnimSeconds = Math.max(
-                0,
-                (data.roundAnimStartTime - nowServer) / 1000
-            );
-            if (waitAnimSeconds > 0) {
-                await PaiJiuUtil.wait(this as any, waitAnimSeconds);
-            }
-            if (this.isCurrentTimeline(version, data.roundId) && getServerNow() < data.roundAnimEndTime) {
-                const currentGameUI = this.getGameUI();
-                if (!currentGameUI) {
-                    return;
-                }
-
-                this.sentRoundIds.add(data.roundId);
-                await currentGameUI.showRoundStartAnim(
-                    this.roundId,
-                    data.serverTime,
-                    data.roundAnimEndTime
-                );
-            }
-        } else {
-            console.log("局数动画已过期，跳过");
-        }
-
     }
 
     // 开始抢庄
@@ -1101,9 +1034,6 @@ export default class ClientRoomManager {
         }
     }
 
-    public doNextRound(){   
-        SettleManager.close();
-    }
 
 
     // 下一局
@@ -1111,8 +1041,6 @@ export default class ClientRoomManager {
         console.log("下一局:", data.roundId)
         this.invalidateTimelineTasks();
         GameUIManager.instance.hideBankerBetStatus();
-        // 强制关闭结算界面
-        SettleManager.close();
 
         this.roundId = data.roundId;
         this.maxRoundId = data.maxRoundId || this.maxRoundId || 0;
@@ -1139,7 +1067,6 @@ export default class ClientRoomManager {
         CountDownManager.close();
         GameUIManager.instance.hidePhaseTip();
         GameUIManager.instance.hideBankerBetStatus();
-        SettleManager.close();
         GameUIManager.instance.showReady(ReadyBtnState.HIDE);
         GameUIManager.instance.showRoomFinalSettle(data);
     }

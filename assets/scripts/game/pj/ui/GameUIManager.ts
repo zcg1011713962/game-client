@@ -8,8 +8,6 @@ import SeatComponentManager from "../seat/SeatComponentManager";
 import { RoomBarData, RooomTopBar } from "../../top/RoomTopBar";
 import PaiJiuTable from "../PaiJiuTable";
 import GameRes from "../GameRes";
-import RoundStartPopup from "../../../common/RoundStartPopup";
-import SettleManager from "../../../common/SettleManager";
 import ReadyButton, { ReadyBtnState } from "../../btn/ReadyButton";
 import GrabBankerPopup from "../banker/GrabBankerPopup";
 import LookCardPopup from "../room/LookCardPopup";
@@ -460,7 +458,6 @@ export default class GameUIManager extends cc.Component {
         if (!keepSettleEffects) {
             this.clearSettleEffects();
         }
-        SettleManager.close();
     }
 
     public keepSettleViewForNextReady() {
@@ -470,7 +467,6 @@ export default class GameUIManager extends cc.Component {
         this.setBetPanelVisible(false);
         this.setGrabBankerPanelVisible(false);
         this.setLookCardPanelVisible(false, true);
-        SettleManager.close();
     }
 
     // 清理发牌区
@@ -830,45 +826,8 @@ export default class GameUIManager extends cc.Component {
     }
 
 
-    public setFrontView(labelNode: cc.Node, name: string, outlineWidth: number, color: cc.Color) {
-        const label = labelNode.getComponent(cc.Label);
-        let outline = labelNode.getComponent(cc.LabelOutline);
-        if (!outline) {
-            outline = labelNode.addComponent(cc.LabelOutline);
-            // 黑色描边
-            outline.color = cc.Color.BLACK;
-            // 宽度
-            outline.width = outlineWidth;
-        }
-        if (name.length > 0) {
-            label.string = name;
-        }
-        label.node.color = color;
-    }
 
 
-    public async showRoundStartAnim(
-        roundId: number,
-        serverTime: number,
-        roundAnimEndTime: number
-    ): Promise<void> {
-
-        const node = cc.instantiate(
-            GameRes.instance.roundStartPrefab
-        );
-
-        node.parent = cc.find("Canvas");
-
-        const comp = node.getComponent(RoundStartPopup);
-
-        await comp.play(
-            roundId,
-            serverTime,
-            roundAnimEndTime
-        );
-
-        node.destroy();
-    }
 
 
     public showReady(status: ReadyBtnState) {

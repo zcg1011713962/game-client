@@ -22,10 +22,9 @@
 | 文件 | 职责 |
 | --- | --- |
 | `assets/scripts/loading/Loading.ts` | 启动加载页，预加载登录、大厅、游戏资源，更新进度条并切场景。当前代码最终固定跳到 `login`。 |
-| `assets/scripts/login/LoginRes.ts` | 登录相关公共资源加载，如 Toast、鼠标光标等资源。 |
+| `assets/scripts/login/LoginRes.ts` | 登录相关公共资源加载，如 Toast 等资源。 |
 | `assets/scripts/login/Login.ts` | 登录页主逻辑；游客登录、token 失效重试、本地用户数据保存、进入大厅。 |
 | `assets/scripts/login/AgreementCheck.ts` | 用户协议勾选按钮逻辑。 |
-| `assets/scripts/login/GlobalBoot.ts` | 初始化全局鼠标光标节点并绑定 Canvas。 |
 | `assets/scripts/login/entity/User.ts` | 登录用户数据结构。 |
 | `assets/scripts/login/entity/UserData.ts` | 用户数据本地持久化，保存、读取、清理、更新金币/房卡/昵称/头像。 |
 | `assets/scripts/login/entity/ServerMsg.ts` | HTTP 服务端响应结构。 |
@@ -61,10 +60,6 @@
 | --- | --- |
 | `assets/scripts/common/ToastManager.ts` | Toast 弹窗统一入口，实例化 Toast prefab 并挂到 Canvas。 |
 | `assets/scripts/common/ToastView.ts` | Toast 显示动画和销毁逻辑。 |
-| `assets/scripts/common/SettleManager.ts` | 结算弹窗统一入口，持有结算 prefab 并显示/关闭。 |
-| `assets/scripts/common/SettlePopup.ts` | 结算面板展示胜负、金币变化、牌型、描述等。 |
-| `assets/scripts/common/RoundStartPopup.ts` | 新一局开始动画，按服务端时间判断是否过期。 |
-| `assets/scripts/common/MouseCursorManager.ts` | 自定义鼠标光标跟随。 |
 | `assets/scripts/common/CountDownManager.ts` | 倒计时统一入口，实例化 `ClockCountdown` 到游戏桌面。 |
 | `assets/scripts/common/countdown/ClockCountdown.ts` | 倒计时组件，按本地结束时间刷新秒数，最后 5 秒播放警告音与晃动动画。 |
 | `assets/scripts/common/entity/PageResult.ts` | 分页接口数据结构。 |
@@ -231,7 +226,6 @@ Canvas
 - `LookCardPanel`：实例化 `LookCardPanel`。
 - `ClockContainer`：倒计时时实例化 `BetCountdown`。
 - `UI`：需要显示准备按钮时实例化 `ReadyButtonPrefab`。
-- `Canvas`：开局动画实例化 `RoundStartPrefab`，结算实例化 `SettlePopup`。
 
 ### 关键 prefab 节点
 
@@ -375,14 +369,12 @@ WebSocket 统一入口：`assets/scripts/game/pj/net/WsClient.ts`。
 | 商店弹窗 | `Shop.showAnim()` / `hideAnim()` | 遮罩渐变，面板缩放弹出。 |
 | 抢庄弹窗 | `GrabBankerPopup.show()` / `hide()` | 面板淡入缩放。 |
 | 看牌弹窗 | `LookCardPopup.show()` / `hide()` | 面板淡入缩放。 |
-| 新一局动画 | `UIManager.showRoundStartAnim()` -> `RoundStartPopup.play()` | 按服务端时间播放局数飞入和淡出。 |
 | 倒计时警告 | `ClockCountdown.playWarn()` | 最后 5 秒播放警告音，时钟左右晃动。 |
 | 洗牌 | `PaiJiuTable.shuffleAnim()` | 扑克牌随机抖动、左右分堆、合并。 |
 | 发牌 | `PaiJiuTable.dealCards()` -> `dealOneCard()` | 从牌堆飞到座位目标点。 |
 | 普通翻牌 | `PaiJiuCard.flipToFront()`，由 `PaiJiuTable.flipSeatCards()` 调用 | scaleX 压缩到 0.05，切正面，再展开。 |
 | 搓牌 | `PaiJiuTable.playSlideRubOpenEffect()` | 自己的两张牌移到中间，第一张直接翻开，第二张通过触摸横向进度“剥开”。 |
 | 筹码飞入 | `BetArea.addChip()` -> `Chip.playFlyAnim()` | 从座位位置飞到对应下注区。 |
-| 结算弹窗 | `SettleManager.show()` -> `SettlePopup.show()` | 展示本局胜负和金币变化。 |
 
 ## 5. 房间流程
 
@@ -459,9 +451,9 @@ WebSocket 统一入口：`assets/scripts/game/pj/net/WsClient.ts`。
    - 按 `settleTime` 延迟。
    - 更新玩家金币。
    - 刷新座位输赢。
-   - 当前用户展示结算弹窗。
+   - 展示桌面结算特效和输赢数字。
 9. `NEXT_ROUND` -> `ClientRoomManager.nextRound()`：
-   - 关闭结算。
+   - 保留本局牌面和输赢，等待玩家准备。
    - 清桌。
    - 更新玩家与状态。
    - 显示准备按钮。
@@ -675,9 +667,7 @@ WebSocket 统一入口：`assets/scripts/game/pj/net/WsClient.ts`。
 | `SeatComponentManager` | `assets/scripts/game/pj/seat/SeatComponentManager.ts` | 缓存座位组件列表和座位数据列表，供刷新座位时查找。 |
 | `CurrUserManager` | `assets/scripts/game/pj/user/CurrUserManager.ts` | 当前用户读取工具，从 `UserData` 取用户 id 和用户对象。 |
 | `CountDownManager` | `assets/scripts/common/CountDownManager.ts` | 倒计时全局入口，控制倒计时 prefab 的实例化、复用和关闭。 |
-| `SettleManager` | `assets/scripts/common/SettleManager.ts` | 结算弹窗全局入口，控制结算 prefab 的实例化和关闭。 |
 | `ToastManager` | `assets/scripts/common/ToastManager.ts` | Toast 全局入口，动态加载 Toast prefab 并显示提示。 |
-| `MouseCursorManager` | `assets/scripts/common/MouseCursorManager.ts` | 自定义鼠标光标管理。 |
 
 资源类虽然不叫 Manager，但承担资源管理职责：
 
