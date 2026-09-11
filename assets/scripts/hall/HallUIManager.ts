@@ -10,6 +10,7 @@ import { ServerMsg } from "../login/entity/ServerMsg";
 import ToastManager from "../common/ToastManager";
 import HallTopBar from "./top/HallTopBar";
 import Shop from "../shop/Shop";
+import UIZOrder from "../common/ui/UIZOrder";
 import { ShareRoomUtil } from "../util/SceneUtil";
 import MailPopup from "./mail/MailPopup";
 import HallMainManager from "./HallMainManager";
@@ -36,7 +37,8 @@ export default class HallUIManager extends cc.Component {
     public createRoomPopupNode!:cc.Node;
     public roomSelectPanelNode: cc.Node | null = null;
     public canvas!: cc.Node;
-    private shopNode: cc.Node |null = null;
+    private rechargeNode: cc.Node | null = null;
+    private rechargeLoading: boolean = false;
     private destroyed: boolean = false;
     private isPlayingBgm: boolean = false;
     private isMatching: boolean = false;
@@ -221,18 +223,30 @@ export default class HallUIManager extends cc.Component {
  
 
     public async showShop(){
-        let shopPrefab = ShopRes.instance.shopPrefab;
-        if(!shopPrefab){
-            await ShopRes.instance.loadShopPrefab();
-            shopPrefab = ShopRes.instance.shopPrefab;
+        const isAlive = () => !this.destroyed && cc.isValid(this.node, true) && cc.isValid(this.canvas, true);
+        if (!isAlive() || this.rechargeLoading) return;
+        if (cc.isValid(this.rechargeNode, true)) {
+            this.rechargeNode.active = true;
+            this.rechargeNode.setSiblingIndex(this.canvas.childrenCount - 1);
+            return;
         }
-        if(!this.shopNode){
-            this.shopNode = cc.instantiate(shopPrefab);
-            this.canvas?.addChild(this.shopNode);
-        }else{
-            this.shopNode.active = true;
+
+        this.rechargeLoading = true;
+        try {
+            const prefab = await ShopRes.instance.loadRechargePrefab();
+            if (!isAlive()) return;
+            this.rechargeNode = cc.instantiate(prefab);
+            this.rechargeNode.zIndex = UIZOrder.POPUP;
+            this.canvas.addChild(this.rechargeNode);
+            this.rechargeNode.setPosition(0, 0);
+        } catch (error) {
+            if (isAlive()) {
+                cc.error("充值界面加载失败", error);
+                ToastManager.show("充值界面加载失败，请重试");
+            }
+        } finally {
+            this.rechargeLoading = false;
         }
-        this.refreshShopTopBar();
     }
 
     private async playGameBgm(): Promise<void> {
@@ -326,7 +340,8 @@ export default class HallUIManager extends cc.Component {
     }
 
     public refreshShopTopBar(){
-        const shopTopBar = this.canvas.getChildByName("Shop").getComponent(Shop);
+        const shopNode = this.canvas && this.canvas.getChildByName("Shop");
+        const shopTopBar = shopNode && shopNode.getComponent(Shop);
         if(shopTopBar){
             shopTopBar.refresh();
         }
