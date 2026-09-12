@@ -31,6 +31,7 @@ export default class HallTopBar extends cc.Component {
             this.emailNode.on(cc.Node.EventType.TOUCH_END, this.mailShow, this);
         }
         cc.systemEvent.on("MAIL_ASSET_CHANGE", this.refresh, this);
+        cc.systemEvent.on("PAYMENT_ASSET_CHANGE", this.refresh, this);
         this.refresh();
     }
 
@@ -116,6 +117,7 @@ export default class HallTopBar extends cc.Component {
         this.destroyed = true;
         this.unreadRefreshSeq++;
         cc.systemEvent.off("MAIL_ASSET_CHANGE", this.refresh, this);
+        cc.systemEvent.off("PAYMENT_ASSET_CHANGE", this.refresh, this);
 
         if (this.emailNode) {
             this.emailNode.off(cc.Node.EventType.TOUCH_END, this.mailShow, this);
