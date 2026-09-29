@@ -1,10 +1,10 @@
 const { ccclass } = cc._decorator;
 
 import LoginRes from "../login/LoginRes";
-import HallRes from "../hall/HallRes";
+import HallRes from "../../hall/scripts/HallRes";
 import { SceneUtil, ShareRoomUtil } from "../util/SceneUtil";
 import UserData from "../login/entity/UserData";
-import GameRes from "../game/pj/GameRes";
+import GameRes from "../../paijiu/scripts/pj/GameRes";
 import UIUtil from "../util/UIUtil";
 import UIColorUtil from "../util/UIColorUtil";
 import Http from "../util/Http";

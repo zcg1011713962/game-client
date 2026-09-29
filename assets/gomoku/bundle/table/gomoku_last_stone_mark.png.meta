@@ -1,0 +1,38 @@
+{
+  "ver": "2.3.7",
+  "uuid": "a109b66a-c53f-42b3-93ed-f5e98395d0f2",
+  "importer": "texture",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "genMipmaps": false,
+  "packable": true,
+  "width": 68,
+  "height": 68,
+  "platformSettings": {},
+  "subMetas": {
+    "gomoku_last_stone_mark": {
+      "ver": "1.0.6",
+      "uuid": "4442b592-357d-43f8-944b-b315ed0a85a8",
+      "importer": "sprite-frame",
+      "rawTextureUuid": "a109b66a-c53f-42b3-93ed-f5e98395d0f2",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 0,
+      "offsetY": 0,
+      "trimX": 12,
+      "trimY": 13,
+      "width": 44,
+      "height": 42,
+      "rawWidth": 68,
+      "rawHeight": 68,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}

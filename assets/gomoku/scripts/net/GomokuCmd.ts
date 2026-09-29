@@ -1,0 +1,9 @@
+export enum GomokuCmd {
+    MATCH = "GOMOKU_MATCH",
+    MATCH_RESULT = "GOMOKU_MATCH_RESULT",
+    START = "GOMOKU_START",
+    MOVE = "GOMOKU_MOVE",
+    STATE = "GOMOKU_STATE",
+    FINISH = "GOMOKU_FINISH",
+    LEAVE = "GOMOKU_LEAVE"
+}

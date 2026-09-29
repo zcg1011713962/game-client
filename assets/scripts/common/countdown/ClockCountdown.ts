@@ -1,4 +1,4 @@
-import GameRes from "../../game/pj/GameRes";
+import GameRes from "../../../paijiu/scripts/pj/GameRes";
 
 const { ccclass, property } = cc._decorator;
 

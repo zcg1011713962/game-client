@@ -206,7 +206,7 @@ export class SceneUtil {
 
     static async preloadScene(scene: string): Promise<void> {
         if (scene === "game_1") {
-            await this.preloadBundleScene("bundle_game", "scene/game_1");
+            await this.preloadBundleScene("paijiu", "scene/game_1");
         } else if (scene === "hall") {
             await this.preloadNormalScene("hall");
         } else if (scene === "login") {
@@ -218,7 +218,7 @@ export class SceneUtil {
         SceneData.setData(data);
         const t = Date.now();
         if (scene === "game_1") {
-            await this.loadBundleScene("bundle_game", "scene/game_1");
+            await this.loadBundleScene("paijiu", "scene/game_1");
         }else if(scene === "hall"){
             await this.loadNormalScene("hall");
         }else if (scene === "login") {

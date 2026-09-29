@@ -22,7 +22,7 @@ export default class Config {
         [AppEnv.Test]: {
             protocol: "http",
             wsProtocol: "ws",
-            host: "192.168.5.8",
+            host: "192.168.5.12",
             apiPort: 18080,
             wsPort: 19001,
             shareUrl: "http://192.168.5.8:7456/",

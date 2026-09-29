@@ -1,0 +1,38 @@
+{
+  "ver": "2.3.7",
+  "uuid": "93ace8b2-cc8d-4990-8325-32d5bf32c782",
+  "importer": "texture",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "genMipmaps": false,
+  "packable": true,
+  "width": 520,
+  "height": 190,
+  "platformSettings": {},
+  "subMetas": {
+    "gomoku_player_info_bg_blue": {
+      "ver": "1.0.6",
+      "uuid": "19828f35-7948-45a6-ae8a-aad287949a05",
+      "importer": "sprite-frame",
+      "rawTextureUuid": "93ace8b2-cc8d-4990-8325-32d5bf32c782",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 1,
+      "offsetY": 8,
+      "trimX": 8,
+      "trimY": 16,
+      "width": 506,
+      "height": 142,
+      "rawWidth": 520,
+      "rawHeight": 190,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}

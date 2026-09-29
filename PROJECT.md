@@ -50,8 +50,7 @@
 
 | 文件 | 职责 |
 | --- | --- |
-| `assets/scripts/shop/ShopRes.ts` | 商店 bundle 与商店/确认购买 prefab 加载。 |
-| `assets/scripts/shop/Shop.ts` | 商店主面板，展示房卡商品、刷新顶部资产、打开购买确认弹窗。 |
+| `assets/scripts/shop/ShopRes.ts` | 充值 bundle 与充值相关 prefab 加载。 |
 | `assets/scripts/shop/BuyConfirmPopup.ts` | 购买确认弹窗，确认后回调大厅购买接口。 |
 
 ### 公共弹窗与提示
