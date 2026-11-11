@@ -17,14 +17,12 @@ export default class HallRecordItem extends cc.Component {
     private clickHandler: (data: RecordItemDTO) => void = null;
 
     protected onLoad(): void {
-        this.buildView();
+        this.bindView();
         this.bindTouch();
     }
 
     public updateView(data: RecordItemDTO) {
-        if (!this.gameNameLabel) {
-            this.buildView();
-        }
+        if (!this.gameNameLabel) return;
 
         this.recordData = data;
         const amount = Number(data.winAmount || 0);
@@ -42,46 +40,16 @@ export default class HallRecordItem extends cc.Component {
         this.clickHandler = handler;
     }
 
-    private buildView(): void {
-        this.node.removeAllChildren();
-        this.node.setContentSize(1020, 190);
-
-        const bg = this.createSpriteNode("Bg", HallRes.instance.recordImgMap["record_item_bg"], 1020, 190);
-        bg.parent = this.node;
-        this.bgSprite = bg.getComponent(cc.Sprite);
-
-        const icon = this.createSpriteNode("GameIcon", HallRes.instance.recordImgMap["record_paijiu_icon"], 150, 150);
-        icon.parent = this.node;
-        icon.setPosition(-390, 0);
-        this.iconSprite = icon.getComponent(cc.Sprite);
-
-        this.gameNameLabel = this.createLabel("牌九", 46, cc.color(255, 246, 232), true);
-        this.gameNameLabel.node.parent = this.node;
-        this.gameNameLabel.node.setAnchorPoint(0, 0.5);
-        this.gameNameLabel.node.setPosition(-290, 48);
-
-        this.roomLabel = this.createLabel("房间号：", 29, cc.color(205, 205, 215), false);
-        this.roomLabel.node.parent = this.node;
-        this.roomLabel.node.setAnchorPoint(0, 0.5);
-        this.roomLabel.node.setPosition(-290, -8);
-
-        this.timeLabel = this.createLabel("", 29, cc.color(180, 184, 196), false);
-        this.timeLabel.node.parent = this.node;
-        this.timeLabel.node.setAnchorPoint(0, 0.5);
-        this.timeLabel.node.setPosition(-290, -55);
-
-        this.resultLabel = this.createLabel("总 输 赢", 28, cc.color(180, 184, 196), false);
-        this.resultLabel.node.parent = this.node;
-        this.resultLabel.node.setPosition(225, 35);
-
-        this.amountLabel = this.createLabel("0", 62, cc.color(105, 230, 90), true);
-        this.amountLabel.node.parent = this.node;
-        this.amountLabel.node.setContentSize(260, 70);
-        this.amountLabel.node.setPosition(225, -28);
-
-        this.arrowLabel = this.createLabel(">", 58, cc.color(255, 212, 190), true);
-        this.arrowLabel.node.parent = this.node;
-        this.arrowLabel.node.setPosition(450, -2);
+    private bindView(): void {
+        this.bgSprite = this.node.getChildByName("Bg")?.getComponent(cc.Sprite);
+        this.iconSprite = this.node.getChildByName("GameIcon")?.getComponent(cc.Sprite);
+        this.gameNameLabel = this.node.getChildByName("GameNameLabel")?.getComponent(cc.Label);
+        this.roomLabel = this.node.getChildByName("RoomLabel")?.getComponent(cc.Label);
+        this.timeLabel = this.node.getChildByName("TimeLabel")?.getComponent(cc.Label);
+        this.resultLabel = this.node.getChildByName("ResultLabel")?.getComponent(cc.Label);
+        this.amountLabel = this.node.getChildByName("AmountLabel")?.getComponent(cc.Label);
+        this.arrowLabel = this.node.getChildByName("ArrowLabel")?.getComponent(cc.Label);
+        
     }
 
     private bindTouch(): void {
@@ -158,36 +126,6 @@ export default class HallRecordItem extends cc.Component {
         const second = this.pad(date.getSeconds());
 
         return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
-    }
-
-    private createSpriteNode(name: string, spriteFrame: cc.SpriteFrame, width: number, height: number): cc.Node {
-        const node = new cc.Node(name);
-        node.setContentSize(width, height);
-
-        const sprite = node.addComponent(cc.Sprite);
-        sprite.spriteFrame = spriteFrame;
-        sprite.sizeMode = cc.Sprite.SizeMode.CUSTOM;
-
-        return node;
-    }
-
-    private createLabel(text: string, fontSize: number, color: cc.Color, outline: boolean): cc.Label {
-        const node = new cc.Node("Label");
-        const label = node.addComponent(cc.Label);
-        label.string = text;
-        label.fontSize = fontSize;
-        label.lineHeight = fontSize + 4;
-        label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
-        label.verticalAlign = cc.Label.VerticalAlign.CENTER;
-        node.color = color;
-
-        if (outline) {
-            const labelOutline = node.addComponent(cc.LabelOutline);
-            labelOutline.color = cc.color(20, 0, 0);
-            labelOutline.width = 3;
-        }
-
-        return label;
     }
 
     private pad(num: number): string {

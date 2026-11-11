@@ -599,8 +599,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        140,
-        0,
+        120,
+        -6,
         0,
         0,
         0,

@@ -71,9 +71,9 @@ export default class HallMainManager extends cc.Component {
             cover: item.coverAsset || "hall_game_cover_coming",
             bgAsset: item.bgAsset,
             buttonAsset: item.buttonAsset,
-            enabled: item.enabled === true,
-            matchEnabled: item.matchEnabled === true,
-            roomEnabled: item.roomEnabled === true,
+            enabled: item.enabled === true || Number(item.enabled) === 1,
+            matchEnabled: item.matchEnabled === true || Number(item.matchEnabled) === 1,
+            roomEnabled: item.roomEnabled === true || Number(item.roomEnabled) === 1,
         }));
     }
 

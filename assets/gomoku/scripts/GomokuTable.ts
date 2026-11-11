@@ -11,8 +11,8 @@ const { ccclass } = cc._decorator;
 @ccclass
 export default class GomokuTable extends cc.Component {
     private readonly size = 15;
-    private readonly start = -385;
-    private readonly cell = 55;
+    private start = -385;
+    private cell = 55;
     private turnSeconds = 30;
     private readonly maxUndoCount = 3;
     private board: number[][] = [];
@@ -35,6 +35,8 @@ export default class GomokuTable extends cc.Component {
     private pendingServerState: any = null;
     private undoCount = 0;
     private returningToHall = false;
+    private turnTipNode: cc.Node = null;
+    private displayedTurnUserId = 0;
 
     async onLoad() {
         this.createInputBlocker();
@@ -46,6 +48,7 @@ export default class GomokuTable extends cc.Component {
             this.stoneLayer.setContentSize(920, 920);
             boardPanel.addChild(this.stoneLayer);
         }
+        this.updateBoardMetrics(boardPanel.getChildByName("BoardBg"));
         this.bindControls();
         this.userId = Number(UserData.get()?.userId || 0);
         GameNet.on(GomokuCmd.START, this.applyServerState, this);
@@ -92,6 +95,20 @@ export default class GomokuTable extends cc.Component {
         blocker.addComponent(cc.BlockInputEvents);
         this.node.addChild(blocker);
         blocker.setSiblingIndex(0);
+    }
+
+    private updateBoardMetrics(boardBg: cc.Node) {
+        if (!boardBg) return;
+        const boardSize = Math.min(boardBg.width, boardBg.height);
+        if (boardSize <= 0) return;
+        // The original 900px board used a 770px playable grid.
+        const gridSize = boardSize * 770 / 900;
+        this.cell = gridSize / (this.size - 1);
+        this.start = -gridSize / 2;
+        if (this.stoneLayer) {
+            this.stoneLayer.setContentSize(boardBg.getContentSize());
+            this.stoneLayer.setPosition(boardBg.position);
+        }
     }
 
     private bindControls() {
@@ -175,10 +192,48 @@ export default class GomokuTable extends cc.Component {
         if (bottomTimeNode) bottomTimeNode.active = !this.finished && !topTurn;
         this.setLabel(topTime, time);
         this.setLabel(bottomTime, time);
-        const topTip = this.node.getChildByName("TopTurnTip");
-        const bottomTip = this.node.getChildByName("BottomTurnTip");
-        if (topTip) topTip.active = !this.finished && this.turnUserId === this.topUserId;
-        if (bottomTip) bottomTip.active = !this.finished && this.turnUserId !== this.topUserId;
+        this.showBoardTurnTip();
+    }
+
+    private showBoardTurnTip() {
+        if (this.finished) {
+            if (this.turnTipNode && cc.isValid(this.turnTipNode)) this.turnTipNode.active = false;
+            return;
+        }
+        if (!this.turnUserId || this.turnUserId === this.displayedTurnUserId) {
+            return;
+        }
+        this.displayedTurnUserId = this.turnUserId;
+        const boardPanel = this.node.getChildByName("BoardPanel");
+        if (!boardPanel) return;
+        if (!this.turnTipNode || !cc.isValid(this.turnTipNode)) {
+            this.turnTipNode = new cc.Node("BoardTurnTip");
+            this.turnTipNode.setContentSize(540, 72);
+            const label = this.turnTipNode.addComponent(cc.Label);
+            label.fontSize = 38;
+            label.lineHeight = 50;
+            label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
+            label.verticalAlign = cc.Label.VerticalAlign.CENTER;
+            const outline = this.turnTipNode.addComponent(cc.LabelOutline);
+            outline.color = cc.Color.BLACK;
+            outline.width = 3;
+            boardPanel.addChild(this.turnTipNode);
+            this.turnTipNode.zIndex = 100;
+        }
+
+        const label = this.turnTipNode.getComponent(cc.Label);
+        const isSelfTurn = this.turnUserId === this.userId;
+        this.turnTipNode.active = true;
+        label.string = isSelfTurn ? "你的回合" : "对方回合";
+        label.node.color = isSelfTurn ? new cc.Color(50, 210, 255) : new cc.Color(255, 105, 105);
+        cc.Tween.stopAllByTarget(this.turnTipNode);
+        this.turnTipNode.opacity = 0;
+        this.turnTipNode.setPosition(-430, 0);
+        cc.tween(this.turnTipNode)
+            .to(0.18, { opacity: 255, position: cc.v3(-90, 0, 0) })
+            .delay(0.45)
+            .to(0.28, { opacity: 0, position: cc.v3(430, 0, 0) })
+            .start();
     }
 
     private formatTime(seconds: number): string {
@@ -265,7 +320,7 @@ export default class GomokuTable extends cc.Component {
         if (!this.lastStoneMark || !this.stoneLayer) return;
         if (!this.lastStoneNode || !cc.isValid(this.lastStoneNode)) {
             this.lastStoneNode = new cc.Node("LastStoneMark");
-            this.lastStoneNode.setContentSize(68, 68);
+            this.lastStoneNode.setContentSize(this.cell * 1.24, this.cell * 1.24);
             const sprite = this.lastStoneNode.addComponent(cc.Sprite);
             sprite.spriteFrame = this.lastStoneMark;
             this.stoneLayer.addChild(this.lastStoneNode);
@@ -295,6 +350,7 @@ export default class GomokuTable extends cc.Component {
         if (!stone) return;
         stone.name = "Stone_" + x + "_" + y;
         stone.setPosition(this.start + x * this.cell, this.start + y * this.cell);
+        stone.setContentSize(this.cell * 0.98, this.cell * 0.98);
         const sprite = stone.getComponent(cc.Sprite);
         if (!sprite) return;
         sprite.spriteFrame = value === 1 ? this.blackStone : this.whiteStone;
@@ -388,13 +444,19 @@ export default class GomokuTable extends cc.Component {
         const panel = cc.find("Panel", this.resultPopup);
         if (!panel || panel.getChildByName("ResultDescription")) return;
         const node = new cc.Node("ResultDescription");
-        node.setPosition(0, 25);
-        node.setContentSize(600, 44);
+        node.setPosition(0, 20);
+        node.setContentSize(600, 52);
         const label = node.addComponent(cc.Label);
-        label.string = result === "You win" ? "You defeated Robot" : "Robot defeated you";
-        label.fontSize = 28;
-        label.lineHeight = 36;
+        const won = result === "You win";
+        label.string = won ? "本局胜利，继续前进" : "本局惜败，再接再厉";
+        label.fontSize = 30;
+        label.lineHeight = 44;
         label.horizontalAlign = cc.Label.HorizontalAlign.CENTER;
+        label.verticalAlign = cc.Label.VerticalAlign.CENTER;
+        node.color = won ? new cc.Color(97, 218, 255) : new cc.Color(255, 145, 132);
+        const outline = node.addComponent(cc.LabelOutline);
+        outline.color = won ? new cc.Color(6, 42, 82) : new cc.Color(86, 12, 20);
+        outline.width = 2;
         panel.addChild(node);
     }
 
